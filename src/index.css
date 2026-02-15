@@ -1,0 +1,43 @@
+@import url("https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap");
+@import "tailwindcss";
+
+/*
+ * Global Styles – Community ID Platform
+ * Design tokens extracted from Figma:
+ *   Primary:    #1152d4
+ *   Secondary:  #ef4444
+ *   Bg Light:   #f6f6f8
+ *   Bg Dark:    #101622
+ *   Font:       Public Sans
+ */
+
+body {
+  margin: 0;
+  font-family:
+    "Public Sans",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 20px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+
+/* ID card aspect ratio utility */
+.id-card-aspect {
+  aspect-ratio: 85.6 / 53.98;
+}
