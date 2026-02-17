@@ -178,10 +178,10 @@ export default function Templates() {
               className="group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-[#1152d4]/30 transition-all duration-300 overflow-hidden text-left"
             >
               {/* Card Preview */}
-              <div className="h-44 relative overflow-hidden">
+              <div className={`${t.id === "custom" ? "h-full" : "h-44"} relative overflow-hidden`}>
                 {t.id === "custom" ? (
-                  <div className="h-full border-2 border-dashed border-slate-300 rounded-t-xl flex flex-col items-center justify-center gap-3 bg-slate-50 group-hover:border-[#1152d4]/40 transition-colors">
-                    <div className="w-12 h-12 bg-[#1152d4]/10 rounded-full flex items-center justify-center group-hover:bg-[#1152d4]/20 transition-colors">
+                  <div className="h-full min-h-44 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center gap-3 bg-slate-50 group-hover:border-[#1152d4]/40 transition-colors text-center px-4">
+                    <div className="w-14 h-14 bg-[#1152d4]/10 rounded-full flex items-center justify-center group-hover:bg-[#1152d4]/20 transition-colors">
                       <svg
                         className="w-6 h-6 text-[#1152d4]"
                         fill="none"
@@ -378,96 +378,102 @@ export default function Templates() {
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
                   </svg>
                 </button>
 
-                {showWatermark && (<>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Text Watermark
-                  </label>
-                  <input
-                    type="text"
-                    value={watermark.text}
-                    onChange={(e) =>
-                      setWatermark((prev) => ({
-                        ...prev,
-                        text: e.target.value,
-                      }))
-                    }
-                    placeholder="e.g. CONFIDENTIAL, org name..."
-                    className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#1152d4] focus:ring-[#1152d4] py-2.5 px-3 outline-none"
-                  />
-                  {watermark.text && (
-                    <div className="mt-2 flex items-center gap-2">
-                      <label className="text-[11px] text-slate-500 shrink-0">
-                        Opacity
+                {showWatermark && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                        Text Watermark
                       </label>
                       <input
-                        type="range"
-                        min="0.02"
-                        max="0.3"
-                        step="0.01"
-                        value={watermark.textOpacity}
+                        type="text"
+                        value={watermark.text}
                         onChange={(e) =>
                           setWatermark((prev) => ({
                             ...prev,
-                            textOpacity: parseFloat(e.target.value),
+                            text: e.target.value,
                           }))
                         }
-                        className="flex-1 h-1 accent-[#1152d4]"
+                        placeholder="e.g. CONFIDENTIAL, org name..."
+                        className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#1152d4] focus:ring-[#1152d4] py-2.5 px-3 outline-none"
                       />
-                      <span className="text-[11px] text-slate-400 w-8 text-right">
-                        {Math.round(watermark.textOpacity * 100)}%
-                      </span>
+                      {watermark.text && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <label className="text-[11px] text-slate-500 shrink-0">
+                            Opacity
+                          </label>
+                          <input
+                            type="range"
+                            min="0.02"
+                            max="0.3"
+                            step="0.01"
+                            value={watermark.textOpacity}
+                            onChange={(e) =>
+                              setWatermark((prev) => ({
+                                ...prev,
+                                textOpacity: parseFloat(e.target.value),
+                              }))
+                            }
+                            className="flex-1 h-1 accent-[#1152d4]"
+                          />
+                          <span className="text-[11px] text-slate-400 w-8 text-right">
+                            {Math.round(watermark.textOpacity * 100)}%
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Image Watermark URL
-                  </label>
-                  <input
-                    type="url"
-                    value={watermark.imageUrl}
-                    onChange={(e) =>
-                      setWatermark((prev) => ({
-                        ...prev,
-                        imageUrl: e.target.value,
-                      }))
-                    }
-                    placeholder="https://example.com/watermark.png"
-                    className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#1152d4] focus:ring-[#1152d4] py-2.5 px-3 outline-none"
-                  />
-                  {watermark.imageUrl && (
-                    <div className="mt-2 flex items-center gap-2">
-                      <label className="text-[11px] text-slate-500 shrink-0">
-                        Opacity
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                        Image Watermark URL
                       </label>
                       <input
-                        type="range"
-                        min="0.02"
-                        max="0.3"
-                        step="0.01"
-                        value={watermark.imageOpacity}
+                        type="url"
+                        value={watermark.imageUrl}
                         onChange={(e) =>
                           setWatermark((prev) => ({
                             ...prev,
-                            imageOpacity: parseFloat(e.target.value),
+                            imageUrl: e.target.value,
                           }))
                         }
-                        className="flex-1 h-1 accent-[#1152d4]"
+                        placeholder="https://example.com/watermark.png"
+                        className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#1152d4] focus:ring-[#1152d4] py-2.5 px-3 outline-none"
                       />
-                      <span className="text-[11px] text-slate-400 w-8 text-right">
-                        {Math.round(watermark.imageOpacity * 100)}%
-                      </span>
+                      {watermark.imageUrl && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <label className="text-[11px] text-slate-500 shrink-0">
+                            Opacity
+                          </label>
+                          <input
+                            type="range"
+                            min="0.02"
+                            max="0.3"
+                            step="0.01"
+                            value={watermark.imageOpacity}
+                            onChange={(e) =>
+                              setWatermark((prev) => ({
+                                ...prev,
+                                imageOpacity: parseFloat(e.target.value),
+                              }))
+                            }
+                            className="flex-1 h-1 accent-[#1152d4]"
+                          />
+                          <span className="text-[11px] text-slate-400 w-8 text-right">
+                            {Math.round(watermark.imageOpacity * 100)}%
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                </>)}
+                  </>
+                )}
               </div>
             </div>
 

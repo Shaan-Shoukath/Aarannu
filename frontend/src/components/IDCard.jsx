@@ -311,8 +311,12 @@ const IDCard = forwardRef(function IDCard(
                   <div className="grid grid-cols-2 gap-y-1 gap-x-4 pt-1">
                     {backFields.map((f) => (
                       <div key={f.label}>
-                        <p className="text-[8px] text-slate-400 uppercase font-semibold">{f.label}</p>
-                        <p className="text-[11px] font-semibold text-slate-700">{customValues[f.label] || "—"}</p>
+                        <p className="text-[8px] text-slate-400 uppercase font-semibold">
+                          {f.label}
+                        </p>
+                        <p className="text-[11px] font-semibold text-slate-700">
+                          {customValues[f.label] || "—"}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -346,7 +350,10 @@ const IDCard = forwardRef(function IDCard(
             <div className="absolute inset-0 z-30 pointer-events-none overflow-hidden flex items-center justify-center">
               <span
                 className="text-4xl font-bold text-slate-900 uppercase tracking-widest whitespace-nowrap select-none"
-                style={{ opacity: watermark.textOpacity || 0.08, transform: "rotate(-30deg)" }}
+                style={{
+                  opacity: watermark.textOpacity || 0.08,
+                  transform: "rotate(-30deg)",
+                }}
               >
                 {watermark.text}
               </span>
