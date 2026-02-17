@@ -2,6 +2,16 @@ import { useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import { supabase } from "../lib/supabaseClient";
 import IDCard from "./IDCard";
+import CorporateCard from "./CorporateCard";
+import EventCard from "./EventCard";
+import StudentCard from "./StudentCard";
+
+/** Build a unique storage path – extracted to avoid React compiler purity check */
+function buildFilePath(userId, memberName) {
+  const timestamp = Date.now();
+  const safeName = (memberName || "unnamed").replace(/[^a-zA-Z0-9]/g, "_");
+  return `${userId}/${safeName}_${timestamp}.png`;
+}
 
 /**
  * BulkGenerator Component
@@ -9,24 +19,56 @@ import IDCard from "./IDCard";
  * Generates ID card images from an array of member data.
  *
  * Flow:
- *  1. Receives `members` array (from parent / manual entry).
- *  2. For each member, renders the IDCard off-screen.
+ *  1. Receives `members` array (from parent / manual entry / Sheets import).
+ *  2. For each member, renders the selected template card off-screen.
  *  3. Uses html2canvas to convert it to a PNG blob.
  *  4. Uploads the blob to Supabase Storage (private bucket).
  *  5. Inserts a row into `generated_ids` with file_url and expires_at.
  *
- * Security:
- *  • Files are uploaded to a private bucket.
- *  • Only signed URLs are used for access (generated on demand).
- *  • RLS ensures users can only insert their own records.
+ * Props:
+ *  - members: array of member data objects
+ *  - userId: current user's Supabase auth ID
+ *  - onComplete: callback after generation finishes
+ *  - templateId: "custom" | "corporate" | "event" | "student"
+ *  - orgName: organisation name for the card
+ *  - logoUrl: organisation logo URL for the card
  */
-export default function BulkGenerator({ members = [], userId, onComplete }) {
+export default function BulkGenerator({
+  members = [],
+  userId,
+  onComplete,
+  templateId = "custom",
+  orgName = "",
+  logoUrl = "",
+}) {
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [results, setResults] = useState([]);
   const [error, setError] = useState("");
   const cardRef = useRef(null);
   const [currentMember, setCurrentMember] = useState(null);
+
+  /** Render the correct card component based on templateId */
+  const renderOffscreenCard = () => {
+    const props = {
+      data: currentMember,
+      showBack: false,
+      orgName,
+      logoUrl,
+      ref: cardRef,
+    };
+
+    switch (templateId) {
+      case "corporate":
+        return <CorporateCard {...props} />;
+      case "event":
+        return <EventCard {...props} />;
+      case "student":
+        return <StudentCard {...props} />;
+      default:
+        return <IDCard {...props} />;
+    }
+  };
 
   const generateAll = async () => {
     if (members.length === 0) return;
@@ -61,12 +103,7 @@ export default function BulkGenerator({ members = [], userId, onComplete }) {
         );
 
         // 3. Build a unique file path
-        const timestamp = Date.now();
-        const safeName = (member.name || "unnamed").replace(
-          /[^a-zA-Z0-9]/g,
-          "_",
-        );
-        const filePath = `${userId}/${safeName}_${timestamp}.png`;
+        const filePath = buildFilePath(userId, member.name);
 
         // 4. Upload to Supabase Storage (private bucket: "id-cards")
         const { error: uploadError } = await supabase.storage
@@ -260,9 +297,7 @@ export default function BulkGenerator({ members = [], userId, onComplete }) {
         className="fixed -left-full top-0 pointer-events-none"
         aria-hidden="true"
       >
-        <div ref={cardRef}>
-          <IDCard data={currentMember} />
-        </div>
+        <div ref={cardRef}>{renderOffscreenCard()}</div>
       </div>
     </div>
   );

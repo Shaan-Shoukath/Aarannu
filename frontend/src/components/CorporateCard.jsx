@@ -2,30 +2,16 @@ import { forwardRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
 
 /**
- * IDCard Component
- * --------------------------------------------------
- * Renders a single ID card matching the "Geometric Gradient" design
- * extracted from the Figma / HTML design files.
- *
- * Design tokens (from attachments):
- *  Primary:    #1152d4
- *  Secondary:  #ef4444
- *  Font:       Public Sans
- *  Card ratio: 85.6 : 53.98 (standard CR-80)
- *
- * Props:
- *  - data: { name, role, id_number, dob, gender, photo_url, address }
- *  - showBack: boolean (render back side)
- *
- * The component is wrapped in forwardRef so html2canvas can capture it.
+ * CorporateCard – Red & Blue Dynamic Gradient template
+ * Standard CR-80 landscape card with corporate styling.
  */
-const IDCard = forwardRef(function IDCard(
+const CorporateCard = forwardRef(function CorporateCard(
   { data, showBack = false, orgName = "", logoUrl = "" },
   ref,
 ) {
   const {
     name = "Full Name",
-    role = "Member",
+    role = "Employee",
     id_number = "0000 0000 0000",
     dob = "01/01/2000",
     gender = "N/A",
@@ -35,27 +21,20 @@ const IDCard = forwardRef(function IDCard(
 
   return (
     <div ref={ref} className="flex flex-col items-center gap-8">
-      {/* ═══════════════════════════════════════════
-          FRONT SIDE
-          ═══════════════════════════════════════════ */}
+      {/* ═══ FRONT ═══ */}
       <div
         className="relative w-125 bg-white rounded-xl shadow-2xl overflow-hidden ring-1 ring-slate-900/5"
         style={{ aspectRatio: "85.6 / 53.98" }}
       >
-        {/* Geometric Background */}
+        {/* Background gradients */}
         <div className="absolute inset-0 z-0">
-          {/* Top-right gradient blob */}
-          <div className="absolute -top-10 -right-10 w-48 h-48 bg-linear-to-bl from-[#1152d4] to-blue-600 rounded-full blur-2xl opacity-20" />
-          {/* Top-right triangle */}
+          <div className="absolute -top-10 -right-10 w-56 h-56 bg-linear-to-bl from-[#1152d4] to-blue-600 rounded-full blur-3xl opacity-20" />
+          <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-linear-to-tr from-red-500 to-orange-400 rounded-full blur-2xl opacity-15" />
           <div className="absolute top-0 right-0 w-40 h-40">
-            <svg
-              viewBox="0 0 100 100"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
+            <svg viewBox="0 0 100 100" fill="none">
               <defs>
                 <linearGradient
-                  id="idcard-grad-front-tr"
+                  id="corp-tr"
                   x1="0"
                   y1="0"
                   x2="100"
@@ -68,23 +47,16 @@ const IDCard = forwardRef(function IDCard(
               </defs>
               <path
                 d="M0 0H100V100L50 50L0 0Z"
-                fill="url(#idcard-grad-front-tr)"
-                fillOpacity="0.9"
+                fill="url(#corp-tr)"
+                fillOpacity="0.85"
               />
             </svg>
           </div>
-          {/* Bottom-left gradient blob */}
-          <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-linear-to-tr from-red-500 to-orange-400 rounded-full blur-2xl opacity-10" />
-          {/* Bottom-left triangle */}
           <div className="absolute bottom-0 left-0 w-32 h-32 rotate-180">
-            <svg
-              viewBox="0 0 100 100"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
+            <svg viewBox="0 0 100 100" fill="none">
               <defs>
                 <linearGradient
-                  id="idcard-grad-front-bl"
+                  id="corp-bl"
                   x1="0"
                   y1="0"
                   x2="100"
@@ -97,47 +69,46 @@ const IDCard = forwardRef(function IDCard(
               </defs>
               <path
                 d="M0 0H100V100L50 50L0 0Z"
-                fill="url(#idcard-grad-front-bl)"
-                fillOpacity="0.8"
+                fill="url(#corp-bl)"
+                fillOpacity="0.7"
               />
             </svg>
           </div>
         </div>
 
-        {/* Hologram overlay */}
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full border border-white/20 z-20 opacity-30 mix-blend-overlay pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%)",
-          }}
-        />
-
-        {/* Header bar */}
+        {/* Header */}
         <div className="absolute top-4 left-6 right-6 flex items-center gap-2 z-10">
-          <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#1152d4] to-blue-800 flex items-center justify-center text-white shadow-sm">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
-            </svg>
-          </div>
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt="Logo"
+              className="w-8 h-8 object-contain rounded"
+              crossOrigin="anonymous"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#1152d4] to-blue-800 flex items-center justify-center text-white shadow-sm">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
+              </svg>
+            </div>
+          )}
           <div className="flex flex-col leading-tight">
             <span className="text-[10px] font-bold text-[#1152d4] uppercase tracking-wide">
-              Community ID
+              {orgName || "Organization"}
             </span>
             <span className="text-[8px] text-slate-500 font-medium">
-              Digital Identity Card
+              Employee ID Card
             </span>
           </div>
         </div>
 
-        {/* Main content */}
+        {/* Content */}
         <div className="absolute top-16 left-6 right-6 bottom-6 flex gap-6 z-10">
-          {/* Photo */}
           <div className="w-28 h-32 shrink-0 relative">
             {photo_url ? (
               <img
                 src={photo_url}
-                alt={`${name} profile`}
+                alt={name}
                 className="w-full h-full object-cover rounded-md shadow-md border-2 border-white ring-1 ring-[#1152d4]/20"
                 crossOrigin="anonymous"
               />
@@ -152,12 +123,7 @@ const IDCard = forwardRef(function IDCard(
                 </svg>
               </div>
             )}
-            <div className="absolute bottom-0 w-full bg-black/50 backdrop-blur-[1px] text-center py-0.5 rounded-b-md">
-              <span className="text-[8px] text-white font-mono">VERIFIED</span>
-            </div>
           </div>
-
-          {/* Details */}
           <div className="flex-1 flex flex-col justify-center space-y-3">
             <div>
               <h3 className="text-xl font-bold text-slate-800">{name}</h3>
@@ -191,48 +157,17 @@ const IDCard = forwardRef(function IDCard(
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════
-          BACK SIDE (optional)
-          ═══════════════════════════════════════════ */}
+      {/* ═══ BACK ═══ */}
       {showBack && (
         <div
           className="relative w-125 bg-white rounded-xl shadow-2xl overflow-hidden ring-1 ring-slate-900/5"
           style={{ aspectRatio: "85.6 / 53.98" }}
         >
-          {/* Background  */}
           <div className="absolute inset-0 z-0 opacity-50">
             <div className="absolute top-0 left-0 w-full h-2 bg-linear-to-r from-[#1152d4] via-red-500 to-[#1152d4]" />
-            <div className="absolute bottom-0 right-0 w-40 h-40 rotate-90">
-              <svg
-                viewBox="0 0 100 100"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <defs>
-                  <linearGradient
-                    id="idcard-grad-back"
-                    x1="0"
-                    y1="0"
-                    x2="100"
-                    y2="100"
-                    gradientUnits="userSpaceOnUse"
-                  >
-                    <stop stopColor="#1152d4" />
-                    <stop offset="1" stopColor="#ef4444" />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M0 0H100V100L50 50L0 0Z"
-                  fill="url(#idcard-grad-back)"
-                  fillOpacity="0.1"
-                />
-              </svg>
-            </div>
           </div>
-
           <div className="absolute inset-0 p-6 flex flex-col z-10">
             <div className="flex-1 flex gap-6">
-              {/* Address block */}
               <div className="flex-1 space-y-4">
                 <div>
                   <h4 className="text-xs font-bold text-slate-800 mb-1 uppercase tracking-wide border-b border-[#1152d4]/20 pb-1 inline-block">
@@ -247,12 +182,10 @@ const IDCard = forwardRef(function IDCard(
                     Issuing Authority
                   </h4>
                   <p className="text-[11px] leading-relaxed text-slate-600 font-medium">
-                    {orgName || "Community ID Platform"}
+                    {orgName || "Organization"}
                   </p>
                 </div>
               </div>
-
-              {/* QR Code */}
               <div className="w-32 flex flex-col justify-center items-end">
                 <div className="w-28 h-28 bg-white p-2 rounded-lg border border-slate-200 shadow-sm flex items-center justify-center">
                   <QRCodeSVG value={id_number} size={96} level="M" />
@@ -262,11 +195,9 @@ const IDCard = forwardRef(function IDCard(
                 </span>
               </div>
             </div>
-
-            {/* Footer */}
             <div className="h-6 border-t border-slate-100 flex items-center justify-between mt-auto">
               <span className="text-[8px] text-slate-400">
-                community-id-platform
+                {orgName || "aarannu"}
               </span>
               <span className="text-[8px] text-slate-400">
                 Valid for 15 days from issue
@@ -279,4 +210,4 @@ const IDCard = forwardRef(function IDCard(
   );
 });
 
-export default IDCard;
+export default CorporateCard;

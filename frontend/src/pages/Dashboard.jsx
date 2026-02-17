@@ -147,10 +147,10 @@ export default function Dashboard() {
       <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-[#1152d4] rounded-lg flex items-center justify-center text-white font-bold text-lg">
-            ID
+            A
           </div>
           <h1 className="font-bold text-lg text-slate-900">
-            Card Studio{" "}
+            Aarannu{" "}
             <span className="text-slate-400 font-normal ml-2 text-sm">
               | Dashboard
             </span>
@@ -159,7 +159,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-3">
           {member?.approved && (
             <button
-              onClick={() => navigate("/generate")}
+              onClick={() => navigate("/templates")}
               className="px-4 py-2 bg-[#1152d4] hover:bg-[#1152d4]/90 text-white text-sm font-medium rounded-lg flex items-center gap-2 shadow-lg shadow-[#1152d4]/20 transition-all"
             >
               <svg
@@ -362,7 +362,7 @@ export default function Dashboard() {
               </p>
               {member?.approved && (
                 <button
-                  onClick={() => navigate("/generate")}
+                  onClick={() => navigate("/templates")}
                   className="mt-4 px-4 py-2 bg-[#1152d4] text-white text-sm font-medium rounded-lg hover:bg-[#1152d4]/90 transition-colors"
                 >
                   Generate your first ID

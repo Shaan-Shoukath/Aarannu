@@ -1,22 +1,35 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import BulkGenerator from "../components/BulkGenerator";
 import IDCard from "../components/IDCard";
+import CorporateCard from "../components/CorporateCard";
+import EventCard from "../components/EventCard";
+import StudentCard from "../components/StudentCard";
 
 /**
  * Generate Page
  * --------------------------------------------------
  * Allows approved users to:
  *  1. Enter member data manually (one or multiple).
- *  2. Preview the ID card in real-time.
- *  3. Bulk-generate and upload all cards.
+ *  2. Import members from a published Google Sheets URL.
+ *  3. Preview the ID card in real-time using selected template.
+ *  4. Bulk-generate and upload all cards.
  *
- * Only accessible if the user's member.approved === true.
- * If not approved, they're redirected to the dashboard.
+ * Receives via location.state:
+ *  - template: "custom" | "corporate" | "event" | "student"
+ *  - orgName: string
+ *  - logoUrl: string
  */
 export default function Generate() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Template info from /templates page
+  const templateId = location.state?.template || "custom";
+  const orgName = location.state?.orgName || "";
+  const logoUrl = location.state?.logoUrl || "";
+
   const [user, setUser] = useState(null);
   const [_member, setMember] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -38,6 +51,19 @@ export default function Generate() {
   // Preview mode
   const [previewData, setPreviewData] = useState(null);
   const [showBack, setShowBack] = useState(false);
+
+  // Google Sheets import
+  const [sheetsUrl, setSheetsUrl] = useState("");
+  const [sheetsLoading, setSheetsLoading] = useState(false);
+  const [sheetsError, setSheetsError] = useState("");
+  const [sheetsSuccess, setSheetsSuccess] = useState("");
+
+  const TEMPLATE_LABELS = {
+    custom: "Custom",
+    corporate: "Corporate Standard",
+    event: "Event Access",
+    student: "Student ID",
+  };
 
   const checkAccess = async () => {
     setLoading(true);
@@ -109,7 +135,172 @@ export default function Generate() {
 
   const handleGenerationComplete = () => {
     setMembers([]);
-    // Optionally navigate to dashboard to see results
+  };
+
+  /** ── Google Sheets CSV Import ── */
+  const handleSheetsImport = async () => {
+    if (!sheetsUrl.trim()) return;
+    setSheetsLoading(true);
+    setSheetsError("");
+    setSheetsSuccess("");
+
+    try {
+      // Convert any Google Sheets URL to CSV export URL
+      let csvUrl = sheetsUrl.trim();
+
+      // Handle various Google Sheets URL formats
+      const spreadsheetIdMatch = csvUrl.match(
+        /\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/,
+      );
+      if (spreadsheetIdMatch) {
+        const sheetId = spreadsheetIdMatch[1];
+        // Extract gid if present
+        const gidMatch = csvUrl.match(/gid=(\d+)/);
+        const gid = gidMatch ? gidMatch[1] : "0";
+        csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+      } else if (
+        !csvUrl.includes("export?format=csv") &&
+        !csvUrl.endsWith(".csv")
+      ) {
+        throw new Error(
+          "Please paste a valid Google Sheets URL (e.g. https://docs.google.com/spreadsheets/d/...).",
+        );
+      }
+
+      const res = await fetch(csvUrl);
+      if (!res.ok) {
+        throw new Error(
+          "Could not fetch the sheet. Make sure it is published / shared as 'Anyone with the link'.",
+        );
+      }
+
+      const csvText = await res.text();
+      const rows = parseCSV(csvText);
+
+      if (rows.length < 2) {
+        throw new Error(
+          "Sheet must have a header row and at least one data row.",
+        );
+      }
+
+      const headers = rows[0].map((h) => h.trim().toLowerCase());
+      const imported = [];
+
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (row.every((c) => !c.trim())) continue; // skip empty rows
+
+        const get = (keys) => {
+          for (const k of keys) {
+            const idx = headers.indexOf(k);
+            if (idx !== -1 && row[idx]?.trim()) return row[idx].trim();
+          }
+          return "";
+        };
+
+        const name = get(["name", "full name", "fullname", "member name"]);
+        if (!name) continue; // name is required
+
+        imported.push({
+          name,
+          role: get(["role", "designation", "title", "position"]) || "Member",
+          id_number:
+            get(["id", "id_number", "id number", "member id", "memberid"]) ||
+            `ID-${Date.now().toString(36).toUpperCase()}-${i}`,
+          dob: get(["dob", "date of birth", "birthday", "birth date"]),
+          gender: get(["gender", "sex"]) || "N/A",
+          photo_url: get([
+            "photo",
+            "photo_url",
+            "photo url",
+            "image",
+            "image_url",
+          ]),
+          address: get(["address", "addr", "location"]),
+        });
+      }
+
+      if (imported.length === 0) {
+        throw new Error(
+          'No valid rows found. Make sure column headers include at least "name".',
+        );
+      }
+
+      setMembers((prev) => [...prev, ...imported]);
+      setSheetsSuccess(
+        `Imported ${imported.length} member(s) from Google Sheets.`,
+      );
+      setSheetsUrl("");
+    } catch (err) {
+      setSheetsError(err.message);
+    } finally {
+      setSheetsLoading(false);
+    }
+  };
+
+  /** Minimal CSV parser that handles quoted fields */
+  function parseCSV(text) {
+    const rows = [];
+    let current = [];
+    let field = "";
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      const next = text[i + 1];
+
+      if (inQuotes) {
+        if (ch === '"' && next === '"') {
+          field += '"';
+          i++;
+        } else if (ch === '"') {
+          inQuotes = false;
+        } else {
+          field += ch;
+        }
+      } else {
+        if (ch === '"') {
+          inQuotes = true;
+        } else if (ch === ",") {
+          current.push(field);
+          field = "";
+        } else if (ch === "\n" || (ch === "\r" && next === "\n")) {
+          current.push(field);
+          field = "";
+          rows.push(current);
+          current = [];
+          if (ch === "\r") i++;
+        } else if (ch === "\r") {
+          current.push(field);
+          field = "";
+          rows.push(current);
+          current = [];
+        } else {
+          field += ch;
+        }
+      }
+    }
+    // last field / row
+    if (field || current.length) {
+      current.push(field);
+      rows.push(current);
+    }
+    return rows;
+  }
+
+  /** Render the correct card component based on selected template */
+  const renderCard = (data, ref = null, back = showBack) => {
+    const props = { data, showBack: back, orgName, logoUrl, ref };
+    switch (templateId) {
+      case "corporate":
+        return <CorporateCard {...props} />;
+      case "event":
+        return <EventCard {...props} />;
+      case "student":
+        return <StudentCard {...props} />;
+      default:
+        return <IDCard {...props} />;
+    }
   };
 
   if (loading) {
@@ -151,16 +342,22 @@ export default function Generate() {
           <h1 className="font-bold text-lg text-slate-900">
             Bulk ID Generator{" "}
             <span className="text-slate-400 font-normal ml-2 text-sm">
-              | Data Entry
+              | {TEMPLATE_LABELS[templateId]} Template
             </span>
           </h1>
         </div>
         <div className="flex items-center gap-3">
           <button
+            onClick={() => navigate("/templates")}
+            className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-[#1152d4] transition-colors border border-slate-300 rounded-lg"
+          >
+            ← Change Template
+          </button>
+          <button
             onClick={() => navigate("/dashboard")}
             className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-[#1152d4] transition-colors border border-slate-300 rounded-lg"
           >
-            ← Back to Dashboard
+            Dashboard
           </button>
         </div>
       </header>
@@ -170,10 +367,61 @@ export default function Generate() {
         {/* ─── Left Sidebar: Data Entry ─── */}
         <aside className="w-100 shrink-0 bg-white border-r border-slate-200 overflow-y-auto">
           <div className="p-6 space-y-8">
-            {/* Section 1: Identity Details */}
+            {/* Google Sheets Import */}
+            <div className="space-y-3">
+              <h2 className="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-2 flex items-center gap-2">
+                <svg
+                  className="w-4 h-4 text-green-600"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z" />
+                </svg>
+                Import from Google Sheets
+              </h2>
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={sheetsUrl}
+                  onChange={(e) => {
+                    setSheetsUrl(e.target.value);
+                    setSheetsError("");
+                    setSheetsSuccess("");
+                  }}
+                  placeholder="Paste Google Sheets URL..."
+                  className="flex-1 rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-green-500 focus:ring-green-500 py-2 px-3 outline-none"
+                />
+                <button
+                  onClick={handleSheetsImport}
+                  disabled={sheetsLoading || !sheetsUrl.trim()}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                >
+                  {sheetsLoading ? "..." : "Import"}
+                </button>
+              </div>
+              {sheetsError && (
+                <p className="text-xs text-red-600 bg-red-50 p-2 rounded-lg border border-red-100">
+                  {sheetsError}
+                </p>
+              )}
+              {sheetsSuccess && (
+                <p className="text-xs text-green-700 bg-green-50 p-2 rounded-lg border border-green-100">
+                  {sheetsSuccess}
+                </p>
+              )}
+              <p className="text-[10px] text-slate-400 leading-relaxed">
+                Sheet must have a header row with columns like:{" "}
+                <strong>name</strong>, role, id_number, dob, gender, photo_url,
+                address. Share the sheet as &quot;Anyone with the link&quot;.
+              </p>
+            </div>
+
+            <hr className="border-slate-200" />
+
+            {/* Section 1: Identity Details (manual) */}
             <div className="space-y-4">
               <h2 className="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-4">
-                Identity Details
+                Add Manually
               </h2>
 
               <div className="grid grid-cols-2 gap-4">
@@ -322,6 +570,27 @@ export default function Generate() {
               </button>
             </div>
 
+            {/* Org Info Badge */}
+            {orgName && (
+              <div className="bg-indigo-50 p-3 rounded-lg border border-indigo-100 flex items-center gap-2">
+                {logoUrl && (
+                  <img
+                    src={logoUrl}
+                    alt=""
+                    className="w-8 h-8 object-contain rounded"
+                  />
+                )}
+                <div>
+                  <p className="text-xs font-semibold text-indigo-800">
+                    {orgName}
+                  </p>
+                  <p className="text-[10px] text-indigo-600">
+                    Organization configured for this template
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Mapping Guide */}
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
               <div className="flex gap-2">
@@ -337,9 +606,10 @@ export default function Generate() {
                     How it works
                   </h4>
                   <p className="text-xs text-slate-600 leading-relaxed">
-                    Add members one by one below. When ready, click
-                    &quot;Generate All IDs&quot; to create and upload all cards
-                    to secure storage. Cards expire after 15 days.
+                    Add members manually or import from Google Sheets. When
+                    ready, click &quot;Generate All IDs&quot; to create and
+                    upload all cards to secure storage. Cards expire after 15
+                    days.
                   </p>
                 </div>
               </div>
@@ -394,7 +664,7 @@ export default function Generate() {
                   Live Preview
                 </h3>
                 <div className="transform transition-transform hover:scale-[1.02] duration-300">
-                  <IDCard data={previewData} showBack={showBack} />
+                  {renderCard(previewData)}
                 </div>
               </div>
             )}
@@ -412,8 +682,8 @@ export default function Generate() {
                   No cards yet
                 </h3>
                 <p className="text-sm text-slate-400">
-                  Fill in the form on the left and click &quot;Preview&quot; or
-                  &quot;Add to Queue&quot;
+                  Fill in the form on the left, import from Google Sheets, or
+                  click &quot;Preview&quot;
                 </p>
               </div>
             )}
@@ -471,6 +741,9 @@ export default function Generate() {
                   members={members}
                   userId={user?.id}
                   onComplete={handleGenerationComplete}
+                  templateId={templateId}
+                  orgName={orgName}
+                  logoUrl={logoUrl}
                 />
               </div>
             )}

@@ -3,6 +3,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Generate from "./pages/Generate";
+import Templates from "./pages/Templates";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 /**
@@ -12,6 +13,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
  *  /login     → public
  *  /signup    → public
  *  /dashboard → protected (requires auth)
+ *  /templates → protected (pick a card template)
  *  /generate  → protected (requires auth + approval checked inside)
  *  /          → redirects to /dashboard
  *  *          → redirects to /dashboard
@@ -30,6 +32,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/templates"
+          element={
+            <ProtectedRoute>
+              <Templates />
             </ProtectedRoute>
           }
         />

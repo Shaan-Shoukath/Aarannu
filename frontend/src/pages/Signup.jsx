@@ -5,18 +5,13 @@ import { supabase } from "../lib/supabaseClient";
 /**
  * Signup Page
  * --------------------------------------------------
- * Mirrors the Login page layout (split-screen) for visual consistency.
- *
  * Flow:
  *  1. User enters name, email, password.
  *  2. Supabase creates the auth user.
- *  3. A row is inserted into the `members` table with approved = false.
- *  4. User sees a "pending approval" message.
- *  5. Admin must flip `approved` to true before the user can generate IDs.
- *
- * Security notes:
- *  • Password min-length enforced client-side (8 chars) AND by Supabase.
- *  • Name is sanitised (trimmed) before DB insert to avoid leading/trailing spaces.
+ *  3. An OTP is sent to the user's email for verification.
+ *  4. User enters the 6-digit code.
+ *  5. On successful verification, a row is inserted into `members` with approved = true.
+ *  6. User is redirected to dashboard.
  */
 export default function Signup() {
   const navigate = useNavigate();
@@ -29,6 +24,12 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  // OTP verification state
+  const [otpStep, setOtpStep] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpMessage, setOtpMessage] = useState("");
+  const [signupUserId, setSignupUserId] = useState(null);
 
   const handleSignup = async (e) => {
     e.preventDefault();
@@ -61,24 +62,112 @@ export default function Signup() {
         return;
       }
 
-      // 2. Insert member record (approved defaults to false via DB default)
+      // Save user ID for member insert after OTP verification
+      setSignupUserId(authData.user.id);
+
+      // 2. Send OTP to email for verification
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+      });
+
+      if (otpError) {
+        // If rate limited, still proceed — the signup confirmation email acts as verification
+        console.warn("OTP send warning:", otpError.message);
+      }
+
+      setOtpStep(true);
+      setOtpMessage("A 6-digit verification code has been sent to your email.");
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /** Verify the 6-digit OTP and complete signup */
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setError("");
+    setOtpMessage("");
+
+    if (!otpCode.trim() || otpCode.trim().length !== 6) {
+      setError("Please enter the 6-digit code from your email.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data: verifyData, error: verifyError } =
+        await supabase.auth.verifyOtp({
+          email: email.trim(),
+          token: otpCode.trim(),
+          type: "email",
+        });
+
+      if (verifyError) {
+        setError("Invalid or expired code. Please try again.");
+        return;
+      }
+
+      // Use the verified user's ID
+      const userId = verifyData?.user?.id || signupUserId;
+
+      // Insert member record with auto-approval
       const { error: memberError } = await supabase.from("members").insert({
-        user_id: authData.user.id,
+        user_id: userId,
         name: name.trim(),
         role: role.trim() || "Member",
+        approved: true,
       });
 
       if (memberError) {
-        setError(
-          "Account created but profile setup failed. Please contact admin.",
-        );
-        console.error("Member insert error:", memberError);
-        return;
+        // Member might already exist if they retried
+        if (memberError.code === "23505") {
+          // Duplicate — update existing record
+          await supabase
+            .from("members")
+            .update({
+              approved: true,
+              name: name.trim(),
+              role: role.trim() || "Member",
+            })
+            .eq("user_id", userId);
+        } else {
+          setError(
+            "Account verified but profile setup failed. Please contact admin.",
+          );
+          console.error("Member insert error:", memberError);
+          return;
+        }
       }
 
       setSuccess(true);
     } catch {
       setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /** Resend OTP */
+  const handleResendOtp = async () => {
+    setError("");
+    setOtpMessage("");
+    setLoading(true);
+    try {
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+      });
+      if (otpError) {
+        setError(
+          otpError.message ||
+            "Failed to resend code. Wait a moment and try again.",
+        );
+      } else {
+        setOtpMessage("A new code has been sent to your email.");
+      }
+    } catch {
+      setError("Failed to resend code.");
     } finally {
       setLoading(false);
     }
@@ -105,19 +194,155 @@ export default function Signup() {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-slate-900">
-            Account Created!
+            You&apos;re All Set!
           </h2>
           <p className="text-slate-500">
-            Your account has been created successfully. An admin needs to
-            approve your account before you can generate ID cards. You&apos;ll
-            be able to log in and check your approval status.
+            Your email has been verified and your account is approved. You can
+            now access the dashboard and generate ID cards.
           </p>
           <button
-            onClick={() => navigate("/login", { replace: true })}
+            onClick={() => navigate("/dashboard", { replace: true })}
             className="inline-flex items-center px-6 py-2.5 bg-[#1152d4] text-white text-sm font-medium rounded-lg hover:bg-[#1152d4]/90 transition-colors shadow-lg shadow-[#1152d4]/25"
           >
-            Go to Login
+            Go to Dashboard
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── OTP Verification step ──
+  if (otpStep) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white font-['Public_Sans',sans-serif] p-8">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center gap-2 mb-6">
+              <div className="w-10 h-10 bg-[#1152d4] rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-[#1152d4]/30">
+                A
+              </div>
+              <span className="text-2xl font-bold text-slate-900 tracking-tight">
+                Aarannu
+              </span>
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">
+              Verify your email
+            </h1>
+            <p className="text-slate-500 text-sm">
+              Enter the 6-digit code sent to{" "}
+              <span className="font-medium text-slate-700">{email}</span>
+            </p>
+          </div>
+
+          <form onSubmit={handleVerifyOtp} className="space-y-5">
+            {error && (
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+                {error}
+              </div>
+            )}
+            {otpMessage && (
+              <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm">
+                {otpMessage}
+              </div>
+            )}
+
+            <div>
+              <label
+                htmlFor="otp-code"
+                className="block text-sm font-medium text-slate-700 mb-1"
+              >
+                Verification Code
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                    />
+                  </svg>
+                </span>
+                <input
+                  id="otp-code"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]{6}"
+                  maxLength={6}
+                  required
+                  value={otpCode}
+                  onChange={(e) =>
+                    setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                  }
+                  placeholder="Enter 6-digit code"
+                  className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none tracking-widest text-center font-mono text-lg"
+                />
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Didn&apos;t receive the code?{" "}
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={loading}
+                className="text-[#1152d4] hover:underline font-medium"
+              >
+                Resend code
+              </button>
+            </p>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#1152d4] hover:bg-[#1152d4]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1152d4] transition-all duration-200 shadow-lg shadow-[#1152d4]/25 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <svg
+                  className="animate-spin h-5 w-5 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+              ) : (
+                "Verify & Complete Signup"
+              )}
+            </button>
+          </form>
+
+          <p className="text-center text-sm text-slate-500">
+            <button
+              type="button"
+              onClick={() => {
+                setOtpStep(false);
+                setOtpCode("");
+                setError("");
+                setOtpMessage("");
+              }}
+              className="text-[#1152d4] hover:underline font-medium"
+            >
+              &larr; Back to signup form
+            </button>
+          </p>
         </div>
       </div>
     );
@@ -173,10 +398,10 @@ export default function Signup() {
           <div className="text-center lg:text-left">
             <div className="inline-flex items-center justify-center lg:justify-start gap-2 mb-6">
               <div className="w-10 h-10 bg-[#1152d4] rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-[#1152d4]/30">
-                ID
+                A
               </div>
               <span className="text-2xl font-bold text-slate-900 tracking-tight">
-                Card Studio
+                Aarannu
               </span>
             </div>
             <h1 className="text-3xl font-bold text-slate-900 mb-2">
