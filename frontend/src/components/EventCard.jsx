@@ -7,7 +7,7 @@ import { proxyImageUrl } from "../lib/proxyImage";
  * Landscape card with a luxurious dark gradient for event access / VIP passes.
  */
 const EventCard = forwardRef(function EventCard(
-  { data, showBack = false, orgName = "", logoUrl = "" },
+  { data, showBack = false, orgName = "", logoUrl = "", customFields = [], watermark = {} },
   ref,
 ) {
   const {
@@ -17,9 +17,12 @@ const EventCard = forwardRef(function EventCard(
     dob = "",
     photo_url = "",
     address = "",
+    customValues = {},
   } = data || {};
 
   const photoSrc = proxyImageUrl(photo_url);
+  const frontFields = customFields.filter((f) => f.side === "front");
+  const backFields = customFields.filter((f) => f.side === "back");
 
   return (
     <div ref={ref} className="flex flex-col items-center gap-8">
@@ -39,6 +42,29 @@ const EventCard = forwardRef(function EventCard(
           <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-amber-400 via-yellow-300 to-amber-400 opacity-80" />
           <div className="absolute bottom-0 left-0 w-full h-1 bg-linear-to-r from-amber-400 via-yellow-300 to-amber-400 opacity-40" />
         </div>
+
+        {/* Watermarks */}
+        {watermark?.text && (
+          <div className="absolute inset-0 z-30 pointer-events-none overflow-hidden flex items-center justify-center">
+            <span
+              className="text-4xl font-bold text-white uppercase tracking-widest whitespace-nowrap select-none"
+              style={{ opacity: watermark.textOpacity || 0.08, transform: "rotate(-30deg)" }}
+            >
+              {watermark.text}
+            </span>
+          </div>
+        )}
+        {watermark?.imageUrl && (
+          <div className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center">
+            <img
+              src={watermark.imageUrl}
+              alt=""
+              className="w-32 h-32 object-contain select-none"
+              style={{ opacity: watermark.imageOpacity || 0.06 }}
+              crossOrigin="anonymous"
+            />
+          </div>
+        )}
 
         {/* Header */}
         <div className="absolute top-4 left-6 right-6 flex items-center justify-between z-10">
@@ -114,6 +140,16 @@ const EventCard = forwardRef(function EventCard(
                 {id_number}
               </p>
             </div>
+            {frontFields.length > 0 && (
+              <div className="grid grid-cols-2 gap-y-1 gap-x-4 mt-1">
+                {frontFields.map((f) => (
+                  <div key={f.label}>
+                    <p className="text-[8px] text-indigo-400 uppercase font-semibold">{f.label}</p>
+                    <p className="text-[11px] font-semibold text-indigo-100">{customValues[f.label] || "—"}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -148,6 +184,16 @@ const EventCard = forwardRef(function EventCard(
                     {orgName || "Organization"}
                   </p>
                 </div>
+                {backFields.length > 0 && (
+                  <div className="grid grid-cols-2 gap-y-1 gap-x-4 pt-1">
+                    {backFields.map((f) => (
+                      <div key={f.label}>
+                        <p className="text-[8px] text-indigo-400 uppercase font-semibold">{f.label}</p>
+                        <p className="text-[11px] font-semibold text-indigo-100">{customValues[f.label] || "—"}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="w-32 flex flex-col justify-center items-end">
                 <div className="w-28 h-28 bg-white p-2 rounded-lg shadow-sm flex items-center justify-center">
@@ -167,6 +213,29 @@ const EventCard = forwardRef(function EventCard(
               </span>
             </div>
           </div>
+
+          {/* Back Watermarks */}
+          {watermark?.text && (
+            <div className="absolute inset-0 z-30 pointer-events-none overflow-hidden flex items-center justify-center">
+              <span
+                className="text-4xl font-bold text-white uppercase tracking-widest whitespace-nowrap select-none"
+                style={{ opacity: watermark.textOpacity || 0.08, transform: "rotate(-30deg)" }}
+              >
+                {watermark.text}
+              </span>
+            </div>
+          )}
+          {watermark?.imageUrl && (
+            <div className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center">
+              <img
+                src={watermark.imageUrl}
+                alt=""
+                className="w-32 h-32 object-contain select-none"
+                style={{ opacity: watermark.imageOpacity || 0.06 }}
+                crossOrigin="anonymous"
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

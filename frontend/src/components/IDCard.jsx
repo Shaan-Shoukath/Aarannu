@@ -21,7 +21,14 @@ import { proxyImageUrl } from "../lib/proxyImage";
  * The component is wrapped in forwardRef so html2canvas can capture it.
  */
 const IDCard = forwardRef(function IDCard(
-  { data, showBack = false, orgName = "", logoUrl = "" },
+  {
+    data,
+    showBack = false,
+    orgName = "",
+    logoUrl = "",
+    customFields = [],
+    watermark = {},
+  },
   ref,
 ) {
   const {
@@ -32,9 +39,12 @@ const IDCard = forwardRef(function IDCard(
     gender = "N/A",
     photo_url = "",
     address = "",
+    customValues = {},
   } = data || {};
 
   const photoSrc = proxyImageUrl(photo_url);
+  const frontFields = customFields.filter((f) => f.side === "front");
+  const backFields = customFields.filter((f) => f.side === "back");
 
   return (
     <div ref={ref} className="flex flex-col items-center gap-8">
@@ -116,6 +126,34 @@ const IDCard = forwardRef(function IDCard(
           }}
         />
 
+        {/* Text Watermark */}
+        {watermark?.text && (
+          <div className="absolute inset-0 z-30 pointer-events-none overflow-hidden flex items-center justify-center">
+            <span
+              className="text-4xl font-bold text-slate-900 uppercase tracking-widest whitespace-nowrap select-none"
+              style={{
+                opacity: watermark.textOpacity || 0.08,
+                transform: "rotate(-30deg)",
+              }}
+            >
+              {watermark.text}
+            </span>
+          </div>
+        )}
+
+        {/* Image Watermark */}
+        {watermark?.imageUrl && (
+          <div className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center">
+            <img
+              src={watermark.imageUrl}
+              alt=""
+              className="w-32 h-32 object-contain select-none"
+              style={{ opacity: watermark.imageOpacity || 0.06 }}
+              crossOrigin="anonymous"
+            />
+          </div>
+        )}
+
         {/* Header bar */}
         <div className="absolute top-4 left-6 right-6 flex items-center gap-2 z-10">
           <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#1152d4] to-blue-800 flex items-center justify-center text-white shadow-sm">
@@ -190,6 +228,21 @@ const IDCard = forwardRef(function IDCard(
                 {id_number}
               </p>
             </div>
+            {/* Front custom fields */}
+            {frontFields.length > 0 && (
+              <div className="grid grid-cols-2 gap-y-1 gap-x-4 mt-1">
+                {frontFields.map((f) => (
+                  <div key={f.label}>
+                    <p className="text-[8px] text-slate-400 uppercase font-semibold">
+                      {f.label}
+                    </p>
+                    <p className="text-[11px] font-semibold text-slate-700">
+                      {customValues[f.label] || "—"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -253,6 +306,17 @@ const IDCard = forwardRef(function IDCard(
                     {orgName || "Community ID Platform"}
                   </p>
                 </div>
+                {/* Back custom fields */}
+                {backFields.length > 0 && (
+                  <div className="grid grid-cols-2 gap-y-1 gap-x-4 pt-1">
+                    {backFields.map((f) => (
+                      <div key={f.label}>
+                        <p className="text-[8px] text-slate-400 uppercase font-semibold">{f.label}</p>
+                        <p className="text-[11px] font-semibold text-slate-700">{customValues[f.label] || "—"}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* QR Code */}
@@ -276,6 +340,29 @@ const IDCard = forwardRef(function IDCard(
               </span>
             </div>
           </div>
+
+          {/* Back Watermarks */}
+          {watermark?.text && (
+            <div className="absolute inset-0 z-30 pointer-events-none overflow-hidden flex items-center justify-center">
+              <span
+                className="text-4xl font-bold text-slate-900 uppercase tracking-widest whitespace-nowrap select-none"
+                style={{ opacity: watermark.textOpacity || 0.08, transform: "rotate(-30deg)" }}
+              >
+                {watermark.text}
+              </span>
+            </div>
+          )}
+          {watermark?.imageUrl && (
+            <div className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center">
+              <img
+                src={watermark.imageUrl}
+                alt=""
+                className="w-32 h-32 object-contain select-none"
+                style={{ opacity: watermark.imageOpacity || 0.06 }}
+                crossOrigin="anonymous"
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -40,6 +40,8 @@ export default function BulkGenerator({
   templateId = "custom",
   orgName = "",
   logoUrl = "",
+  customFields = [],
+  watermark = {},
 }) {
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -56,6 +58,8 @@ export default function BulkGenerator({
       orgName,
       logoUrl,
       ref: cardRef,
+      customFields,
+      watermark,
     };
 
     switch (templateId) {

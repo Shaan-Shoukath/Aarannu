@@ -7,7 +7,7 @@ import { proxyImageUrl } from "../lib/proxyImage";
  * Bright gradient card for educational institutions.
  */
 const StudentCard = forwardRef(function StudentCard(
-  { data, showBack = false, orgName = "", logoUrl = "" },
+  { data, showBack = false, orgName = "", logoUrl = "", customFields = [], watermark = {} },
   ref,
 ) {
   const {
@@ -18,9 +18,12 @@ const StudentCard = forwardRef(function StudentCard(
     gender = "N/A",
     photo_url = "",
     address = "",
+    customValues = {},
   } = data || {};
 
   const photoSrc = proxyImageUrl(photo_url);
+  const frontFields = customFields.filter((f) => f.side === "front");
+  const backFields = customFields.filter((f) => f.side === "back");
 
   return (
     <div ref={ref} className="flex flex-col items-center gap-8">
@@ -35,6 +38,29 @@ const StudentCard = forwardRef(function StudentCard(
           <div className="absolute -top-16 -right-16 w-64 h-64 bg-linear-to-bl from-orange-400/15 via-pink-400/10 to-transparent rounded-full blur-3xl" />
           <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-linear-to-tr from-purple-500/10 to-transparent rounded-full blur-2xl" />
         </div>
+
+        {/* Watermarks */}
+        {watermark?.text && (
+          <div className="absolute inset-0 z-30 pointer-events-none overflow-hidden flex items-center justify-center">
+            <span
+              className="text-4xl font-bold text-slate-900 uppercase tracking-widest whitespace-nowrap select-none"
+              style={{ opacity: watermark.textOpacity || 0.08, transform: "rotate(-30deg)" }}
+            >
+              {watermark.text}
+            </span>
+          </div>
+        )}
+        {watermark?.imageUrl && (
+          <div className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center">
+            <img
+              src={watermark.imageUrl}
+              alt=""
+              className="w-32 h-32 object-contain select-none"
+              style={{ opacity: watermark.imageOpacity || 0.06 }}
+              crossOrigin="anonymous"
+            />
+          </div>
+        )}
 
         {/* Header */}
         <div className="absolute top-5 left-6 right-6 flex items-center gap-3 z-10">
@@ -119,6 +145,16 @@ const StudentCard = forwardRef(function StudentCard(
                 {id_number}
               </p>
             </div>
+            {frontFields.length > 0 && (
+              <div className="grid grid-cols-2 gap-y-1 gap-x-4 mt-1">
+                {frontFields.map((f) => (
+                  <div key={f.label}>
+                    <p className="text-[8px] text-slate-400 uppercase font-semibold">{f.label}</p>
+                    <p className="text-[11px] font-semibold text-slate-700">{customValues[f.label] || "—"}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -149,6 +185,16 @@ const StudentCard = forwardRef(function StudentCard(
                     {orgName || "Academy"}
                   </p>
                 </div>
+                {backFields.length > 0 && (
+                  <div className="grid grid-cols-2 gap-y-1 gap-x-4 pt-1">
+                    {backFields.map((f) => (
+                      <div key={f.label}>
+                        <p className="text-[8px] text-slate-400 uppercase font-semibold">{f.label}</p>
+                        <p className="text-[11px] font-semibold text-slate-700">{customValues[f.label] || "—"}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="w-32 flex flex-col justify-center items-end">
                 <div className="w-28 h-28 bg-white p-2 rounded-lg border border-slate-200 shadow-sm flex items-center justify-center">
@@ -168,6 +214,29 @@ const StudentCard = forwardRef(function StudentCard(
               </span>
             </div>
           </div>
+
+          {/* Back Watermarks */}
+          {watermark?.text && (
+            <div className="absolute inset-0 z-30 pointer-events-none overflow-hidden flex items-center justify-center">
+              <span
+                className="text-4xl font-bold text-slate-900 uppercase tracking-widest whitespace-nowrap select-none"
+                style={{ opacity: watermark.textOpacity || 0.08, transform: "rotate(-30deg)" }}
+              >
+                {watermark.text}
+              </span>
+            </div>
+          )}
+          {watermark?.imageUrl && (
+            <div className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center">
+              <img
+                src={watermark.imageUrl}
+                alt=""
+                className="w-32 h-32 object-contain select-none"
+                style={{ opacity: watermark.imageOpacity || 0.06 }}
+                crossOrigin="anonymous"
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

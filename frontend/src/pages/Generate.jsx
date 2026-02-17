@@ -29,6 +29,12 @@ export default function Generate() {
   const templateId = location.state?.template || "custom";
   const orgName = location.state?.orgName || "";
   const logoUrl = location.state?.logoUrl || "";
+  const watermark = location.state?.watermark || {
+    text: "",
+    textOpacity: 0.08,
+    imageUrl: "",
+    imageOpacity: 0.06,
+  };
 
   const [user, setUser] = useState(null);
   const [_member, setMember] = useState(null);
@@ -36,6 +42,11 @@ export default function Generate() {
 
   // Members to generate IDs for
   const [members, setMembers] = useState([]);
+
+  // Custom field definitions: [{label, side: 'front'|'back'}]
+  const [customFieldDefs, setCustomFieldDefs] = useState([]);
+  const [newFieldLabel, setNewFieldLabel] = useState("");
+  const [newFieldSide, setNewFieldSide] = useState("front");
 
   // Form state for adding a new member
   const [form, setForm] = useState({
@@ -46,6 +57,7 @@ export default function Generate() {
     gender: "Male",
     photo_url: "",
     address: "",
+    customValues: {},
   });
 
   // Preview mode
@@ -111,6 +123,7 @@ export default function Generate() {
       role: form.role.trim() || "Member",
       id_number:
         form.id_number.trim() || `ID-${Date.now().toString(36).toUpperCase()}`,
+      customValues: { ...form.customValues },
     };
 
     setMembers((prev) => [...prev, newMember]);
@@ -122,6 +135,7 @@ export default function Generate() {
       gender: "Male",
       photo_url: "",
       address: "",
+      customValues: {},
     });
   };
 
@@ -186,6 +200,56 @@ export default function Generate() {
       const headers = rows[0].map((h) => h.trim().toLowerCase());
       const imported = [];
 
+      // Known standard column keys (all lowercase)
+      const STANDARD_KEYS = new Set([
+        "name",
+        "full name",
+        "fullname",
+        "member name",
+        "role",
+        "designation",
+        "title",
+        "position",
+        "id",
+        "id_number",
+        "id number",
+        "member id",
+        "memberid",
+        "dob",
+        "date of birth",
+        "birthday",
+        "birth date",
+        "gender",
+        "sex",
+        "photo",
+        "photo_url",
+        "photo url",
+        "image",
+        "image_url",
+        "address",
+        "addr",
+        "location",
+      ]);
+
+      // Detect extra columns that become custom fields
+      const extraColumns = headers
+        .map((h, idx) => ({ header: h, idx }))
+        .filter((c) => c.header && !STANDARD_KEYS.has(c.header));
+
+      // Auto-register detected custom fields (skip if already defined)
+      if (extraColumns.length > 0) {
+        setCustomFieldDefs((prev) => {
+          const existing = new Set(prev.map((f) => f.label.toLowerCase()));
+          const newDefs = extraColumns
+            .filter((c) => !existing.has(c.header))
+            .map((c) => ({
+              label: c.header.charAt(0).toUpperCase() + c.header.slice(1),
+              side: "front",
+            }));
+          return [...prev, ...newDefs];
+        });
+      }
+
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
         if (row.every((c) => !c.trim())) continue; // skip empty rows
@@ -217,6 +281,12 @@ export default function Generate() {
             "image_url",
           ]),
           address: get(["address", "addr", "location"]),
+          customValues: Object.fromEntries(
+            extraColumns.map((c) => [
+              c.header.charAt(0).toUpperCase() + c.header.slice(1),
+              row[c.idx]?.trim() || "",
+            ]),
+          ),
         });
       }
 
@@ -290,7 +360,15 @@ export default function Generate() {
 
   /** Render the correct card component based on selected template */
   const renderCard = (data, ref = null, back = showBack) => {
-    const props = { data, showBack: back, orgName, logoUrl, ref };
+    const props = {
+      data,
+      showBack: back,
+      orgName,
+      logoUrl,
+      ref,
+      customFields: customFieldDefs,
+      watermark,
+    };
     switch (templateId) {
       case "corporate":
         return <CorporateCard {...props} />;
@@ -412,7 +490,9 @@ export default function Generate() {
               <p className="text-[10px] text-slate-400 leading-relaxed">
                 Sheet must have a header row with columns like:{" "}
                 <strong>name</strong>, role, id_number, dob, gender, photo_url,
-                address. Share the sheet as &quot;Anyone with the link&quot;.
+                address. Any extra columns (e.g. register_no, blood_group) are
+                auto-added as custom fields. Share the sheet as &quot;Anyone
+                with the link&quot;.
               </p>
             </div>
 
@@ -551,6 +631,116 @@ export default function Generate() {
                   className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-3 outline-none resize-none"
                 />
               </div>
+            </div>
+
+            <hr className="border-slate-200" />
+
+            {/* Section 4: Custom Fields */}
+            <div className="space-y-4">
+              <h2 className="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-2 flex items-center gap-2">
+                <svg
+                  className="w-4 h-4 text-purple-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  />
+                </svg>
+                Custom Fields
+              </h2>
+
+              {/* Add new field definition */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newFieldLabel}
+                  onChange={(e) => setNewFieldLabel(e.target.value)}
+                  placeholder="Field name (e.g. Register No)"
+                  className="flex-1 rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-purple-500 focus:ring-purple-500 py-2 px-3 outline-none"
+                />
+                <select
+                  value={newFieldSide}
+                  onChange={(e) => setNewFieldSide(e.target.value)}
+                  className="rounded-lg border border-slate-300 bg-slate-50 text-xs focus:border-purple-500 focus:ring-purple-500 py-2 px-2 outline-none"
+                >
+                  <option value="front">Front</option>
+                  <option value="back">Back</option>
+                </select>
+                <button
+                  onClick={() => {
+                    if (!newFieldLabel.trim()) return;
+                    setCustomFieldDefs((prev) => [
+                      ...prev,
+                      { label: newFieldLabel.trim(), side: newFieldSide },
+                    ]);
+                    setNewFieldLabel("");
+                  }}
+                  disabled={!newFieldLabel.trim()}
+                  className="px-3 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                >
+                  +
+                </button>
+              </div>
+
+              {/* List defined custom fields */}
+              {customFieldDefs.length > 0 && (
+                <div className="space-y-2">
+                  {customFieldDefs.map((field, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold uppercase bg-purple-50 text-purple-600 border border-purple-200">
+                        {field.side}
+                      </span>
+                      <span className="flex-1 text-xs font-medium text-slate-700">
+                        {field.label}
+                      </span>
+                      <input
+                        type="text"
+                        value={form.customValues[field.label] || ""}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            customValues: {
+                              ...prev.customValues,
+                              [field.label]: e.target.value,
+                            },
+                          }))
+                        }
+                        placeholder={`Enter ${field.label}`}
+                        className="w-40 rounded-lg border border-slate-300 bg-slate-50 text-xs focus:border-purple-500 focus:ring-purple-500 py-1.5 px-2 outline-none"
+                      />
+                      <button
+                        onClick={() =>
+                          setCustomFieldDefs((prev) =>
+                            prev.filter((_, i) => i !== idx),
+                          )
+                        }
+                        className="text-red-400 hover:text-red-600 transition-colors"
+                        title="Remove field"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <p className="text-[10px] text-slate-400 leading-relaxed">
+                Define extra fields like Register No, Blood Group, Department,
+                etc. Choose if they appear on the front or back of the card.
+                Extra columns in Google Sheets are auto-detected as custom
+                fields.
+              </p>
             </div>
 
             {/* Add member button */}
@@ -744,6 +934,8 @@ export default function Generate() {
                   templateId={templateId}
                   orgName={orgName}
                   logoUrl={logoUrl}
+                  customFields={customFieldDefs}
+                  watermark={watermark}
                 />
               </div>
             )}
