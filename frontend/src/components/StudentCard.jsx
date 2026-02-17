@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import { proxyImageUrl } from "../lib/proxyImage";
 
 /**
  * StudentCard – Modern Academic Vertical-ish template
@@ -18,6 +19,8 @@ const StudentCard = forwardRef(function StudentCard(
     photo_url = "",
     address = "",
   } = data || {};
+
+  const photoSrc = proxyImageUrl(photo_url);
 
   return (
     <div ref={ref} className="flex flex-col items-center gap-8">
@@ -64,7 +67,7 @@ const StudentCard = forwardRef(function StudentCard(
           <div className="w-26 h-30 shrink-0 relative mt-1">
             {photo_url ? (
               <img
-                src={photo_url}
+                src={photoSrc}
                 alt={name}
                 className="w-full h-full object-cover rounded-lg shadow-md border-2 border-white ring-1 ring-orange-400/20"
                 crossOrigin="anonymous"

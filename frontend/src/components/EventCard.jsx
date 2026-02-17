@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import { proxyImageUrl } from "../lib/proxyImage";
 
 /**
  * EventCard – Dark Royal Theme
@@ -17,6 +18,8 @@ const EventCard = forwardRef(function EventCard(
     photo_url = "",
     address = "",
   } = data || {};
+
+  const photoSrc = proxyImageUrl(photo_url);
 
   return (
     <div ref={ref} className="flex flex-col items-center gap-8">
@@ -77,7 +80,7 @@ const EventCard = forwardRef(function EventCard(
           <div className="w-28 h-32 shrink-0 relative">
             {photo_url ? (
               <img
-                src={photo_url}
+                src={photoSrc}
                 alt={name}
                 className="w-full h-full object-cover rounded-md shadow-lg border-2 border-amber-400/30 ring-1 ring-amber-300/20"
                 crossOrigin="anonymous"

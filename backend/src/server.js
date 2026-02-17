@@ -66,6 +66,7 @@ app.use(express.json({ limit: "1mb" }));
 const authRoutes = require("./routes/authRoutes");
 const idRoutes = require("./routes/idRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const proxyRoutes = require("./routes/proxyRoutes");
 
 // Health check (no auth required)
 app.get("/api/health", (_req, res) => {
@@ -79,6 +80,7 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/ids", idRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/proxy", proxyRoutes);
 
 // 404 catch-all for unknown routes
 app.use((_req, res) => {

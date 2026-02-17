@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import { proxyImageUrl } from "../lib/proxyImage";
 
 /**
  * IDCard Component
@@ -32,6 +33,8 @@ const IDCard = forwardRef(function IDCard(
     photo_url = "",
     address = "",
   } = data || {};
+
+  const photoSrc = proxyImageUrl(photo_url);
 
   return (
     <div ref={ref} className="flex flex-col items-center gap-8">
@@ -136,7 +139,7 @@ const IDCard = forwardRef(function IDCard(
           <div className="w-28 h-32 shrink-0 relative">
             {photo_url ? (
               <img
-                src={photo_url}
+                src={photoSrc}
                 alt={`${name} profile`}
                 className="w-full h-full object-cover rounded-md shadow-md border-2 border-white ring-1 ring-[#1152d4]/20"
                 crossOrigin="anonymous"
