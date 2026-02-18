@@ -5,6 +5,7 @@ import { supabase } from "../lib/supabaseClient";
 import {
   canvasesToPdfBlob,
   canvasToJpegBlob,
+  canvasToPngBlob,
   downloadBlob,
 } from "../utils/downloadHelpers";
 import BulkGenerator from "../components/BulkGenerator";
@@ -75,11 +76,31 @@ export default function Generate() {
   const previewFrontRef = useRef(null);
   const previewBackRef = useRef(null);
 
+  // Ref to the bulk generator section so we can scroll to it after import
+  const generatorSectionRef = useRef(null);
+
   // Google Sheets import
   const [sheetsUrl, setSheetsUrl] = useState("");
   const [sheetsLoading, setSheetsLoading] = useState(false);
   const [sheetsError, setSheetsError] = useState("");
   const [sheetsSuccess, setSheetsSuccess] = useState("");
+
+  // Column mapping state (2-phase import)
+  const [sheetHeaders, setSheetHeaders] = useState([]); // raw header strings from CSV
+  const [sheetRows, setSheetRows] = useState([]); // parsed data rows (arrays)
+  const [columnMap, setColumnMap] = useState({}); // { fieldKey: headerIndex | -1 }
+  const [showMapping, setShowMapping] = useState(false); // show mapping modal
+
+  /** Standard fields the user can map sheet columns to */
+  const MAPPABLE_FIELDS = [
+    { key: "name", label: "Full Name", required: true },
+    { key: "role", label: "Role / Designation" },
+    { key: "id_number", label: "ID Number" },
+    { key: "dob", label: "Date of Birth" },
+    { key: "gender", label: "Gender" },
+    { key: "photo_url", label: "Photo URL" },
+    { key: "address", label: "Address" },
+  ];
 
   const TEMPLATE_LABELS = {
     custom: "Custom",
@@ -161,13 +182,60 @@ export default function Generate() {
   /** Capture a ref element as a canvas */
   const captureRef = async (ref) => {
     if (!ref.current) return null;
-    await new Promise((r) => setTimeout(r, 300));
+    await new Promise((r) => setTimeout(r, 500));
+    // Wait for all <img> inside the card to finish loading
+    const imgs = ref.current.querySelectorAll("img");
+    if (imgs.length > 0) {
+      await Promise.all(
+        [...imgs].map(
+          (img) =>
+            new Promise((res) => {
+              if (img.complete) return res();
+              img.onload = res;
+              img.onerror = res;
+            }),
+        ),
+      );
+    }
     return html2canvas(ref.current, {
       scale: 2,
       useCORS: true,
       backgroundColor: "#ffffff",
       logging: false,
     });
+  };
+
+  /**
+   * Upload the front canvas to Supabase Storage + insert a `generated_ids`
+   * row so the card shows up in the Dashboard for 15 days.
+   */
+  const uploadCardToSupabase = async (frontCanvas, memberName) => {
+    if (!user?.id || !frontCanvas) return;
+    try {
+      const pngBlob = await canvasToPngBlob(frontCanvas);
+      const safeName = (memberName || "card").replace(/[^a-zA-Z0-9]/g, "_");
+      const filePath = `${user.id}/${safeName}_${Date.now()}.png`;
+
+      const { error: uploadErr } = await supabase.storage
+        .from("id-cards")
+        .upload(filePath, pngBlob, { contentType: "image/png", upsert: false });
+
+      if (uploadErr) {
+        console.warn("Supabase upload failed:", uploadErr.message);
+        return;
+      }
+
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 15);
+
+      await supabase.from("generated_ids").insert({
+        user_id: user.id,
+        file_url: filePath,
+        expires_at: expiresAt.toISOString(),
+      });
+    } catch (err) {
+      console.warn("Cloud save failed (card still downloaded locally):", err);
+    }
   };
 
   /** Download the previewed card as a 2-page PDF (front + back) */
@@ -178,8 +246,14 @@ export default function Generate() {
       const frontCanvas = await captureRef(previewFrontRef);
       const backCanvas = await captureRef(previewBackRef);
       const blob = canvasesToPdfBlob(frontCanvas, backCanvas);
-      const safeName = (previewData.name || "id-card").replace(/[^a-zA-Z0-9]/g, "_");
+      const safeName = (previewData.name || "id-card").replace(
+        /[^a-zA-Z0-9]/g,
+        "_",
+      );
       downloadBlob(blob, `${safeName}_ID.pdf`);
+
+      // Also store in Supabase for Dashboard access
+      await uploadCardToSupabase(frontCanvas, previewData.name);
     } catch (err) {
       console.error("PDF download failed:", err);
     } finally {
@@ -195,9 +269,16 @@ export default function Generate() {
       const ref = showBack ? previewBackRef : previewFrontRef;
       const canvas = await captureRef(ref);
       const blob = await canvasToJpegBlob(canvas);
-      const safeName = (previewData.name || "id-card").replace(/[^a-zA-Z0-9]/g, "_");
+      const safeName = (previewData.name || "id-card").replace(
+        /[^a-zA-Z0-9]/g,
+        "_",
+      );
       const side = showBack ? "back" : "front";
       downloadBlob(blob, `${safeName}_${side}.jpg`);
+
+      // Also store front side in Supabase for Dashboard access
+      const frontCanvas = await captureRef(previewFrontRef);
+      await uploadCardToSupabase(frontCanvas, previewData.name);
     } catch (err) {
       console.error("JPEG download failed:", err);
     } finally {
@@ -210,23 +291,25 @@ export default function Generate() {
   };
 
   /** ── Google Sheets CSV Import ── */
+  /**
+   * Phase 1: Fetch the Google Sheet, parse CSV, show column mapping UI.
+   */
   const handleSheetsImport = async () => {
     if (!sheetsUrl.trim()) return;
     setSheetsLoading(true);
     setSheetsError("");
     setSheetsSuccess("");
+    setShowMapping(false);
 
     try {
       // Convert any Google Sheets URL to CSV export URL
       let csvUrl = sheetsUrl.trim();
 
-      // Handle various Google Sheets URL formats
       const spreadsheetIdMatch = csvUrl.match(
         /\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/,
       );
       if (spreadsheetIdMatch) {
         const sheetId = spreadsheetIdMatch[1];
-        // Extract gid if present
         const gidMatch = csvUrl.match(/gid=(\d+)/);
         const gid = gidMatch ? gidMatch[1] : "0";
         csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
@@ -255,115 +338,137 @@ export default function Generate() {
         );
       }
 
-      const headers = rows[0].map((h) => h.trim().toLowerCase());
-      const imported = [];
+      const headers = rows[0].map((h) => h.trim());
+      const dataRows = rows.slice(1).filter((r) => r.some((c) => c.trim()));
 
-      // Known standard column keys (all lowercase)
-      const STANDARD_KEYS = new Set([
-        "name",
-        "full name",
-        "fullname",
-        "member name",
-        "role",
-        "designation",
-        "title",
-        "position",
-        "id",
-        "id_number",
-        "id number",
-        "member id",
-        "memberid",
-        "dob",
-        "date of birth",
-        "birthday",
-        "birth date",
-        "gender",
-        "sex",
-        "photo",
-        "photo_url",
-        "photo url",
-        "image",
-        "image_url",
-        "address",
-        "addr",
-        "location",
-      ]);
-
-      // Detect extra columns that become custom fields
-      const extraColumns = headers
-        .map((h, idx) => ({ header: h, idx }))
-        .filter((c) => c.header && !STANDARD_KEYS.has(c.header));
-
-      // Auto-register detected custom fields (skip if already defined)
-      if (extraColumns.length > 0) {
-        setCustomFieldDefs((prev) => {
-          const existing = new Set(prev.map((f) => f.label.toLowerCase()));
-          const newDefs = extraColumns
-            .filter((c) => !existing.has(c.header))
-            .map((c) => ({
-              label: c.header.charAt(0).toUpperCase() + c.header.slice(1),
-              side: "front",
-            }));
-          return [...prev, ...newDefs];
-        });
+      if (dataRows.length === 0) {
+        throw new Error("No data rows found after the header.");
       }
 
-      for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (row.every((c) => !c.trim())) continue; // skip empty rows
+      // Auto-guess mappings based on header names
+      const guessMap = {};
+      const lowerHeaders = headers.map((h) => h.toLowerCase());
 
-        const get = (keys) => {
-          for (const k of keys) {
-            const idx = headers.indexOf(k);
-            if (idx !== -1 && row[idx]?.trim()) return row[idx].trim();
-          }
-          return "";
-        };
+      const GUESS_RULES = {
+        name: ["name", "full name", "fullname", "member name"],
+        role: ["role", "designation", "title", "position"],
+        id_number: ["id", "id_number", "id number", "member id", "memberid"],
+        dob: ["dob", "date of birth", "birthday", "birth date"],
+        gender: ["gender", "sex"],
+        photo_url: ["photo", "photo_url", "photo url", "image", "image_url"],
+        address: ["address", "addr", "location"],
+      };
 
-        const name = get(["name", "full name", "fullname", "member name"]);
-        if (!name) continue; // name is required
-
-        imported.push({
-          name,
-          role: get(["role", "designation", "title", "position"]) || "Member",
-          id_number:
-            get(["id", "id_number", "id number", "member id", "memberid"]) ||
-            `ID-${Date.now().toString(36).toUpperCase()}-${i}`,
-          dob: get(["dob", "date of birth", "birthday", "birth date"]),
-          gender: get(["gender", "sex"]) || "N/A",
-          photo_url: get([
-            "photo",
-            "photo_url",
-            "photo url",
-            "image",
-            "image_url",
-          ]),
-          address: get(["address", "addr", "location"]),
-          customValues: Object.fromEntries(
-            extraColumns.map((c) => [
-              c.header.charAt(0).toUpperCase() + c.header.slice(1),
-              row[c.idx]?.trim() || "",
-            ]),
-          ),
-        });
+      for (const [field, aliases] of Object.entries(GUESS_RULES)) {
+        const idx = lowerHeaders.findIndex((h) => aliases.includes(h));
+        guessMap[field] = idx !== -1 ? idx : -1;
       }
 
-      if (imported.length === 0) {
-        throw new Error(
-          'No valid rows found. Make sure column headers include at least "name".',
-        );
-      }
-
-      setMembers((prev) => [...prev, ...imported]);
-      setSheetsSuccess(
-        `Imported ${imported.length} member(s) from Google Sheets.`,
-      );
-      setSheetsUrl("");
+      setSheetHeaders(headers);
+      setSheetRows(dataRows);
+      setColumnMap(guessMap);
+      setShowMapping(true);
     } catch (err) {
       setSheetsError(err.message);
     } finally {
       setSheetsLoading(false);
     }
+  };
+
+  /**
+   * Phase 2: Apply column mapping, build member objects, add to queue.
+   */
+  const handleConfirmMapping = () => {
+    if (columnMap.name === -1 || columnMap.name === undefined) {
+      setSheetsError("You must map the 'Full Name' column.");
+      return;
+    }
+
+    // Identify which headers are NOT mapped to standard fields → custom fields
+    const mappedIndices = new Set(
+      Object.values(columnMap).filter((v) => v !== -1),
+    );
+    const extraColumns = sheetHeaders
+      .map((h, idx) => ({ header: h, idx }))
+      .filter((c) => c.header && !mappedIndices.has(c.idx));
+
+    // Auto-register extra columns as custom fields
+    if (extraColumns.length > 0) {
+      setCustomFieldDefs((prev) => {
+        const existing = new Set(prev.map((f) => f.label.toLowerCase()));
+        const newDefs = extraColumns
+          .filter((c) => !existing.has(c.header.toLowerCase()))
+          .map((c) => ({
+            label: c.header.charAt(0).toUpperCase() + c.header.slice(1),
+            side: "front",
+          }));
+        return [...prev, ...newDefs];
+      });
+    }
+
+    const imported = [];
+    for (let i = 0; i < sheetRows.length; i++) {
+      const row = sheetRows[i];
+
+      const getVal = (fieldKey) => {
+        const idx = columnMap[fieldKey];
+        if (idx === -1 || idx === undefined) return "";
+        return row[idx]?.trim() || "";
+      };
+
+      const name = getVal("name");
+      if (!name) continue;
+
+      imported.push({
+        name,
+        role: getVal("role") || "Member",
+        id_number:
+          getVal("id_number") ||
+          `ID-${Date.now().toString(36).toUpperCase()}-${i}`,
+        dob: getVal("dob"),
+        gender: getVal("gender") || "N/A",
+        photo_url: getVal("photo_url"),
+        address: getVal("address"),
+        customValues: Object.fromEntries(
+          extraColumns.map((c) => [
+            c.header.charAt(0).toUpperCase() + c.header.slice(1),
+            row[c.idx]?.trim() || "",
+          ]),
+        ),
+      });
+    }
+
+    if (imported.length === 0) {
+      setSheetsError("No valid rows found with a name in the mapped column.");
+      return;
+    }
+
+    setMembers((prev) => [...prev, ...imported]);
+    setSheetsSuccess(
+      `✓ Imported ${imported.length} member(s). Scroll down and click "Generate & Download" to create the ID cards.`,
+    );
+    setShowMapping(false);
+    setSheetHeaders([]);
+    setSheetRows([]);
+    setColumnMap({});
+    setSheetsUrl("");
+    setSheetsError("");
+
+    // Auto-scroll to the generator section after a short delay for React to render
+    setTimeout(() => {
+      generatorSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 300);
+  };
+
+  /** Cancel column mapping and go back */
+  const handleCancelMapping = () => {
+    setShowMapping(false);
+    setSheetHeaders([]);
+    setSheetRows([]);
+    setColumnMap({});
   };
 
   /** Minimal CSV parser that handles quoted fields */
@@ -532,7 +637,7 @@ export default function Generate() {
                   disabled={sheetsLoading || !sheetsUrl.trim()}
                   className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
                 >
-                  {sheetsLoading ? "..." : "Import"}
+                  {sheetsLoading ? "Fetching…" : "Import"}
                 </button>
               </div>
               {sheetsError && (
@@ -545,13 +650,124 @@ export default function Generate() {
                   {sheetsSuccess}
                 </p>
               )}
-              <p className="text-[10px] text-slate-400 leading-relaxed">
-                Sheet must have a header row with columns like:{" "}
-                <strong>name</strong>, role, id_number, dob, gender, photo_url,
-                address. Any extra columns (e.g. register_no, blood_group) are
-                auto-added as custom fields. Share the sheet as &quot;Anyone
-                with the link&quot;.
-              </p>
+
+              {/* ─── Column Mapping Panel ─── */}
+              {showMapping && (
+                <div className="rounded-lg border border-green-200 bg-green-50/50 p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-semibold text-slate-700">
+                      Map Columns ({sheetRows.length} rows found)
+                    </h3>
+                    <button
+                      onClick={handleCancelMapping}
+                      className="text-[10px] text-slate-400 hover:text-red-500 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+
+                  {/* Data preview */}
+                  <div className="rounded border border-slate-200 bg-white overflow-x-auto max-h-28 text-[10px]">
+                    <table className="min-w-full">
+                      <thead className="bg-slate-50 sticky top-0">
+                        <tr>
+                          {sheetHeaders.map((h, i) => (
+                            <th
+                              key={i}
+                              className="px-2 py-1 text-left font-semibold text-slate-600 whitespace-nowrap border-b border-slate-100"
+                            >
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sheetRows.slice(0, 3).map((row, ri) => (
+                          <tr key={ri} className="border-b border-slate-50">
+                            {sheetHeaders.map((_, ci) => (
+                              <td
+                                key={ci}
+                                className="px-2 py-0.5 text-slate-500 whitespace-nowrap max-w-30 truncate"
+                              >
+                                {row[ci] || ""}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Maps */}
+                  <div className="space-y-1.5">
+                    {MAPPABLE_FIELDS.map((field) => (
+                      <div key={field.key} className="flex items-center gap-2">
+                        <label className="text-[11px] font-medium text-slate-600 w-24 shrink-0 text-right">
+                          {field.label}
+                          {field.required && (
+                            <span className="text-red-500 ml-0.5">*</span>
+                          )}
+                        </label>
+                        <select
+                          value={columnMap[field.key] ?? -1}
+                          onChange={(e) =>
+                            setColumnMap((prev) => ({
+                              ...prev,
+                              [field.key]: parseInt(e.target.value, 10),
+                            }))
+                          }
+                          className={`flex-1 text-[11px] rounded border py-1 px-2 outline-none ${
+                            columnMap[field.key] !== undefined &&
+                            columnMap[field.key] !== -1
+                              ? "border-green-300 bg-green-50 text-green-800"
+                              : "border-slate-200 bg-white text-slate-500"
+                          }`}
+                        >
+                          <option value={-1}>— Skip —</option>
+                          {sheetHeaders.map((h, i) => (
+                            <option key={i} value={i}>
+                              {h}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Unmapped columns note */}
+                  {(() => {
+                    const mappedIdxs = new Set(
+                      Object.values(columnMap).filter((v) => v !== -1),
+                    );
+                    const unmapped = sheetHeaders.filter(
+                      (_, i) => !mappedIdxs.has(i),
+                    );
+                    if (unmapped.length === 0) return null;
+                    return (
+                      <p className="text-[10px] text-amber-600 bg-amber-50 rounded px-2 py-1 border border-amber-100">
+                        Unmapped columns will become{" "}
+                        <strong>custom fields</strong>: {unmapped.join(", ")}
+                      </p>
+                    );
+                  })()}
+
+                  <button
+                    onClick={handleConfirmMapping}
+                    className="w-full py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors"
+                  >
+                    Confirm &amp; Import {sheetRows.length} Members
+                  </button>
+                </div>
+              )}
+
+              {!showMapping && (
+                <p className="text-[10px] text-slate-400 leading-relaxed">
+                  Sheet must have a header row. After fetching, you'll map each
+                  column to a field (name, role, photo, etc.). Unmapped columns
+                  become custom fields automatically. Share the sheet as
+                  &quot;Anyone with the link&quot;.
+                </p>
+              )}
             </div>
 
             <hr className="border-slate-200" />
@@ -922,7 +1138,11 @@ export default function Generate() {
                     disabled={downloading}
                     className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50"
                   >
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="w-3.5 h-3.5"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z" />
                     </svg>
                     {downloading ? "Processing…" : "Download PDF"}
@@ -932,18 +1152,26 @@ export default function Generate() {
                     disabled={downloading}
                     className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50"
                   >
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="w-3.5 h-3.5"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
                     </svg>
                     {downloading ? "Processing…" : "Download JPEG"}
                   </button>
                 </div>
                 <p className="text-[10px] text-slate-400 text-center">
-                  PDF includes front &amp; back · JPEG downloads the currently visible side
+                  PDF includes front &amp; back · JPEG downloads the currently
+                  visible side
                 </p>
 
                 {/* Hidden off-screen captures for PDF (front + back) */}
-                <div className="fixed -left-full top-0 pointer-events-none" aria-hidden="true">
+                <div
+                  className="fixed -left-full top-0 pointer-events-none"
+                  aria-hidden="true"
+                >
                   <div ref={previewFrontRef}>
                     {renderCard(previewData, null, false)}
                   </div>
@@ -975,7 +1203,10 @@ export default function Generate() {
 
             {/* Queue + Bulk Generator */}
             {members.length > 0 && (
-              <div className="w-full max-w-2xl space-y-6">
+              <div
+                ref={generatorSectionRef}
+                className="w-full max-w-2xl space-y-6"
+              >
                 {/* Member queue */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                   <div className="px-4 py-3 border-b border-slate-200 bg-slate-50">

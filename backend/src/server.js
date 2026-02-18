@@ -94,7 +94,31 @@ app.use((_req, res) => {
 const errorHandler = require("./middleware/errorHandler");
 app.use(errorHandler);
 
-// ── 6. Start server ─────────────────────────────────────────
+// ── 6. Automated cleanup — purge expired IDs every 6 hours ──
+const { cleanupExpiredIds } = require("./services/supabaseService");
+
+const CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+const runCleanup = async () => {
+  try {
+    const { error, deletedFiles } = await cleanupExpiredIds();
+    if (error) {
+      console.error("[auto-cleanup] DB error:", error.message);
+    } else {
+      console.log(
+        `[auto-cleanup] Purged expired rows & ${deletedFiles} storage file(s)`,
+      );
+    }
+  } catch (err) {
+    console.error("[auto-cleanup] Unexpected error:", err.message);
+  }
+};
+
+// Run once on boot, then every 6 hours
+runCleanup();
+setInterval(runCleanup, CLEANUP_INTERVAL_MS);
+
+// ── 7. Start server ─────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {

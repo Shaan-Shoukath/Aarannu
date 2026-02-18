@@ -48,7 +48,15 @@ export default function BulkGenerator({
   watermark = {},
 }) {
   const [generating, setGenerating] = useState(false);
-  const [progress, setProgress] = useState({ current: 0, total: 0, phase: "" });
+  const [progress, setProgress] = useState({
+    current: 0,
+    total: 0,
+    phase: "", // "Generating" | "Compressing ZIP" | "Done"
+    step: "", // "capture" | "upload" | "pdf" | "zip"
+    zipPercent: null,
+    startedAt: null, // Date.now() when generation began
+  });
+  const [liveLog, setLiveLog] = useState([]); // [{name, status, time}]
   const [results, setResults] = useState([]);
   const [error, setError] = useState("");
   const frontRef = useRef(null);
@@ -56,19 +64,48 @@ export default function BulkGenerator({
   const [currentMember, setCurrentMember] = useState(null);
   const cancelRef = useRef(false);
 
+  /** Format seconds to mm:ss */
+  const fmtTime = (s) => {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${String(sec).padStart(2, "0")}`;
+  };
+
   /** Resolve the correct card component for the selected template */
   const CardComponent = (() => {
     switch (templateId) {
-      case "corporate": return CorporateCard;
-      case "event":     return EventCard;
-      case "student":   return StudentCard;
-      default:          return IDCard;
+      case "corporate":
+        return CorporateCard;
+      case "event":
+        return EventCard;
+      case "student":
+        return StudentCard;
+      default:
+        return IDCard;
     }
   })();
 
   /** Capture a ref element as an html2canvas Canvas */
   const captureRef = async (ref) => {
-    await new Promise((r) => setTimeout(r, 250));
+    // Wait for React to re-render the card + images to load
+    await new Promise((r) => setTimeout(r, 600));
+    if (!ref.current) {
+      throw new Error("Card element not available for capture");
+    }
+    // Wait for all <img> inside the card to finish loading
+    const imgs = ref.current.querySelectorAll("img");
+    if (imgs.length > 0) {
+      await Promise.all(
+        [...imgs].map(
+          (img) =>
+            new Promise((res) => {
+              if (img.complete) return res();
+              img.onload = res;
+              img.onerror = res; // don't block on broken images
+            }),
+        ),
+      );
+    }
     return html2canvas(ref.current, {
       scale: 2,
       useCORS: true,
@@ -116,9 +153,18 @@ export default function BulkGenerator({
 
     setGenerating(true);
     setResults([]);
+    setLiveLog([]);
     setError("");
     cancelRef.current = false;
-    setProgress({ current: 0, total: toProcess, phase: "Generating" });
+    const startTime = Date.now();
+    setProgress({
+      current: 0,
+      total: toProcess,
+      phase: "Generating",
+      step: "",
+      zipPercent: null,
+      startedAt: startTime,
+    });
 
     const newResults = [];
     const zip = new JSZip();
@@ -128,28 +174,56 @@ export default function BulkGenerator({
     for (let i = 0; i < toProcess; i++) {
       if (cancelRef.current) {
         newResults.push({ name: "—", success: false, error: "Cancelled" });
+        setLiveLog((prev) => [
+          ...prev,
+          {
+            name: "—",
+            status: "cancelled",
+            time: ((Date.now() - startTime) / 1000).toFixed(1),
+          },
+        ]);
         break;
       }
 
       const member = members[i];
       setCurrentMember(member);
-      setProgress({ current: i + 1, total: toProcess, phase: "Generating" });
+      setProgress((prev) => ({ ...prev, current: i + 1, step: "capture" }));
+
+      const cardStart = Date.now();
 
       try {
         // Capture front + back canvases
+        setProgress((prev) => ({ ...prev, step: "capture" }));
         const frontCanvas = await captureRef(frontRef);
-        const backCanvas  = await captureRef(backRef);
+        const backCanvas = await captureRef(backRef);
 
         // Upload front PNG to Supabase (for Dashboard signed-URL access)
-        const pngBlob  = await canvasToPngBlob(frontCanvas);
+        setProgress((prev) => ({ ...prev, step: "upload" }));
+        const pngBlob = await canvasToPngBlob(frontCanvas);
         const filePath = buildFilePath(userId, member.name);
 
         const { error: uploadError } = await supabase.storage
           .from("id-cards")
-          .upload(filePath, pngBlob, { contentType: "image/png", upsert: false });
+          .upload(filePath, pngBlob, {
+            contentType: "image/png",
+            upsert: false,
+          });
 
         if (uploadError) {
-          newResults.push({ name: member.name, success: false, error: uploadError.message });
+          newResults.push({
+            name: member.name,
+            success: false,
+            error: uploadError.message,
+          });
+          setLiveLog((prev) => [
+            ...prev,
+            {
+              name: member.name,
+              status: "failed",
+              detail: "Upload: " + uploadError.message,
+              time: ((Date.now() - startTime) / 1000).toFixed(1),
+            },
+          ]);
           continue;
         }
 
@@ -158,20 +232,56 @@ export default function BulkGenerator({
 
         const { error: insertError } = await supabase
           .from("generated_ids")
-          .insert({ user_id: userId, file_url: filePath, expires_at: expiresAt.toISOString() });
+          .insert({
+            user_id: userId,
+            file_url: filePath,
+            expires_at: expiresAt.toISOString(),
+          });
 
         if (insertError) {
-          newResults.push({ name: member.name, success: false, error: insertError.message });
+          newResults.push({
+            name: member.name,
+            success: false,
+            error: insertError.message,
+          });
+          setLiveLog((prev) => [
+            ...prev,
+            {
+              name: member.name,
+              status: "failed",
+              detail: "DB: " + insertError.message,
+              time: ((Date.now() - startTime) / 1000).toFixed(1),
+            },
+          ]);
           continue;
         }
 
         // Build 2-page PDF (front + back) and add to ZIP
+        setProgress((prev) => ({ ...prev, step: "pdf" }));
         const pdfBlob = canvasesToPdfBlob(frontCanvas, backCanvas);
         pdfFolder.file(safeFileName(member.name, i, "pdf"), pdfBlob);
 
+        const cardTime = ((Date.now() - cardStart) / 1000).toFixed(1);
         newResults.push({ name: member.name, success: true });
+        setLiveLog((prev) => [
+          ...prev,
+          { name: member.name, status: "ok", time: cardTime },
+        ]);
       } catch (err) {
-        newResults.push({ name: member.name, success: false, error: err.message });
+        newResults.push({
+          name: member.name,
+          success: false,
+          error: err.message,
+        });
+        setLiveLog((prev) => [
+          ...prev,
+          {
+            name: member.name,
+            status: "failed",
+            detail: err.message,
+            time: ((Date.now() - startTime) / 1000).toFixed(1),
+          },
+        ]);
       }
 
       // Yield to UI every batch
@@ -183,16 +293,31 @@ export default function BulkGenerator({
     // ── 3. Compress & download ZIP of PDFs ──
     const okCount = newResults.filter((r) => r.success).length;
     if (okCount > 0 && !cancelRef.current) {
-      setProgress((prev) => ({ ...prev, phase: "Compressing ZIP" }));
+      setProgress((prev) => ({
+        ...prev,
+        phase: "Compressing ZIP",
+        step: "zip",
+      }));
       try {
         const zipBlob = await zip.generateAsync(
-          { type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } },
-          (meta) => setProgress((prev) => ({ ...prev, zipPercent: Math.round(meta.percent) })),
+          {
+            type: "blob",
+            compression: "DEFLATE",
+            compressionOptions: { level: 6 },
+          },
+          (meta) =>
+            setProgress((prev) => ({
+              ...prev,
+              zipPercent: Math.round(meta.percent),
+            })),
         );
         saveAs(zipBlob, `id-cards-${templateId}-${Date.now()}.zip`);
+        setProgress((prev) => ({ ...prev, phase: "Done", step: "done" }));
       } catch (zipErr) {
         setError(`ZIP creation failed: ${zipErr.message}`);
       }
+    } else {
+      setProgress((prev) => ({ ...prev, phase: "Done", step: "done" }));
     }
 
     setResults(newResults);
@@ -264,33 +389,176 @@ export default function BulkGenerator({
         that downloads automatically. Limited to {DAILY_LIMIT} cards/day.
       </div>
 
-      {/* ─── Progress Bar ─── */}
-      {generating && (
-        <div className="space-y-2">
-          <div className="w-full bg-slate-200 rounded-full h-2">
-            <div
-              className="bg-[#1152d4] h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(progress.current / progress.total) * 100}%` }}
-            />
+      {/* ─── Enhanced Progress Panel ─── */}
+      {(generating || progress.phase === "Done") && progress.total > 0 && (
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          {/* Phase Steps */}
+          <div className="flex border-b border-slate-100">
+            {[
+              {
+                key: "capture",
+                label: "Capture",
+                icon: "M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z M15 13a3 3 0 11-6 0 3 3 0 016 0z",
+              },
+              {
+                key: "upload",
+                label: "Upload",
+                icon: "M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12",
+              },
+              {
+                key: "pdf",
+                label: "PDF",
+                icon: "M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z",
+              },
+              {
+                key: "zip",
+                label: "ZIP",
+                icon: "M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4",
+              },
+            ].map((s, idx) => {
+              const steps = ["capture", "upload", "pdf", "zip", "done"];
+              const currentIdx = steps.indexOf(progress.step);
+              const thisIdx = idx;
+              const isActive = progress.step === s.key;
+              const isDone = currentIdx > thisIdx || progress.step === "done";
+              return (
+                <div
+                  key={s.key}
+                  className={`flex-1 flex flex-col items-center py-3 gap-1 text-[10px] font-medium transition-colors ${
+                    isActive
+                      ? "bg-[#1152d4]/5 text-[#1152d4]"
+                      : isDone
+                        ? "text-green-600"
+                        : "text-slate-300"
+                  }`}
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                  >
+                    {isDone && !isActive ? (
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    ) : (
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d={s.icon}
+                      />
+                    )}
+                  </svg>
+                  {s.label}
+                </div>
+              );
+            })}
           </div>
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <span>
-              {progress.phase}{" · "}
-              {progress.current.toLocaleString()}/
-              {progress.total.toLocaleString()}
-              {" · "}
-              {currentMember?.name || "..."}
-            </span>
-            <span>
-              {Math.round((progress.current / progress.total) * 100)}%
-              {progress.zipPercent != null && ` · ZIP ${progress.zipPercent}%`}
-            </span>
+
+          {/* Progress bar + stats */}
+          <div className="px-4 pt-3 pb-2 space-y-2">
+            {/* Bar */}
+            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+              {progress.phase === "Compressing ZIP" ? (
+                <div
+                  className="bg-amber-500 h-2.5 rounded-full transition-all duration-300"
+                  style={{ width: `${progress.zipPercent ?? 0}%` }}
+                />
+              ) : (
+                <div
+                  className={`h-2.5 rounded-full transition-all duration-300 ${
+                    progress.phase === "Done" ? "bg-green-500" : "bg-[#1152d4]"
+                  }`}
+                  style={{
+                    width: `${(progress.current / progress.total) * 100}%`,
+                  }}
+                />
+              )}
+            </div>
+
+            {/* Stats row */}
+            <div className="flex items-center justify-between text-xs text-slate-500">
+              <span className="font-medium">
+                {progress.phase === "Compressing ZIP" ? (
+                  <>Compressing ZIP… {progress.zipPercent ?? 0}%</>
+                ) : progress.phase === "Done" ? (
+                  <span className="text-green-600">Generation complete</span>
+                ) : (
+                  <>
+                    {progress.current}/{progress.total}
+                    {" · "}
+                    <span className="text-[#1152d4] font-semibold">
+                      {currentMember?.name || "…"}
+                    </span>
+                  </>
+                )}
+              </span>
+              <span className="tabular-nums">
+                {(() => {
+                  if (!progress.startedAt) return "";
+                  const elapsed = (Date.now() - progress.startedAt) / 1000;
+                  if (progress.phase === "Done")
+                    return `Total: ${fmtTime(elapsed)}`;
+                  const perCard =
+                    progress.current > 0 ? elapsed / progress.current : 0;
+                  const remaining =
+                    perCard * (progress.total - progress.current);
+                  return `${fmtTime(elapsed)} elapsed${progress.current > 1 ? ` · ~${fmtTime(remaining)} left` : ""}`;
+                })()}
+              </span>
+            </div>
+
+            {/* Large batch hint */}
+            {members.length > 50 && progress.phase === "Generating" && (
+              <p className="text-[10px] text-slate-400 text-center">
+                Large batch — keep this tab active.
+              </p>
+            )}
           </div>
-          {members.length > 50 && (
-            <p className="text-[10px] text-slate-400 text-center">
-              Large batch — est. {Math.ceil((members.length * 0.6) / 60)} min
-              (front + back). Keep this tab active.
-            </p>
+
+          {/* Live log */}
+          {liveLog.length > 0 && (
+            <div className="border-t border-slate-100 max-h-40 overflow-y-auto">
+              <div className="divide-y divide-slate-50">
+                {liveLog.slice(-50).map((entry, i) => (
+                  <div
+                    key={i}
+                    className="px-4 py-1.5 flex items-center justify-between text-[11px]"
+                  >
+                    <span className="flex items-center gap-1.5 truncate">
+                      {entry.status === "ok" ? (
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+                      ) : entry.status === "failed" ? (
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                      ) : (
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
+                      )}
+                      <span
+                        className={
+                          entry.status === "failed"
+                            ? "text-red-600"
+                            : "text-slate-600"
+                        }
+                      >
+                        {entry.name}
+                      </span>
+                      {entry.detail && (
+                        <span className="text-red-400 truncate ml-1">
+                          — {entry.detail}
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-slate-400 tabular-nums shrink-0 ml-2">
+                      {entry.time}s
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       )}

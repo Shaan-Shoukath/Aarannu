@@ -67,32 +67,80 @@ Server-side filtering prevents all three issues.
 
 ---
 
-## Cleanup (Optional)
+## Automated Cleanup (Built-In)
 
-Expired rows remain in the database until explicitly removed. The `/api/admin/cleanup` endpoint deletes them:
+Expired rows and their storage files are **automatically deleted** by a scheduler in `server.js`.
 
-```js
+### How It Works
+
+```javascript
+// server.js
+const CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+const runCleanup = async () => {
+  const { error, deletedFiles } = await cleanupExpiredIds();
+  if (error) console.error("[auto-cleanup] DB error:", error.message);
+  else
+    console.log(
+      `[auto-cleanup] Purged expired rows & ${deletedFiles} storage file(s)`,
+    );
+};
+
+runCleanup(); // run once on boot
+setInterval(runCleanup, CLEANUP_INTERVAL_MS); // then every 6 hours
+```
+
+### `cleanupExpiredIds()` — Enhanced Service Function
+
+```javascript
 const cleanupExpiredIds = async () => {
-  return supabase
+  // 1. Fetch expired rows (need file_url for storage deletion)
+  const { data: expired } = await supabase
+    .from("generated_ids")
+    .select("id, file_url")
+    .lt("expires_at", getNow());
+
+  // 2. Delete storage files (best-effort — errors logged, not thrown)
+  let deletedFiles = 0;
+  for (const row of expired) {
+    if (row.file_url) {
+      try {
+        await deleteFile(row.file_url);
+        deletedFiles++;
+      } catch (err) {
+        console.warn(`Could not delete ${row.file_url}:`, err.message);
+      }
+    }
+  }
+
+  // 3. Delete DB rows
+  const { data, error } = await supabase
     .from("generated_ids")
     .delete()
-    .lt("expires_at", new Date().toISOString());
+    .lt("expires_at", getNow());
+
+  return { data, error, deletedFiles };
 };
 ```
 
-This can be:
+### Why Every 6 Hours?
 
-- Called manually by an admin.
-- Triggered by a cron job (e.g. Railway Cron, Render Cron, GitHub Actions).
-- Run as a Supabase Edge Function on a schedule.
+| Interval    | Trade-off                                              |
+| ----------- | ------------------------------------------------------ |
+| 1 hour      | More frequent, but adds unnecessary DB load            |
+| **6 hours** | Good balance — max 6 hours of stale files after expiry |
+| 24 hours    | Too long — expired files accumulate all day            |
 
-### Example Cron (Railway / Render)
+### Manual Cleanup
 
-```bash
-# Every day at 3 AM UTC
-0 3 * * * curl -X POST https://your-backend.com/api/admin/cleanup \
-  -H "Authorization: Bearer <admin-token>"
+Admins can also trigger cleanup immediately via:
+
 ```
+POST /api/admin/cleanup
+Authorization: Bearer <admin-token>
+```
+
+Returns `{ message, deletedFiles }` with the count of purged storage files.
 
 ---
 

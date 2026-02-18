@@ -72,10 +72,40 @@ User navigates to /templates
 ```
 User enters member data on Generate page (manual or Google Sheets import)
   -> Clicks "Preview" to see real-time card rendering
-  -> Download PDF: both front + back are captured off-screen via html2canvas
-    -> canvasesToPdfBlob() creates a 2-page jsPDF document
-    -> Browser downloads the PDF instantly
-  -> Download JPEG: currently visible side captured -> canvas.toBlob('image/jpeg')
+  -> Download PDF:
+    1. Both front + back captured off-screen via html2canvas
+    2. canvasesToPdfBlob() creates a 2-page jsPDF document
+    3. Browser downloads the PDF instantly
+    4. Front PNG also uploaded to Supabase Storage (for Dashboard access)
+    5. Row inserted into generated_ids (15-day expiry)
+  -> Download JPEG:
+    1. Currently visible side captured -> canvasToJpegBlob()
+    2. Browser downloads the JPEG
+    3. Front PNG uploaded to Supabase Storage
+    4. Row inserted into generated_ids (15-day expiry)
+```
+
+**Key detail:** Every single-card download now also persists the card to
+Supabase so it appears in the Dashboard. Upload failures are logged
+but do not block the local download.
+
+### Google Sheets Import (2-Phase Column Mapping)
+
+```
+User pastes a Google Sheets URL and clicks "Import"
+  Phase 1 — Fetch & Map:
+    -> Sheet URL converted to CSV export URL
+    -> CSV fetched and parsed (custom parseCSV handles quoted fields)
+    -> Headers extracted; auto-guess mapping via GUESS_RULES aliases
+    -> Column Mapping UI shown: dropdowns for each standard field
+       (name, role, id_number, dob, gender, photo_url, address)
+    -> Data preview table shows first 3 rows
+  Phase 2 — Confirm & Import:
+    -> User adjusts mappings, clicks "Confirm & Import"
+    -> Validates that 'Full Name' column is mapped
+    -> Unmapped columns auto-registered as custom fields
+    -> Member objects built from mapped columns -> added to queue
+    -> Auto-scrolls to Generation Queue section
 ```
 
 ### ID Card Generation (Bulk)
@@ -103,8 +133,13 @@ User adds multiple members to the queue
 User visits Dashboard
   -> Query: SELECT * FROM generated_ids WHERE user_id = current AND expires_at > now()
   -> Expired records are excluded from the result
-  -> Active records show download/preview buttons
-  -> Download generates a temporary signed URL (1-hour validity) -> downloads PNG
+  -> Results displayed as a responsive thumbnail card grid (1-4 columns)
+  -> Each DashboardCard component:
+      1. Loads thumbnail via signed URL (cached in state)
+      2. Shows member name, creation date, expiry badge (green/amber/red)
+      3. "View" button opens full-size preview in new tab
+      4. "Download" button uses supabase.storage.download() -> blob -> browser save
+         (avoids cross-origin issues with signed URL + <a download>)
 ```
 
 ### Google Drive Image Proxy
@@ -178,3 +213,7 @@ src/
 - **PDF delivery via jsPDF** - Each card becomes a 2-page PDF (front + back). For bulk, all PDFs are zipped. For single preview, PDF downloads instantly.
 - **Watermark is optional** - Templates page has a collapsed watermark config section with toggle. When disabled, `watermark: null` is passed downstream.
 - **Custom fields are dynamic** - Users define field label + side (front/back) at runtime. Google Sheets extra columns auto-register as custom fields.
+- **Single-card uploads to Supabase** - Both PDF and JPEG downloads also upload the front PNG to Supabase Storage + insert a `generated_ids` row, so every card appears in the Dashboard.
+- **Column mapping for Sheets import** - 2-phase flow: Phase 1 fetches CSV and shows auto-guessed mapping UI; Phase 2 confirms mappings and imports. Unmapped columns become custom fields automatically.
+- **Image preloading before capture** - `captureRef()` waits for all `<img>` elements inside the card to finish loading before calling `html2canvas`, preventing blank photos.
+- **Dashboard thumbnail grid** - `DashboardCard` subcomponent loads signed-URL thumbnails with hover effects, expiry badges (green >7d, amber 3-7d, red ≤3d), and blob-based downloads.

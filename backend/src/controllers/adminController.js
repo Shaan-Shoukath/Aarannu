@@ -133,7 +133,7 @@ const cleanup = async (req, res, next) => {
     const admin = await requireAdmin(req, res);
     if (!admin) return;
 
-    const { error } = await cleanupExpiredIds();
+    const { error, deletedFiles } = await cleanupExpiredIds();
 
     if (error) {
       console.error("[adminController.cleanup] DB error:", error.message);
@@ -145,6 +145,7 @@ const cleanup = async (req, res, next) => {
 
     return res.status(200).json({
       message: "Expired records cleaned up successfully.",
+      deletedFiles: deletedFiles || 0,
     });
   } catch (err) {
     next(err);

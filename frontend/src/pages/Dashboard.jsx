@@ -90,15 +90,33 @@ export default function Dashboard() {
   };
 
   const handleDownload = async (filePath, fileName) => {
-    const url = await getSignedUrl(filePath);
-    if (!url) return;
+    try {
+      // Use Supabase client's download() to avoid CORS issues entirely
+      const { data, error } = await supabase.storage
+        .from("id-cards")
+        .download(filePath);
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName || "id-card.png";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+      if (error || !data) {
+        console.error("Supabase download error:", error);
+        // Fallback: open signed URL in new tab
+        const url = await getSignedUrl(filePath);
+        if (url) window.open(url, "_blank");
+        return;
+      }
+
+      const blobUrl = URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = fileName || "id-card.png";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    } catch (err) {
+      console.error("Download failed:", err);
+      const url = await getSignedUrl(filePath);
+      if (url) window.open(url, "_blank");
+    }
   };
 
   const handlePreview = async (filePath) => {
@@ -321,12 +339,18 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Generated IDs Table */}
+        {/* Generated IDs — Card Grid */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-800">
-              Your Generated IDs
-            </h2>
+            <div>
+              <h2 className="text-lg font-bold text-slate-800">
+                Your Generated IDs
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Stored for 15 days · {generatedIds.length} active card
+                {generatedIds.length !== 1 ? "s" : ""}
+              </p>
+            </div>
             <button
               onClick={loadDashboardData}
               className="text-sm text-[#1152d4] hover:underline flex items-center gap-1"
@@ -349,119 +373,197 @@ export default function Dashboard() {
           </div>
 
           {generatedIds.length === 0 ? (
-            <div className="px-6 py-12 text-center">
+            <div className="px-6 py-16 text-center">
               <svg
-                className="w-12 h-12 text-slate-300 mx-auto mb-3"
+                className="w-16 h-16 text-slate-200 mx-auto mb-4"
                 fill="currentColor"
                 viewBox="0 0 24 24"
               >
                 <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12z" />
               </svg>
-              <p className="text-slate-500 text-sm">
-                No active ID cards found.
+              <h3 className="text-lg font-semibold text-slate-500 mb-1">
+                No ID cards generated yet
+              </h3>
+              <p className="text-sm text-slate-400 mb-4">
+                Generate ID cards to see them here. Each card is stored for 15
+                days.
               </p>
               {member?.approved && (
                 <button
                   onClick={() => navigate("/templates")}
-                  className="mt-4 px-4 py-2 bg-[#1152d4] text-white text-sm font-medium rounded-lg hover:bg-[#1152d4]/90 transition-colors"
+                  className="px-5 py-2.5 bg-[#1152d4] text-white text-sm font-medium rounded-lg hover:bg-[#1152d4]/90 transition-colors shadow-lg shadow-[#1152d4]/20"
                 >
                   Generate your first ID
                 </button>
               )}
             </div>
           ) : (
-            <div className="divide-y divide-slate-100">
-              {/* Table header */}
-              <div className="grid grid-cols-12 bg-slate-50 px-6 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                <div className="col-span-1">#</div>
-                <div className="col-span-4">File</div>
-                <div className="col-span-3">Created</div>
-                <div className="col-span-2">Expires In</div>
-                <div className="col-span-2 text-right">Actions</div>
-              </div>
-
-              {generatedIds.map((id, idx) => (
-                <div
+            <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {generatedIds.map((id) => (
+                <DashboardCard
                   key={id.id}
-                  className="grid grid-cols-12 items-center px-6 py-3 hover:bg-slate-50 transition-colors"
-                >
-                  <div className="col-span-1 text-sm text-slate-500">
-                    {idx + 1}
-                  </div>
-                  <div className="col-span-4 text-sm text-slate-800 font-medium truncate">
-                    {id.file_url.split("/").pop()}
-                  </div>
-                  <div className="col-span-3 text-sm text-slate-500">
-                    {new Date(id.created_at).toLocaleDateString()}
-                  </div>
-                  <div className="col-span-2">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                        daysRemaining(id.expires_at) <= 3
-                          ? "bg-red-100 text-red-700"
-                          : "bg-green-100 text-green-700"
-                      }`}
-                    >
-                      {daysRemaining(id.expires_at)} days left
-                    </span>
-                  </div>
-                  <div className="col-span-2 flex gap-2 justify-end">
-                    <button
-                      onClick={() => handlePreview(id.file_url)}
-                      className="p-1.5 text-slate-400 hover:text-[#1152d4] transition-colors"
-                      title="Preview"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() =>
-                        handleDownload(
-                          id.file_url,
-                          id.file_url.split("/").pop(),
-                        )
-                      }
-                      className="p-1.5 text-slate-400 hover:text-green-600 transition-colors"
-                      title="Download"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
+                  record={id}
+                  daysLeft={daysRemaining(id.expires_at)}
+                  getSignedUrl={getSignedUrl}
+                  onPreview={handlePreview}
+                  onDownload={handleDownload}
+                />
               ))}
             </div>
           )}
         </div>
       </main>
+    </div>
+  );
+}
+
+/**
+ * DashboardCard — Shows a single generated ID with thumbnail, metadata, and actions.
+ */
+function DashboardCard({
+  record,
+  daysLeft,
+  getSignedUrl,
+  onPreview,
+  onDownload,
+}) {
+  const [thumbUrl, setThumbUrl] = useState(null);
+  const [thumbLoading, setThumbLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const url = await getSignedUrl(record.file_url);
+      if (!cancelled) {
+        setThumbUrl(url);
+        setThumbLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [record.file_url]);
+
+  const fileName =
+    record.file_url
+      .split("/")
+      .pop()
+      ?.replace(/_\d+\.png$/, "")
+      .replace(/_/g, " ") || "ID Card";
+  const created = new Date(record.created_at).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  return (
+    <div className="group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden">
+      {/* Thumbnail */}
+      <div
+        className="relative aspect-video bg-slate-100 flex items-center justify-center cursor-pointer overflow-hidden"
+        onClick={() => onPreview(record.file_url)}
+      >
+        {thumbLoading ? (
+          <svg
+            className="animate-spin w-6 h-6 text-slate-300"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
+          </svg>
+        ) : thumbUrl ? (
+          <img
+            src={thumbUrl}
+            alt={fileName}
+            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <svg
+            className="w-10 h-10 text-slate-300"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12z" />
+          </svg>
+        )}
+        {/* Hover overlay */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+          <svg
+            className="w-8 h-8 text-white opacity-0 group-hover:opacity-80 transition-opacity drop-shadow-lg"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+            />
+          </svg>
+        </div>
+      </div>
+
+      {/* Info */}
+      <div className="p-3 space-y-2">
+        <p
+          className="text-sm font-semibold text-slate-800 truncate capitalize"
+          title={fileName}
+        >
+          {fileName}
+        </p>
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] text-slate-400">{created}</span>
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+              daysLeft <= 3
+                ? "bg-red-100 text-red-700"
+                : daysLeft <= 7
+                  ? "bg-amber-100 text-amber-700"
+                  : "bg-green-100 text-green-700"
+            }`}
+          >
+            {daysLeft}d left
+          </span>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2 pt-1">
+          <button
+            onClick={() => onPreview(record.file_url)}
+            className="flex-1 py-1.5 text-xs font-medium text-[#1152d4] bg-[#1152d4]/5 hover:bg-[#1152d4]/10 rounded-lg transition-colors text-center"
+          >
+            View
+          </button>
+          <button
+            onClick={() =>
+              onDownload(record.file_url, record.file_url.split("/").pop())
+            }
+            className="flex-1 py-1.5 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors text-center"
+          >
+            Download
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

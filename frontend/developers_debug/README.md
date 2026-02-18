@@ -17,15 +17,15 @@ This folder contains **advanced internal documentation** for the Aarannu Communi
 
 ## Key Concepts
 
-| Concept                | Where documented                  |
-| ---------------------- | --------------------------------- |
-| Template system        | 01_ARCHITECTURE (Frontend Arch)   |
-| Custom fields          | 01_ARCHITECTURE (Design Decisions)|
-| Google Drive proxy     | 01_ARCHITECTURE + 05_STORAGE_FLOW |
-| PDF generation (jsPDF) | 05_STORAGE_FLOW + 07_LIBRARIES    |
-| ZIP bundling (JSZip)   | 05_STORAGE_FLOW + 07_LIBRARIES    |
-| Watermarks             | 01_ARCHITECTURE (Design Decisions)|
-| QR codes               | 07_LIBRARIES (qrcode.react)       |
+| Concept                | Where documented                   |
+| ---------------------- | ---------------------------------- |
+| Template system        | 01_ARCHITECTURE (Frontend Arch)    |
+| Custom fields          | 01_ARCHITECTURE (Design Decisions) |
+| Google Drive proxy     | 01_ARCHITECTURE + 05_STORAGE_FLOW  |
+| PDF generation (jsPDF) | 05_STORAGE_FLOW + 07_LIBRARIES     |
+| ZIP bundling (JSZip)   | 05_STORAGE_FLOW + 07_LIBRARIES     |
+| Watermarks             | 01_ARCHITECTURE (Design Decisions) |
+| QR codes               | 07_LIBRARIES (qrcode.react)        |
 
 ## Why This Exists
 

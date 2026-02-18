@@ -85,7 +85,7 @@ backend/
 - **Approval gating** — generation blocked until admin-approved
 - **Input validation** — all payloads validated before DB operations
 - **Service-role isolation** — service key never exposed to frontend
-- **Image proxy guards** — content-type whitelist (image/* only), 10 MB size cap
+- **Image proxy guards** — content-type whitelist (image/\* only), 10 MB size cap
 - **Centralized errors** — stack traces hidden in production
 
 ---

@@ -78,28 +78,28 @@ cd ../backend  && npm run dev     # http://localhost:5000
 
 ## Tech Stack
 
-| Layer              | Technology                                       |
-| ------------------ | ------------------------------------------------ |
-| Frontend           | React 19, Vite 7, Tailwind CSS v4                |
-| Backend API        | Express 5, Node.js, Supabase Admin SDK           |
-| Database           | Supabase Postgres + RLS                          |
-| Storage            | Supabase Storage (private, signed URLs)          |
-| Card Rendering     | html2canvas (2× scale capture)                   |
-| PDF Generation     | jsPDF (2-page front+back per card)               |
-| ZIP Bundling       | JSZip + file-saver (bulk delivery)               |
-| QR Codes           | qrcode.react (canvas-based)                      |
-| Image Proxy        | Express route (Google Drive CORS bypass)         |
-| Routing            | react-router-dom v7                              |
+| Layer          | Technology                               |
+| -------------- | ---------------------------------------- |
+| Frontend       | React 19, Vite 7, Tailwind CSS v4        |
+| Backend API    | Express 5, Node.js, Supabase Admin SDK   |
+| Database       | Supabase Postgres + RLS                  |
+| Storage        | Supabase Storage (private, signed URLs)  |
+| Card Rendering | html2canvas (2× scale capture)           |
+| PDF Generation | jsPDF (2-page front+back per card)       |
+| ZIP Bundling   | JSZip + file-saver (bulk delivery)       |
+| QR Codes       | qrcode.react (canvas-based)              |
+| Image Proxy    | Express route (Google Drive CORS bypass) |
+| Routing        | react-router-dom v7                      |
 
 ---
 
 ## Delivery Formats
 
-| Context         | Format                                  | Mechanism                       |
-| --------------- | --------------------------------------- | ------------------------------- |
-| Single preview  | PDF (front+back) or JPEG (visible side) | jsPDF + html2canvas             |
+| Context         | Format                                  | Mechanism                          |
+| --------------- | --------------------------------------- | ---------------------------------- |
+| Single preview  | PDF (front+back) or JPEG (visible side) | jsPDF + html2canvas                |
 | Bulk generation | ZIP of 2-page PDFs                      | JSZip + file-saver (auto-download) |
-| Dashboard       | PNG (signed URL, 1hr expiry)            | Supabase Storage                |
+| Dashboard       | PNG (signed URL, 1hr expiry)            | Supabase Storage                   |
 
 ---
 

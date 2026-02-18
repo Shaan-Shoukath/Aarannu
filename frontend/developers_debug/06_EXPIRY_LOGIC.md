@@ -2,7 +2,7 @@
 
 ## Overview
 
-Generated ID cards have a **15-day validity period**. After 15 days, the ID cards are hidden from the user's dashboard but NOT deleted from storage or the database.
+Generated ID cards have a **15-day validity period**. After 15 days, the ID cards are hidden from the user's dashboard. The backend automatically deletes expired records and their storage files every 6 hours.
 
 ---
 
@@ -83,9 +83,10 @@ const daysRemaining = (expiresAt) => {
 };
 ```
 
-This is shown as a badge:
+This is shown as a badge in the Dashboard thumbnail grid:
 
-- **Green badge** — More than 3 days remaining.
+- **Green badge** — More than 7 days remaining.
+- **Amber badge** — 3 to 7 days remaining.
 - **Red badge** — 3 days or fewer remaining (urgency indicator).
 
 ---
@@ -94,97 +95,69 @@ This is shown as a badge:
 
 ### Current behavior:
 
-| Storage File    | Database Record | Signed URL                                       |
-| --------------- | --------------- | ------------------------------------------------ |
-| ✅ Still exists | ✅ Still exists | ❌ Can still be generated (if user has the path) |
+| Storage File | Database Record | After Auto-Cleanup          |
+| ------------ | --------------- | --------------------------- |
+| ✅ Exists    | ✅ Exists       | ❌ Both deleted every 6 hrs |
 
-Expired records are **soft-expired** — they remain in the database and storage but are filtered out of the UI. The user cannot see them on the dashboard.
+The backend runs an **automated cleanup scheduler** (`setInterval` in `server.js`) that:
 
-### Why not hard-delete?
+1. Fetches all expired `generated_ids` rows
+2. Deletes their PNG files from the `id-cards` storage bucket
+3. Removes the expired DB rows
 
-1. **Audit trail** — Keeping records allows tracking who generated what and when.
-2. **Recovery** — If a user needs an ID re-issued, the admin can check history.
-3. **No immediate cost** — Supabase Storage doesn't charge significantly for stored data on lower tiers.
+This runs **on server boot** and then **every 6 hours** automatically.
+
+Additionally, admins can trigger cleanup manually via `POST /api/admin/cleanup`.
 
 ---
 
-## Optional: Automated Cleanup with Cron
+## Automated Cleanup (Built-In)
 
-For true production systems, you may want to periodically delete expired records and their storage files. Here are two approaches:
+The backend's `server.js` includes an automatic cleanup that runs on boot and every 6 hours:
 
-### Option A: Supabase Edge Function + pg_cron
+```javascript
+// server.js
+const CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
-```sql
--- Install pg_cron extension (one-time)
-CREATE EXTENSION IF NOT EXISTS pg_cron;
-
--- Schedule daily cleanup at 3 AM UTC
-SELECT cron.schedule(
-  'cleanup-expired-ids',
-  '0 3 * * *',
-  $$
-    -- Delete expired records older than 30 days (15 days expiry + 15 days grace)
-    DELETE FROM public.generated_ids
-    WHERE expires_at < now() - INTERVAL '15 days';
-  $$
-);
-```
-
-### Option B: Supabase Edge Function (HTTP-triggered)
-
-```typescript
-// supabase/functions/cleanup-expired-ids/index.ts
-import { createClient } from "@supabase/supabase-js";
-
-Deno.serve(async () => {
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+const runCleanup = async () => {
+  const { error, deletedFiles } = await cleanupExpiredIds();
+  console.log(
+    `[auto-cleanup] Purged expired rows & ${deletedFiles} storage file(s)`,
   );
+};
 
-  // 1. Find expired records
-  const { data: expired } = await supabase
-    .from("generated_ids")
-    .select("id, file_url")
-    .lt("expires_at", new Date().toISOString());
-
-  if (!expired?.length) {
-    return new Response("No expired records", { status: 200 });
-  }
-
-  // 2. Delete storage files
-  const filePaths = expired.map((r) => r.file_url);
-  await supabase.storage.from("id-cards").remove(filePaths);
-
-  // 3. Delete database records
-  const ids = expired.map((r) => r.id);
-  await supabase.from("generated_ids").delete().in("id", ids);
-
-  return new Response(`Cleaned ${expired.length} records`, { status: 200 });
-});
+runCleanup(); // run once on boot
+setInterval(runCleanup, CLEANUP_INTERVAL_MS); // then every 6 hours
 ```
 
-### Recommendation for this project:
+The `cleanupExpiredIds()` service function:
 
-- **Start without cron** — soft expiry is sufficient for early usage.
-- **Add cron when storage costs become relevant** — track how many expired files accumulate.
+1. **Fetches** all `generated_ids` rows where `expires_at < now()`
+2. **Deletes storage files** — loops through each row's `file_url` and calls `deleteFile()` (best-effort; errors logged, not thrown)
+3. **Deletes DB rows** — `supabase.from('generated_ids').delete().lt('expires_at', now)`
+
+### Manual cleanup
+
+Admins can also trigger cleanup via `POST /api/admin/cleanup` which calls the same function and returns `{ deletedFiles }` count.
 
 ---
 
 ## Timeline Visualization
 
 ```
-Day 0          Day 15           Day 30 (with cron)
+Day 0          Day 15           ~Day 15.25 (next 6hr cycle)
   │              │                │
   ▼              ▼                ▼
-Generated   Hidden from UI   Hard-deleted (optional)
+Generated   Hidden from UI   Hard-deleted (auto)
   │              │                │
   ├─── ACTIVE ───┤               │
-  │    (visible)  │               │
-  │              ├── SOFT-EXPIRED─┤
-  │              │   (in DB but   │
-  │              │    hidden)     │
+  │   (visible   │               │
+  │   in Dashboard│              │
+  │   with thumbs)│              │
+  │              ├── EXPIRED ────┤
+  │              │  (hidden, but │
+  │              │   still in DB) │
   │              │               ├── DELETED
-  │              │               │   (removed from
-  │              │               │    DB + storage)
+  │              │               │   (DB rows + storage
+  │              │               │    files removed)
 ```

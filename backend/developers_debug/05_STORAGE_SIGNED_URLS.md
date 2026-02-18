@@ -80,8 +80,43 @@ storageService.js
 
 ---
 
+## Storage File Cleanup on Expiry
+
+When expired records are cleaned up (either automatically every 6 hours or manually via `POST /api/admin/cleanup`), the corresponding PNG files are **also deleted** from the `id-cards` bucket.
+
+The enhanced `cleanupExpiredIds()` in `supabaseService.js`:
+
+```javascript
+const cleanupExpiredIds = async () => {
+  // 1. Fetch expired rows to get file_url paths
+  const { data: expired } = await supabase
+    .from("generated_ids")
+    .select("id, file_url")
+    .lt("expires_at", getNow());
+
+  // 2. Delete storage files (best-effort)
+  for (const row of expired) {
+    if (row.file_url) {
+      try {
+        await deleteFile(row.file_url);
+      } catch (err) {
+        console.warn(`Could not delete ${row.file_url}`);
+      }
+    }
+  }
+
+  // 3. Delete DB rows
+  return supabase.from("generated_ids").delete().lt("expires_at", getNow());
+};
+```
+
+**Best-effort deletion:** If a storage file is already gone or the path is invalid, the error is logged but doesn't prevent the DB cleanup from proceeding.
+
+---
+
 ## Security Notes
 
 - The **service-role client** is used for signing URLs because storage RLS may restrict which keys can generate signed URLs.
-- The frontend **never** calls `createSignedUrl` directly — it always goes through the backend.
-- If a user's card is expired in `generated_ids`, the backend won't generate a signed URL for it even if the file still exists in storage.
+- The frontend uses `supabase.storage.download()` for Dashboard downloads (avoids cross-origin `<a download>` issues).
+- The frontend also calls `createSignedUrl` directly for thumbnail loading in the Dashboard card grid.
+- If a user's card is expired in `generated_ids`, it won't appear in the Dashboard query, and the auto-cleanup will delete the storage file within 6 hours.

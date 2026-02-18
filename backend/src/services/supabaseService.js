@@ -11,6 +11,7 @@
 
 const { supabase } = require("../config/supabaseClient");
 const { getExpiryDate, getNow } = require("../utils/expiryHelper");
+const { deleteFile } = require("./storageService");
 const { v4: uuidv4 } = require("uuid");
 
 // ─────────────────────────────────────────────────────────────
@@ -110,13 +111,50 @@ const getActiveIds = async (userId) => {
 };
 
 /**
- * Delete all expired rows from `generated_ids`.
- * Optional cleanup — can be called from a cron endpoint or admin action.
+ * Delete all expired rows from `generated_ids` AND their
+ * associated PNG files from the `id-cards` storage bucket.
  *
- * @returns {Promise<{data, error}>}
+ * Flow:
+ *   1. Fetch expired rows to get their `file_url` paths.
+ *   2. Delete the storage files (best-effort — errors logged, not thrown).
+ *   3. Delete the expired DB rows.
+ *
+ * @returns {Promise<{data, error, deletedFiles: number}>}
  */
 const cleanupExpiredIds = async () => {
-  return supabase.from("generated_ids").delete().lt("expires_at", getNow());
+  // Step 1 — Fetch expired rows
+  const { data: expired, error: fetchError } = await supabase
+    .from("generated_ids")
+    .select("id, file_url")
+    .lt("expires_at", getNow());
+
+  if (fetchError) return { data: null, error: fetchError, deletedFiles: 0 };
+  if (!expired || expired.length === 0)
+    return { data: [], error: null, deletedFiles: 0 };
+
+  // Step 2 — Delete storage files (best-effort)
+  let deletedFiles = 0;
+  for (const row of expired) {
+    if (row.file_url) {
+      try {
+        await deleteFile(row.file_url);
+        deletedFiles++;
+      } catch (err) {
+        console.warn(
+          `[cleanup] Could not delete file ${row.file_url}:`,
+          err.message,
+        );
+      }
+    }
+  }
+
+  // Step 3 — Delete DB rows
+  const { data, error } = await supabase
+    .from("generated_ids")
+    .delete()
+    .lt("expires_at", getNow());
+
+  return { data, error, deletedFiles };
 };
 
 module.exports = {
