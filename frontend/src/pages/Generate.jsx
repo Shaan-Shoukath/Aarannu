@@ -1,6 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import html2canvas from "html2canvas";
 import { supabase } from "../lib/supabaseClient";
+import {
+  canvasesToPdfBlob,
+  canvasToJpegBlob,
+  downloadBlob,
+} from "../utils/downloadHelpers";
 import BulkGenerator from "../components/BulkGenerator";
 import IDCard from "../components/IDCard";
 import CorporateCard from "../components/CorporateCard";
@@ -63,6 +69,11 @@ export default function Generate() {
   // Preview mode
   const [previewData, setPreviewData] = useState(null);
   const [showBack, setShowBack] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+
+  // Refs for single-card download capture
+  const previewFrontRef = useRef(null);
+  const previewBackRef = useRef(null);
 
   // Google Sheets import
   const [sheetsUrl, setSheetsUrl] = useState("");
@@ -145,6 +156,53 @@ export default function Generate() {
 
   const handlePreview = (data) => {
     setPreviewData(data);
+  };
+
+  /** Capture a ref element as a canvas */
+  const captureRef = async (ref) => {
+    if (!ref.current) return null;
+    await new Promise((r) => setTimeout(r, 300));
+    return html2canvas(ref.current, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+      logging: false,
+    });
+  };
+
+  /** Download the previewed card as a 2-page PDF (front + back) */
+  const handleDownloadPdf = async () => {
+    if (!previewData) return;
+    setDownloading(true);
+    try {
+      const frontCanvas = await captureRef(previewFrontRef);
+      const backCanvas = await captureRef(previewBackRef);
+      const blob = canvasesToPdfBlob(frontCanvas, backCanvas);
+      const safeName = (previewData.name || "id-card").replace(/[^a-zA-Z0-9]/g, "_");
+      downloadBlob(blob, `${safeName}_ID.pdf`);
+    } catch (err) {
+      console.error("PDF download failed:", err);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  /** Download the currently visible side as a JPEG */
+  const handleDownloadJpeg = async () => {
+    if (!previewData) return;
+    setDownloading(true);
+    try {
+      const ref = showBack ? previewBackRef : previewFrontRef;
+      const canvas = await captureRef(ref);
+      const blob = await canvasToJpegBlob(canvas);
+      const safeName = (previewData.name || "id-card").replace(/[^a-zA-Z0-9]/g, "_");
+      const side = showBack ? "back" : "front";
+      downloadBlob(blob, `${safeName}_${side}.jpg`);
+    } catch (err) {
+      console.error("JPEG download failed:", err);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const handleGenerationComplete = () => {
@@ -855,6 +913,43 @@ export default function Generate() {
                 </h3>
                 <div className="transform transition-transform hover:scale-[1.02] duration-300">
                   {renderCard(previewData)}
+                </div>
+
+                {/* Download buttons */}
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    onClick={handleDownloadPdf}
+                    disabled={downloading}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z" />
+                    </svg>
+                    {downloading ? "Processing…" : "Download PDF"}
+                  </button>
+                  <button
+                    onClick={handleDownloadJpeg}
+                    disabled={downloading}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
+                    </svg>
+                    {downloading ? "Processing…" : "Download JPEG"}
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-400 text-center">
+                  PDF includes front &amp; back · JPEG downloads the currently visible side
+                </p>
+
+                {/* Hidden off-screen captures for PDF (front + back) */}
+                <div className="fixed -left-full top-0 pointer-events-none" aria-hidden="true">
+                  <div ref={previewFrontRef}>
+                    {renderCard(previewData, null, false)}
+                  </div>
+                  <div ref={previewBackRef}>
+                    {renderCard(previewData, null, true)}
+                  </div>
                 </div>
               </div>
             )}

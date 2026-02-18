@@ -1,6 +1,6 @@
 # Backend — Developers Debug
 
-Internal documentation for the Community ID Platform backend.
+Internal documentation for the Aarannu Community ID Platform backend.
 
 > **Audience:** Developers who maintain, extend, or audit this codebase.
 
@@ -10,7 +10,7 @@ Internal documentation for the Community ID Platform backend.
 
 | #   | File                                                       | Topic                                                         |
 | --- | ---------------------------------------------------------- | ------------------------------------------------------------- |
-| 01  | [01_ARCHITECTURE.md](01_ARCHITECTURE.md)                   | Why a backend exists alongside Supabase; layered architecture |
+| 01  | [01_ARCHITECTURE.md](01_ARCHITECTURE.md)                   | Why a backend exists alongside Supabase; layered architecture; Google Drive proxy |
 | 02  | [02_DATABASE_SCHEMA.md](02_DATABASE_SCHEMA.md)             | Table structures, foreign keys, indexes                       |
 | 03  | [03_AUTH_VERIFICATION.md](03_AUTH_VERIFICATION.md)         | JWT verification flow and reasoning                           |
 | 04  | [04_RLS_AND_SECURITY.md](04_RLS_AND_SECURITY.md)           | Supabase RLS + backend defense-in-depth                       |
@@ -29,7 +29,7 @@ backend/src/
 ├── middleware/                 ← verifyToken → checkApproval → rateLimiter → errorHandler
 ├── services/                  ← DB queries + storage operations
 ├── controllers/               ← thin HTTP handlers
-├── routes/                    ← Express Router wiring
+├── routes/                    ← Express Router wiring + proxyRoutes.js (Google Drive image proxy)
 ├── utils/                     ← validators, expiry helpers
 └── server.js                  ← entry point
 ```

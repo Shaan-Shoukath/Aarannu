@@ -56,6 +56,57 @@ Request → Middleware → Controller → Service → Supabase
 | **Service**    | Pure business logic + Supabase queries                 |
 | **Utils**      | Helpers (expiry math, validation rules)                |
 | **Config**     | Supabase client singletons                             |
+| **Routes**     | Express Router wiring + proxy routes                   |
 
 Controllers are intentionally thin — they contain zero database logic.  
 Services know nothing about HTTP — they return `{ data, error }`.
+
+---
+
+## Google Drive Image Proxy
+
+### Why does it exist?
+
+Google Drive blocks CORS on direct image fetches. When a user provides a Google Drive URL as a member's photo, `html2canvas` cannot render it due to browser security restrictions.
+
+### How it works
+
+```
+Frontend: proxyImage.js
+    │
+    │ Detects Google Drive URL patterns:
+    │   - drive.google.com/file/d/...
+    │   - drive.google.com/open?id=...
+    │   - lh3.googleusercontent.com/...
+    │
+    │ Rewrites to:
+    │   /api/proxy/image?url=<encoded-direct-URL>
+    │
+    ▼
+Backend: proxyRoutes.js
+    │
+    ├── normalizeDriveUrl()  ← converts sharing URLs to direct-download URLs
+    ├── fetch(directUrl)     ← server-side fetch (no CORS issue)
+    ├── Content-Type check   ← only image/* MIME types allowed
+    ├── Size check           ← max 10 MB
+    │
+    ▼
+Response: image bytes streamed to browser
+    │
+    └── html2canvas renders it as a same-origin image
+```
+
+### Security measures on the proxy
+
+- **Content-type whitelist** — only `image/*` MIME types pass through (prevents fetching arbitrary files)
+- **Size limit** — 10 MB maximum prevents memory exhaustion
+- **Rate-limited** — same IP-based rate limits as other endpoints
+- **URL validation** — rejects malformed URLs
+
+### Route file: `src/routes/proxyRoutes.js`
+
+```
+GET /api/proxy/image?url=<encoded-url>
+```
+
+This is a standalone route file that does not use controllers or services — it's a simple pass-through proxy with security guards.

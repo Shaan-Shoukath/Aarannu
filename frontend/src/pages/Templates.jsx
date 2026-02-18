@@ -178,7 +178,9 @@ export default function Templates() {
               className="group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-[#1152d4]/30 transition-all duration-300 overflow-hidden text-left"
             >
               {/* Card Preview */}
-              <div className={`${t.id === "custom" ? "h-full" : "h-44"} relative overflow-hidden`}>
+              <div
+                className={`${t.id === "custom" ? "h-full" : "h-44"} relative overflow-hidden`}
+              >
                 {t.id === "custom" ? (
                   <div className="h-full min-h-44 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center gap-3 bg-slate-50 group-hover:border-[#1152d4]/40 transition-colors text-center px-4">
                     <div className="w-14 h-14 bg-[#1152d4]/10 rounded-full flex items-center justify-center group-hover:bg-[#1152d4]/20 transition-colors">

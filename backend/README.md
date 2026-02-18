@@ -1,7 +1,8 @@
-# Community ID Platform — Backend API
+# Aarannu Community ID Platform — Backend API
 
-Production-grade Express server for the Community Digital ID Platform.  
-Connects to Supabase (Auth, Postgres, Storage) and enforces all business rules server-side.
+Production-grade Express server for the Aarannu Community Digital ID Platform.  
+Connects to Supabase (Auth, Postgres, Storage) and enforces all business rules server-side.  
+Also provides a Google Drive image proxy for CORS-free photo loading.
 
 ---
 
@@ -26,15 +27,16 @@ npm start
 
 ## API Endpoints
 
-| Method | Path                         | Auth | Approval | Admin | Description                       |
-| ------ | ---------------------------- | ---- | -------- | ----- | --------------------------------- |
-| GET    | `/api/health`                | —    | —        | —     | Health check                      |
-| GET    | `/api/auth/me`               | ✅   | —        | —     | Current user + member profile     |
-| POST   | `/api/ids/generate`          | ✅   | ✅       | —     | Bulk-create ID card metadata      |
-| GET    | `/api/ids/my-ids`            | ✅   | —        | —     | Fetch active IDs + signed URLs    |
-| GET    | `/api/admin/pending`         | ✅   | —        | ✅    | List unapproved members           |
-| POST   | `/api/admin/approve/:userId` | ✅   | —        | ✅    | Approve a member                  |
-| POST   | `/api/admin/cleanup`         | ✅   | —        | ✅    | Delete expired generated_ids rows |
+| Method | Path                         | Auth | Approval | Admin | Description                        |
+| ------ | ---------------------------- | ---- | -------- | ----- | ---------------------------------- |
+| GET    | `/api/health`                | —    | —        | —     | Health check                       |
+| GET    | `/api/auth/me`               | ✅   | —        | —     | Current user + member profile      |
+| POST   | `/api/ids/generate`          | ✅   | ✅       | —     | Bulk-create ID card metadata       |
+| GET    | `/api/ids/my-ids`            | ✅   | —        | —     | Fetch active IDs + signed URLs     |
+| GET    | `/api/proxy/image`           | —    | —        | —     | Proxy external images (Drive CORS) |
+| GET    | `/api/admin/pending`         | ✅   | —        | ✅    | List unapproved members            |
+| POST   | `/api/admin/approve/:userId` | ✅   | —        | ✅    | Approve a member                   |
+| POST   | `/api/admin/cleanup`         | ✅   | —        | ✅    | Delete expired generated_ids rows  |
 
 ---
 
@@ -57,7 +59,8 @@ backend/
 │   ├── routes/
 │   │   ├── authRoutes.js
 │   │   ├── idRoutes.js
-│   │   └── adminRoutes.js
+│   │   ├── adminRoutes.js
+│   │   └── proxyRoutes.js       # Google Drive image proxy
 │   ├── services/
 │   │   ├── supabaseService.js   # DB query abstraction
 │   │   └── storageService.js    # Signed URL generation
@@ -82,6 +85,7 @@ backend/
 - **Approval gating** — generation blocked until admin-approved
 - **Input validation** — all payloads validated before DB operations
 - **Service-role isolation** — service key never exposed to frontend
+- **Image proxy guards** — content-type whitelist (image/* only), 10 MB size cap
 - **Centralized errors** — stack traces hidden in production
 
 ---

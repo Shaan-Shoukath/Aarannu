@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import { QRCodeSVG } from "qrcode.react";
+import { QRCodeCanvas } from "qrcode.react";
 import { proxyImageUrl } from "../lib/proxyImage";
 
 /**
@@ -215,7 +215,7 @@ const EventCard = forwardRef(function EventCard(
               </div>
               <div className="w-32 flex flex-col justify-center items-end">
                 <div className="w-28 h-28 bg-white p-2 rounded-lg shadow-sm flex items-center justify-center">
-                  <QRCodeSVG value={id_number} size={96} level="M" />
+                  <QRCodeCanvas value={id_number} size={96} level="M" />
                 </div>
                 <span className="text-[9px] text-indigo-400 mt-2 text-right">
                   Scan for entry
