@@ -54,8 +54,8 @@ const generateIds = async (req, res, next) => {
     }
 
     return res.status(201).json({
-      message: `${rows.length} ID(s) metadata created successfully.`,
-      count: rows.length,
+      message: `${data.length} ID(s) metadata created successfully.`,
+      count: data.length,
       ids: data,
     });
   } catch (err) {

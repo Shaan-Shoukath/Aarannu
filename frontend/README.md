@@ -15,13 +15,13 @@ npm run dev          # http://localhost:5173
 
 ### Environment Variables
 
-| Variable                 | Default                 | Description                          |
-| ------------------------ | ----------------------- | ------------------------------------ |
-| `VITE_SUPABASE_URL`      | —                       | Supabase project URL (required)      |
-| `VITE_SUPABASE_ANON_KEY` | —                       | Supabase anon/public key (required)  |
-| `VITE_BACKEND_URL`       | `http://localhost:5000` | Backend API URL (image proxy)        |
-| `VITE_BULK_DAILY_LIMIT`  | `200`                   | Max card uploads per user per day    |
-| `VITE_BULK_MAX_QUEUE`    | `500`                   | Max members in a generation queue    |
+| Variable                 | Default                 | Description                         |
+| ------------------------ | ----------------------- | ----------------------------------- |
+| `VITE_SUPABASE_URL`      | —                       | Supabase project URL (required)     |
+| `VITE_SUPABASE_ANON_KEY` | —                       | Supabase anon/public key (required) |
+| `VITE_BACKEND_URL`       | `http://localhost:5000` | Backend API URL (image proxy)       |
+| `VITE_BULK_DAILY_LIMIT`  | `200`                   | Max card uploads per user per day   |
+| `VITE_BULK_MAX_QUEUE`    | `500`                   | Max members in a generation queue   |
 
 ---
 
@@ -56,13 +56,13 @@ All card components use `forwardRef` and accept identical props: `data`, `showBa
 
 ### `utils/downloadHelpers.js`
 
-| Function              | Purpose                                                |
-| --------------------- | ------------------------------------------------------ |
-| `canvasesToPdfBlob()` | Creates 2-page PDF (front+back) from html2canvas       |
-| `downloadBlob()`      | Triggers browser download for any Blob (safe revoke)   |
-| `canvasToJpegBlob()`  | Converts canvas to JPEG blob (quality: 0.95)           |
-| `canvasToPngBlob()`   | Converts canvas to lossless PNG blob                   |
-| `safeFileName()`      | Builds zero-padded safe filenames for ZIP entries      |
+| Function              | Purpose                                              |
+| --------------------- | ---------------------------------------------------- |
+| `canvasesToPdfBlob()` | Creates 2-page PDF (front+back) from html2canvas     |
+| `downloadBlob()`      | Triggers browser download for any Blob (safe revoke) |
+| `canvasToJpegBlob()`  | Converts canvas to JPEG blob (quality: 0.95)         |
+| `canvasToPngBlob()`   | Converts canvas to lossless PNG blob                 |
+| `safeFileName()`      | Builds zero-padded safe filenames for ZIP entries    |
 
 ### `lib/proxyImage.js`
 
@@ -76,10 +76,10 @@ Singleton Supabase client configured with `VITE_SUPABASE_URL` and `VITE_SUPABASE
 
 ## Delivery Formats
 
-| Context         | Format                                  | How                                 |
-| --------------- | --------------------------------------- | ----------------------------------- |
-| Single preview  | PDF (front+back) or JPEG (visible side) | jsPDF + html2canvas                 |
-| Bulk generation | ZIP of 2-page PDFs + cloud PNGs         | JSZip + file-saver + Supabase       |
+| Context         | Format                                  | How                                       |
+| --------------- | --------------------------------------- | ----------------------------------------- |
+| Single preview  | PDF (front+back) or JPEG (visible side) | jsPDF + html2canvas                       |
+| Bulk generation | ZIP of 2-page PDFs + cloud PNGs         | JSZip + file-saver + Supabase             |
 | Dashboard       | PNG download via signed URL             | createSignedUrl → fetch → blob → download |
 
 ---
@@ -99,10 +99,10 @@ The download uses a reliable blob-based approach to avoid CORS issues:
 
 ## Bulk Generation Limits
 
-| Limit                  | Default | Environment Variable     |
-| ---------------------- | ------- | ------------------------ |
-| Daily uploads per user | 200     | `VITE_BULK_DAILY_LIMIT`  |
-| Max queue size         | 500     | `VITE_BULK_MAX_QUEUE`    |
+| Limit                  | Default | Environment Variable    |
+| ---------------------- | ------- | ----------------------- |
+| Daily uploads per user | 200     | `VITE_BULK_DAILY_LIMIT` |
+| Max queue size         | 500     | `VITE_BULK_MAX_QUEUE`   |
 
 These are checked **before** generation starts. If the daily limit is partially consumed, only the remaining quota is processed. Queue size is validated upfront.
 
@@ -110,18 +110,18 @@ These are checked **before** generation starts. If the daily limit is partially 
 
 ## Key Dependencies
 
-| Library              | Version  | Purpose                     |
-| -------------------- | -------- | --------------------------- |
-| `react`              | ^19.2.0  | UI framework                |
-| `react-router-dom`   | ^7.13.0  | Client-side routing         |
-| `@supabase/supabase-js` | ^2.95.3 | Auth, DB, Storage SDK    |
-| `html2canvas`        | ^1.4.1   | DOM → Canvas capture        |
-| `jspdf`              | ^4.1.0   | Canvas → PDF generation     |
-| `jszip`              | ^3.10.1  | ZIP archive creation        |
-| `file-saver`         | ^2.0.5   | Cross-browser file download |
-| `qrcode.react`       | ^4.2.0   | QR codes on ID cards        |
-| `tailwindcss`        | ^4.1.18  | Utility-first CSS           |
-| `vite`               | ^7.3.1   | Build tool + dev server     |
+| Library                 | Version | Purpose                     |
+| ----------------------- | ------- | --------------------------- |
+| `react`                 | ^19.2.0 | UI framework                |
+| `react-router-dom`      | ^7.13.0 | Client-side routing         |
+| `@supabase/supabase-js` | ^2.95.3 | Auth, DB, Storage SDK       |
+| `html2canvas`           | ^1.4.1  | DOM → Canvas capture        |
+| `jspdf`                 | ^4.1.0  | Canvas → PDF generation     |
+| `jszip`                 | ^3.10.1 | ZIP archive creation        |
+| `file-saver`            | ^2.0.5  | Cross-browser file download |
+| `qrcode.react`          | ^4.2.0  | QR codes on ID cards        |
+| `tailwindcss`           | ^4.1.18 | Utility-first CSS           |
+| `vite`                  | ^7.3.1  | Build tool + dev server     |
 
 ---
 

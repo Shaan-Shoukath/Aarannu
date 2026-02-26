@@ -92,25 +92,25 @@ cd ../frontend && npm run dev     # http://localhost:5173
 
 ### Frontend (`frontend/.env`)
 
-| Variable                 | Default                | Description                     |
-| ------------------------ | ---------------------- | ------------------------------- |
-| `VITE_SUPABASE_URL`      | —                      | Supabase project URL (required) |
-| `VITE_SUPABASE_ANON_KEY` | —                      | Supabase anon key (required)    |
-| `VITE_BACKEND_URL`       | `http://localhost:5000` | Backend API URL                |
-| `VITE_BULK_DAILY_LIMIT`  | `200`                  | Max uploads per user per day    |
-| `VITE_BULK_MAX_QUEUE`    | `500`                  | Max members per generation queue |
+| Variable                 | Default                 | Description                      |
+| ------------------------ | ----------------------- | -------------------------------- |
+| `VITE_SUPABASE_URL`      | —                       | Supabase project URL (required)  |
+| `VITE_SUPABASE_ANON_KEY` | —                       | Supabase anon key (required)     |
+| `VITE_BACKEND_URL`       | `http://localhost:5000` | Backend API URL                  |
+| `VITE_BULK_DAILY_LIMIT`  | `200`                   | Max uploads per user per day     |
+| `VITE_BULK_MAX_QUEUE`    | `500`                   | Max members per generation queue |
 
 ### Backend (`backend/.env`)
 
-| Variable                     | Default                | Description                       |
-| ---------------------------- | ---------------------- | --------------------------------- |
-| `SUPABASE_URL`               | —                      | Supabase project URL (required)   |
-| `SUPABASE_ANON_KEY`          | —                      | Supabase anon key (required)      |
-| `SUPABASE_SERVICE_ROLE_KEY`  | —                      | Service role key (required, secret)|
-| `PORT`                       | `5000`                 | Server port                       |
-| `NODE_ENV`                   | `development`          | Environment mode                  |
-| `CORS_ORIGIN`                | `http://localhost:5173` | Comma-separated allowed origins  |
-| `BULK_BATCH_LIMIT`           | `50`                   | Max members per API batch         |
+| Variable                    | Default                 | Description                         |
+| --------------------------- | ----------------------- | ----------------------------------- |
+| `SUPABASE_URL`              | —                       | Supabase project URL (required)     |
+| `SUPABASE_ANON_KEY`         | —                       | Supabase anon key (required)        |
+| `SUPABASE_SERVICE_ROLE_KEY` | —                       | Service role key (required, secret) |
+| `PORT`                      | `5000`                  | Server port                         |
+| `NODE_ENV`                  | `development`           | Environment mode                    |
+| `CORS_ORIGIN`               | `http://localhost:5173` | Comma-separated allowed origins     |
+| `BULK_BATCH_LIMIT`          | `50`                    | Max members per API batch           |
 
 ---
 
@@ -133,27 +133,27 @@ cd ../frontend && npm run dev     # http://localhost:5173
 
 ## Configurable Limits
 
-| Limit                    | Default | Config Variable        | Layer    |
-| ------------------------ | ------- | ---------------------- | -------- |
-| Daily uploads per user   | 200     | `VITE_BULK_DAILY_LIMIT` | Frontend |
-| Max queue size/session   | 500     | `VITE_BULK_MAX_QUEUE`   | Frontend |
-| API batch size           | 50      | `BULK_BATCH_LIMIT`      | Backend  |
-| API rate limit           | 100/15m | Hardcoded              | Backend  |
-| Auth rate limit          | 20/15m  | Hardcoded              | Backend  |
-| ID card expiry           | 15 days | Hardcoded              | Backend  |
-| Signed URL TTL           | 1 hour  | Hardcoded              | Both     |
-| Image proxy size cap     | 10 MB   | Hardcoded              | Backend  |
-| Auto-cleanup interval    | 6 hours | Hardcoded              | Backend  |
+| Limit                  | Default | Config Variable         | Layer    |
+| ---------------------- | ------- | ----------------------- | -------- |
+| Daily uploads per user | 200     | `VITE_BULK_DAILY_LIMIT` | Frontend |
+| Max queue size/session | 500     | `VITE_BULK_MAX_QUEUE`   | Frontend |
+| API batch size         | 50      | `BULK_BATCH_LIMIT`      | Backend  |
+| API rate limit         | 100/15m | Hardcoded               | Backend  |
+| Auth rate limit        | 20/15m  | Hardcoded               | Backend  |
+| ID card expiry         | 15 days | Hardcoded               | Backend  |
+| Signed URL TTL         | 1 hour  | Hardcoded               | Both     |
+| Image proxy size cap   | 10 MB   | Hardcoded               | Backend  |
+| Auto-cleanup interval  | 6 hours | Hardcoded               | Backend  |
 
 ---
 
 ## Delivery Formats
 
-| Context         | Format                                  | Mechanism                          |
-| --------------- | --------------------------------------- | ---------------------------------- |
-| Single preview  | PDF (front+back) or JPEG (visible side) | jsPDF + html2canvas                |
-| Bulk generation | ZIP of 2-page PDFs + cloud PNGs         | JSZip + file-saver + Supabase      |
-| Dashboard       | PNG (signed URL, 1hr expiry)            | Supabase Storage + blob download   |
+| Context         | Format                                  | Mechanism                        |
+| --------------- | --------------------------------------- | -------------------------------- |
+| Single preview  | PDF (front+back) or JPEG (visible side) | jsPDF + html2canvas              |
+| Bulk generation | ZIP of 2-page PDFs + cloud PNGs         | JSZip + file-saver + Supabase    |
+| Dashboard       | PNG (signed URL, 1hr expiry)            | Supabase Storage + blob download |
 
 ---
 

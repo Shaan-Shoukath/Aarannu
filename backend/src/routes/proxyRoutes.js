@@ -13,9 +13,22 @@
  */
 
 const express = require("express");
+const { apiLimiter } = require("../middleware/rateLimiter");
 const router = express.Router();
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10 MB
+
+// Allowed domains for image proxying (prevent SSRF)
+const ALLOWED_HOSTS = [
+  "drive.google.com",
+  "www.drive.google.com",
+  "docs.google.com",
+  "lh3.googleusercontent.com",
+  "lh4.googleusercontent.com",
+  "lh5.googleusercontent.com",
+  "lh6.googleusercontent.com",
+  "googleusercontent.com",
+];
 
 /**
  * Convert common Google Drive sharing URLs to direct-download URLs.
@@ -49,11 +62,23 @@ function normalizeDriveUrl(rawUrl) {
   }
 }
 
-router.get("/image", async (req, res) => {
+router.get("/image", apiLimiter, async (req, res) => {
   const { url } = req.query;
 
   if (!url) {
     return res.status(400).json({ error: "Missing 'url' query parameter." });
+  }
+
+  // Validate URL domain against allowlist to prevent SSRF
+  try {
+    const parsed = new URL(url);
+    if (!ALLOWED_HOSTS.includes(parsed.hostname)) {
+      return res.status(403).json({
+        error: "Domain not allowed. Only Google Drive URLs are supported.",
+      });
+    }
+  } catch {
+    return res.status(400).json({ error: "Invalid URL." });
   }
 
   try {

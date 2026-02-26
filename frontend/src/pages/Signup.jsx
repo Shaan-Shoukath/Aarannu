@@ -62,6 +62,14 @@ export default function Signup() {
         return;
       }
 
+      // Supabase returns { user: null } for already-registered emails (enumeration protection)
+      if (!authData?.user) {
+        setError(
+          "Unable to create account. This email may already be registered.",
+        );
+        return;
+      }
+
       // Save user ID for member insert after OTP verification
       setSignupUserId(authData.user.id);
 

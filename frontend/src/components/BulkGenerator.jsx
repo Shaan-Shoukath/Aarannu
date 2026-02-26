@@ -353,7 +353,8 @@ export default function BulkGenerator({
           <p className="text-sm text-slate-500">
             {members.length.toLocaleString()} member
             {members.length !== 1 ? "s" : ""} ready
-            {" · "}Limited to {DAILY_LIMIT} cards/day · Max {MAX_QUEUE_SIZE} per queue
+            {" · "}Limited to {DAILY_LIMIT} cards/day · Max {MAX_QUEUE_SIZE} per
+            queue
           </p>
         </div>
 
@@ -394,7 +395,8 @@ export default function BulkGenerator({
       <div className="text-xs px-3 py-2 rounded-lg border bg-blue-50 border-blue-200 text-blue-700">
         Each card is uploaded to cloud storage (15-day expiry, signed URLs)
         <strong> and </strong> bundled as a 2-page PDF (front + back) in a ZIP
-        that downloads automatically. Limited to {DAILY_LIMIT} cards/day, max {MAX_QUEUE_SIZE} per queue.
+        that downloads automatically. Limited to {DAILY_LIMIT} cards/day, max{" "}
+        {MAX_QUEUE_SIZE} per queue.
       </div>
 
       {/* ─── Enhanced Progress Panel ─── */}

@@ -27,15 +27,15 @@ npm start
 
 ## Environment Variables
 
-| Variable                    | Default                | Description                         |
-| --------------------------- | ---------------------- | ----------------------------------- |
-| `SUPABASE_URL`              | —                      | Supabase project URL (required)     |
-| `SUPABASE_ANON_KEY`         | —                      | Anon key (required)                 |
-| `SUPABASE_SERVICE_ROLE_KEY` | —                      | Service role key (required, secret) |
-| `PORT`                      | `5000`                 | Server port                         |
-| `NODE_ENV`                  | `development`          | Environment mode                    |
-| `CORS_ORIGIN`               | `http://localhost:5173` | Comma-separated allowed origins    |
-| `BULK_BATCH_LIMIT`          | `50`                   | Max members per API batch           |
+| Variable                    | Default                 | Description                         |
+| --------------------------- | ----------------------- | ----------------------------------- |
+| `SUPABASE_URL`              | —                       | Supabase project URL (required)     |
+| `SUPABASE_ANON_KEY`         | —                       | Anon key (required)                 |
+| `SUPABASE_SERVICE_ROLE_KEY` | —                       | Service role key (required, secret) |
+| `PORT`                      | `5000`                  | Server port                         |
+| `NODE_ENV`                  | `development`           | Environment mode                    |
+| `CORS_ORIGIN`               | `http://localhost:5173` | Comma-separated allowed origins     |
+| `BULK_BATCH_LIMIT`          | `50`                    | Max members per API batch           |
 
 ---
 
@@ -116,16 +116,16 @@ Logs the count of purged records and files to stdout.
 
 ## Configurable Limits
 
-| Limit              | Default | Config              | Description                           |
-| ------------------ | ------- | ------------------- | ------------------------------------- |
-| API batch size     | 50      | `BULK_BATCH_LIMIT`  | Max members per `/ids/generate` call  |
-| General rate limit | 100/15m | `rateLimiter.js`    | Per-IP request cap                    |
-| Auth rate limit    | 20/15m  | `rateLimiter.js`    | Per-IP auth endpoint cap              |
-| Image proxy cap    | 10 MB   | `proxyRoutes.js`    | Max proxied image size                |
-| Image proxy timeout| 15s     | `proxyRoutes.js`    | Upstream fetch timeout                |
-| ID card expiry     | 15 days | `expiryHelper.js`   | Lifetime of generated ID records      |
-| Cleanup interval   | 6 hours | `server.js`         | Auto-cleanup frequency                |
-| JSON body limit    | 1 MB    | `server.js`         | Max request body size                 |
+| Limit               | Default | Config             | Description                          |
+| ------------------- | ------- | ------------------ | ------------------------------------ |
+| API batch size      | 50      | `BULK_BATCH_LIMIT` | Max members per `/ids/generate` call |
+| General rate limit  | 100/15m | `rateLimiter.js`   | Per-IP request cap                   |
+| Auth rate limit     | 20/15m  | `rateLimiter.js`   | Per-IP auth endpoint cap             |
+| Image proxy cap     | 10 MB   | `proxyRoutes.js`   | Max proxied image size               |
+| Image proxy timeout | 15s     | `proxyRoutes.js`   | Upstream fetch timeout               |
+| ID card expiry      | 15 days | `expiryHelper.js`  | Lifetime of generated ID records     |
+| Cleanup interval    | 6 hours | `server.js`        | Auto-cleanup frequency               |
+| JSON body limit     | 1 MB    | `server.js`        | Max request body size                |
 
 ---
 
@@ -138,7 +138,7 @@ Logs the count of purged records and files to stdout.
 - **Approval gating** — generation blocked until admin-approved
 - **Input validation** — all payloads validated (name ≤120 chars, role ≤60, URL format, UUID format)
 - **Service-role isolation** — service key server-only, never exposed to frontend
-- **Image proxy guards** — content-type whitelist (image/* only), 10 MB size cap, 15s timeout
+- **Image proxy guards** — content-type whitelist (image/\* only), 10 MB size cap, 15s timeout
 - **Centralized errors** — stack traces hidden in production, generic messages to clients
 - **Auto-cleanup** — expired records + storage files purged automatically
 
@@ -146,16 +146,16 @@ Logs the count of purged records and files to stdout.
 
 ## Key Dependencies
 
-| Library              | Version  | Purpose                              |
-| -------------------- | -------- | ------------------------------------ |
-| `express`            | ^5.2.1   | Web framework                        |
-| `@supabase/supabase-js` | ^2.95.3 | Auth, Postgres, Storage SDK       |
-| `cors`               | ^2.8.6   | Cross-origin access control          |
-| `helmet`             | ^8.1.0   | Secure HTTP headers                  |
-| `express-rate-limit`  | ^8.2.1  | Request rate limiting                |
-| `dotenv`             | ^17.3.1  | Environment variable loading         |
-| `uuid`               | ^13.0.0  | UUID v4 generation for primary keys  |
-| `nodemon`            | ^3.1.11  | Dev auto-restart (devDependency)     |
+| Library                 | Version | Purpose                             |
+| ----------------------- | ------- | ----------------------------------- |
+| `express`               | ^5.2.1  | Web framework                       |
+| `@supabase/supabase-js` | ^2.95.3 | Auth, Postgres, Storage SDK         |
+| `cors`                  | ^2.8.6  | Cross-origin access control         |
+| `helmet`                | ^8.1.0  | Secure HTTP headers                 |
+| `express-rate-limit`    | ^8.2.1  | Request rate limiting               |
+| `dotenv`                | ^17.3.1 | Environment variable loading        |
+| `uuid`                  | ^13.0.0 | UUID v4 generation for primary keys |
+| `nodemon`               | ^3.1.11 | Dev auto-restart (devDependency)    |
 
 ---
 

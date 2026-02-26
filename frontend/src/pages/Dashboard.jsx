@@ -39,22 +39,28 @@ export default function Dashboard() {
       if (!user) return;
 
       // 2. Fetch member profile
-      const { data: memberData } = await supabase
+      const { data: memberData, error: memberError } = await supabase
         .from("members")
         .select("*")
         .eq("user_id", user.id)
         .single();
 
+      if (memberError && memberError.code !== "PGRST116") {
+        console.error("Member fetch error:", memberError.message);
+      }
       setMember(memberData);
 
       // 3. Fetch non-expired generated IDs
-      const { data: idsData } = await supabase
+      const { data: idsData, error: idsError } = await supabase
         .from("generated_ids")
         .select("*")
         .eq("user_id", user.id)
         .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false });
 
+      if (idsError) {
+        console.error("Generated IDs fetch error:", idsError.message);
+      }
       setGeneratedIds(idsData || []);
     } catch (err) {
       console.error("Dashboard load error:", err);

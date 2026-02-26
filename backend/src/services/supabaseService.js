@@ -72,11 +72,12 @@ const approveMember = async (userId) => {
  * @returns {Promise<{data, error}>}
  */
 const insertGeneratedIds = async (userId, members) => {
-  const rows = members.map((m) => {
+  const batchTimestamp = Date.now();
+  const rows = members.map((m, index) => {
     const id = uuidv4();
-    const safeName = m.name.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase();
-    const timestamp = Date.now();
-    const filePath = `${userId}/${safeName}_${timestamp}.png`;
+    const safeName =
+      m.name.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase() || "member";
+    const filePath = `${userId}/${safeName}_${batchTimestamp}_${index}_${id.slice(0, 8)}.png`;
 
     return {
       id,

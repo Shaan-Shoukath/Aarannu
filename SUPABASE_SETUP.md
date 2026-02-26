@@ -35,15 +35,16 @@ Go to **Project Settings → API** (sidebar → gear icon → API).
 
 You need three values:
 
-| Key | Where it goes | Notes |
-|-----|--------------|-------|
-| **Project URL** | `VITE_SUPABASE_URL` (frontend) + `SUPABASE_URL` (backend) | e.g. `https://abcdef.supabase.co` |
-| **anon / public key** | `VITE_SUPABASE_ANON_KEY` (frontend) + `SUPABASE_ANON_KEY` (backend) | Safe for frontend — respects RLS |
-| **service_role key** | `SUPABASE_SERVICE_ROLE_KEY` (backend **only**) | **NEVER** expose in frontend code |
+| Key                   | Where it goes                                                       | Notes                             |
+| --------------------- | ------------------------------------------------------------------- | --------------------------------- |
+| **Project URL**       | `VITE_SUPABASE_URL` (frontend) + `SUPABASE_URL` (backend)           | e.g. `https://abcdef.supabase.co` |
+| **anon / public key** | `VITE_SUPABASE_ANON_KEY` (frontend) + `SUPABASE_ANON_KEY` (backend) | Safe for frontend — respects RLS  |
+| **service_role key**  | `SUPABASE_SERVICE_ROLE_KEY` (backend **only**)                      | **NEVER** expose in frontend code |
 
 ### Set up `.env` files
 
 **Frontend** (`frontend/.env`):
+
 ```env
 VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key-here
@@ -53,6 +54,7 @@ VITE_BULK_MAX_QUEUE=500
 ```
 
 **Backend** (`backend/.env`):
+
 ```env
 SUPABASE_URL=https://your-project-id.supabase.co
 SUPABASE_ANON_KEY=your-anon-key-here
@@ -164,19 +166,8 @@ Go to **Storage** in the sidebar → **New Bucket**:
 - **File size limit**: `10MB`
 - **Allowed MIME types**: `image/png, image/jpeg`
 
-Or via SQL:
-
-```sql
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-  'id-cards',
-  'id-cards',
-  false,
-  10485760,
-  ARRAY['image/png', 'image/jpeg']
-)
-ON CONFLICT (id) DO NOTHING;
-```
+> **Important:** The `INSERT INTO storage.buckets` SQL command does NOT work from the SQL Editor.
+> You **must** create the bucket through the dashboard UI as described above.
 
 ### 5b. Storage RLS Policies
 
@@ -225,6 +216,7 @@ Go to **Authentication → Providers** in the sidebar:
 ### Email Confirmation (Optional but Recommended)
 
 Go to **Authentication → Settings**:
+
 - **Enable email confirmations**: ON for production, OFF for local dev (faster testing).
 - **Site URL**: Set to your frontend URL (e.g. `http://localhost:5173` for dev, `https://yourdomain.com` for prod).
 - **Redirect URLs**: Add your frontend URL.
@@ -235,13 +227,13 @@ Go to **Authentication → Settings**:
 
 The app enforces limits at multiple layers:
 
-| Limit | Default | Config Variable | Where |
-|-------|---------|----------------|-------|
-| Daily uploads per user | **200** | `VITE_BULK_DAILY_LIMIT` | Frontend `.env` |
-| Max queue size per session | **500** | `VITE_BULK_MAX_QUEUE` | Frontend `.env` |
-| API batch size | **50** | `BULK_BATCH_LIMIT` | Backend `.env` |
-| API rate limit | **100 req/15min** | Hardcoded in `rateLimiter.js` | Backend middleware |
-| Auth rate limit | **20 req/15min** | Hardcoded in `rateLimiter.js` | Backend middleware |
+| Limit                      | Default           | Config Variable               | Where              |
+| -------------------------- | ----------------- | ----------------------------- | ------------------ |
+| Daily uploads per user     | **200**           | `VITE_BULK_DAILY_LIMIT`       | Frontend `.env`    |
+| Max queue size per session | **500**           | `VITE_BULK_MAX_QUEUE`         | Frontend `.env`    |
+| API batch size             | **50**            | `BULK_BATCH_LIMIT`            | Backend `.env`     |
+| API rate limit             | **100 req/15min** | Hardcoded in `rateLimiter.js` | Backend middleware |
+| Auth rate limit            | **20 req/15min**  | Hardcoded in `rateLimiter.js` | Backend middleware |
 
 To change limits, set the env vars in the respective `.env` files and restart.
 
@@ -250,6 +242,7 @@ To change limits, set the env vars in the respective `.env` files and restart.
 ## 8. Running the Project
 
 ### Backend
+
 ```bash
 cd backend
 npm install
@@ -258,6 +251,7 @@ npm run dev
 ```
 
 ### Frontend
+
 ```bash
 cd frontend
 npm install
@@ -309,6 +303,7 @@ Replace `your-email@example.com` with the email you signed up with.
 **Fix**: Run all three storage policies from [Section 5b](#5b-storage-rls-policies). Without the `SELECT` policy, neither `download()` nor `createSignedUrl()` will work from the frontend.
 
 **Verify** in Supabase SQL Editor:
+
 ```sql
 SELECT policyname, cmd FROM pg_policies WHERE tablename = 'objects' AND schemaname = 'storage';
 ```
@@ -346,6 +341,7 @@ The backend rate limits are 100 requests per 15 minutes (general) and 20 per 15 
 ### Daily bulk generation limit reached
 
 The default is 200 cards per user per day. Change it by setting `VITE_BULK_DAILY_LIMIT` in `frontend/.env`:
+
 ```env
 VITE_BULK_DAILY_LIMIT=500
 ```
@@ -360,6 +356,7 @@ VITE_BULK_DAILY_LIMIT=500
 ### Expired cards still showing (or not being cleaned up)
 
 The backend auto-cleans every 6 hours. To trigger immediately:
+
 - Restart the backend (cleanup runs on boot), or
 - Call `POST /api/admin/cleanup` (requires admin auth).
 
@@ -367,7 +364,11 @@ The backend auto-cleans every 6 hours. To trigger immediately:
 
 ## Complete SQL Setup Script
 
-Copy and run this entire block in the Supabase SQL Editor for a fresh setup:
+Setup requires **3 steps** (the storage bucket must be created via the dashboard UI):
+
+### Step 1 — Run SQL: Tables + RLS Policies
+
+Copy and run this in the Supabase **SQL Editor**:
 
 ```sql
 -- ═══════════════════════════════════════
@@ -431,21 +432,27 @@ CREATE POLICY "Users can insert own generated_ids"
 CREATE POLICY "Users can delete own generated_ids"
   ON public.generated_ids FOR DELETE
   USING (auth.uid() = user_id);
+```
 
--- ═══════════════════════════════════════
--- STORAGE BUCKET
--- ═══════════════════════════════════════
+### Step 2 — Create Storage Bucket (Dashboard UI)
 
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-  'id-cards',
-  'id-cards',
-  false,
-  10485760,
-  ARRAY['image/png', 'image/jpeg']
-)
-ON CONFLICT (id) DO NOTHING;
+> **Note:** `INSERT INTO storage.buckets` does NOT work from the SQL Editor.
+> You must create the bucket through the Supabase dashboard UI.
 
+1. Go to **Storage** in the left sidebar
+2. Click **New Bucket**
+3. Set:
+   - **Name**: `id-cards`
+   - **Public bucket**: **OFF** (private)
+   - **File size limit**: `10MB`
+   - **Allowed MIME types**: `image/png, image/jpeg`
+4. Click **Create bucket**
+
+### Step 3 — Run SQL: Storage RLS Policies
+
+After creating the bucket, go back to **SQL Editor** and run:
+
+```sql
 -- ═══════════════════════════════════════
 -- STORAGE RLS POLICIES
 -- ═══════════════════════════════════════
