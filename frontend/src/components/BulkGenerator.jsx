@@ -20,10 +20,13 @@ function buildFilePath(userId, memberName) {
   return `${userId}/${safeName}_${timestamp}.png`;
 }
 
-/** Daily upload limit per user (Supabase free tier) */
-const DAILY_LIMIT = 200;
+/** Daily upload limit per user (configurable via env) */
+const DAILY_LIMIT = parseInt(import.meta.env.VITE_BULK_DAILY_LIMIT, 10) || 200;
 
-/** Batch size – yield to UI after this many cards to stay responsive */
+/** Max members allowed in a single generation queue */
+const MAX_QUEUE_SIZE = parseInt(import.meta.env.VITE_BULK_MAX_QUEUE, 10) || 500;
+
+/** Batch size - yield to UI after this many cards to stay responsive */
 const BATCH_SIZE = 50;
 
 /**
@@ -87,25 +90,22 @@ export default function BulkGenerator({
 
   /** Capture a ref element as an html2canvas Canvas */
   const captureRef = async (ref) => {
-    // Wait for React to re-render the card + images to load
     await new Promise((r) => setTimeout(r, 600));
-    if (!ref.current) {
-      throw new Error("Card element not available for capture");
-    }
-    // Wait for all <img> inside the card to finish loading
+    if (!ref.current) throw new Error("Card element not available for capture");
+
+    // Wait for all images inside the card to finish loading
     const imgs = ref.current.querySelectorAll("img");
-    if (imgs.length > 0) {
-      await Promise.all(
-        [...imgs].map(
-          (img) =>
-            new Promise((res) => {
-              if (img.complete) return res();
-              img.onload = res;
-              img.onerror = res; // don't block on broken images
-            }),
-        ),
-      );
-    }
+    await Promise.all(
+      [...imgs].map(
+        (img) =>
+          new Promise((res) => {
+            if (img.complete) return res();
+            img.onload = res;
+            img.onerror = res;
+          }),
+      ),
+    );
+
     return html2canvas(ref.current, {
       scale: 2,
       useCORS: true,
@@ -129,8 +129,16 @@ export default function BulkGenerator({
     return { used: count || 0, err: null };
   };
 
-  /** Generate cards → upload PNGs to Supabase + build ZIP of PDFs */
+  /** Generate cards -> upload PNGs to Supabase + build ZIP of PDFs */
   const handleGenerate = useCallback(async () => {
+    // ── 0. Queue size check ──
+    if (members.length > MAX_QUEUE_SIZE) {
+      setError(
+        `Queue too large (${members.length}). Maximum ${MAX_QUEUE_SIZE} members per session.`,
+      );
+      return;
+    }
+
     // ── 1. Check daily limit ──
     const { used, err: usageErr } = await checkDailyUsage();
     if (usageErr) {
@@ -345,7 +353,7 @@ export default function BulkGenerator({
           <p className="text-sm text-slate-500">
             {members.length.toLocaleString()} member
             {members.length !== 1 ? "s" : ""} ready
-            {" · "}Limited to {DAILY_LIMIT} cards/day
+            {" · "}Limited to {DAILY_LIMIT} cards/day · Max {MAX_QUEUE_SIZE} per queue
           </p>
         </div>
 
@@ -386,7 +394,7 @@ export default function BulkGenerator({
       <div className="text-xs px-3 py-2 rounded-lg border bg-blue-50 border-blue-200 text-blue-700">
         Each card is uploaded to cloud storage (15-day expiry, signed URLs)
         <strong> and </strong> bundled as a 2-page PDF (front + back) in a ZIP
-        that downloads automatically. Limited to {DAILY_LIMIT} cards/day.
+        that downloads automatically. Limited to {DAILY_LIMIT} cards/day, max {MAX_QUEUE_SIZE} per queue.
       </div>
 
       {/* ─── Enhanced Progress Panel ─── */}

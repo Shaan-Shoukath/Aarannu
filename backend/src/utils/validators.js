@@ -104,10 +104,12 @@ const validateMember = (member) => {
   return { valid: true, message: "OK" };
 };
 
+/** Max members per API batch (configurable via BULK_BATCH_LIMIT env var) */
+const BULK_BATCH_LIMIT = parseInt(process.env.BULK_BATCH_LIMIT, 10) || 50;
+
 /**
  * Validates the bulk-generation payload.
- *
- * Expects `{ members: [...] }` with 1–50 members.
+ * Expects `{ members: [...] }` with 1-BULK_BATCH_LIMIT members.
  */
 const validateBulkPayload = (body) => {
   if (!body || !Array.isArray(body.members)) {
@@ -119,10 +121,10 @@ const validateBulkPayload = (body) => {
   if (body.members.length === 0) {
     return { valid: false, message: "Members array must not be empty." };
   }
-  if (body.members.length > 50) {
+  if (body.members.length > BULK_BATCH_LIMIT) {
     return {
       valid: false,
-      message: "Maximum 50 members per batch.",
+      message: `Maximum ${BULK_BATCH_LIMIT} members per batch.`,
     };
   }
 

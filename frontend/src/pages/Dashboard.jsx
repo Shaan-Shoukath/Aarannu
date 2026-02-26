@@ -68,17 +68,13 @@ export default function Dashboard() {
     navigate("/login", { replace: true });
   };
 
-  /**
-   * Generate a signed URL for a given file path.
-   * Signed URLs grant temporary access to private storage files.
-   * We cache them in state to avoid re-generating on every render.
-   */
+  /** Generate & cache a signed URL for a private storage file (1-hour TTL). */
   const getSignedUrl = async (filePath) => {
     if (signedUrls[filePath]) return signedUrls[filePath];
 
     const { data, error } = await supabase.storage
       .from("id-cards")
-      .createSignedUrl(filePath, 60 * 60); // 1 hour validity
+      .createSignedUrl(filePath, 60 * 60);
 
     if (error) {
       console.error("Signed URL error:", error);
@@ -91,20 +87,24 @@ export default function Dashboard() {
 
   const handleDownload = async (filePath, fileName) => {
     try {
-      // Use Supabase client's download() to avoid CORS issues entirely
+      // Generate a signed URL with download disposition header
       const { data, error } = await supabase.storage
         .from("id-cards")
-        .download(filePath);
+        .createSignedUrl(filePath, 60 * 5, {
+          download: fileName || "id-card.png",
+        });
 
-      if (error || !data) {
-        console.error("Supabase download error:", error);
-        // Fallback: open signed URL in new tab
-        const url = await getSignedUrl(filePath);
-        if (url) window.open(url, "_blank");
+      if (error || !data?.signedUrl) {
+        console.error("Signed URL error:", error);
         return;
       }
 
-      const blobUrl = URL.createObjectURL(data);
+      // Fetch the file as a blob to trigger a true browser download
+      const response = await fetch(data.signedUrl);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = blobUrl;
       a.download = fileName || "id-card.png";
@@ -113,7 +113,8 @@ export default function Dashboard() {
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
     } catch (err) {
-      console.error("Download failed:", err);
+      console.error("Download failed, opening in new tab:", err);
+      // Last-resort fallback: open signed URL in new tab
       const url = await getSignedUrl(filePath);
       if (url) window.open(url, "_blank");
     }

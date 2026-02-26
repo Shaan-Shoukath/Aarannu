@@ -44,7 +44,8 @@ export default function Generate() {
   };
 
   const [user, setUser] = useState(null);
-  const [_member, setMember] = useState(null);
+  // member is fetched for the approval check, value not rendered
+  const [, setMember] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Members to generate IDs for
@@ -179,11 +180,10 @@ export default function Generate() {
     setPreviewData(data);
   };
 
-  /** Capture a ref element as a canvas */
+  /** Capture a ref element as a canvas (waits for images to load). */
   const captureRef = async (ref) => {
     if (!ref.current) return null;
     await new Promise((r) => setTimeout(r, 500));
-    // Wait for all <img> inside the card to finish loading
     const imgs = ref.current.querySelectorAll("img");
     if (imgs.length > 0) {
       await Promise.all(
@@ -206,8 +206,8 @@ export default function Generate() {
   };
 
   /**
-   * Upload the front canvas to Supabase Storage + insert a `generated_ids`
-   * row so the card shows up in the Dashboard for 15 days.
+   * Upload front canvas PNG to Supabase Storage and insert a
+   * `generated_ids` row so the card appears on the Dashboard for 15 days.
    */
   const uploadCardToSupabase = async (frontCanvas, memberName) => {
     if (!user?.id || !frontCanvas) return;
@@ -221,7 +221,7 @@ export default function Generate() {
         .upload(filePath, pngBlob, { contentType: "image/png", upsert: false });
 
       if (uploadErr) {
-        console.warn("Supabase upload failed:", uploadErr.message);
+        console.warn("Upload failed:", uploadErr.message);
         return;
       }
 
@@ -261,7 +261,7 @@ export default function Generate() {
     }
   };
 
-  /** Download the currently visible side as a JPEG */
+  /** Download the currently visible side as a JPEG. */
   const handleDownloadJpeg = async () => {
     if (!previewData) return;
     setDownloading(true);
@@ -276,9 +276,13 @@ export default function Generate() {
       const side = showBack ? "back" : "front";
       downloadBlob(blob, `${safeName}_${side}.jpg`);
 
-      // Also store front side in Supabase for Dashboard access
-      const frontCanvas = await captureRef(previewFrontRef);
-      await uploadCardToSupabase(frontCanvas, previewData.name);
+      // Upload front side to Supabase (reuse canvas if already front, else capture)
+      if (!showBack) {
+        await uploadCardToSupabase(canvas, previewData.name);
+      } else {
+        const frontCanvas = await captureRef(previewFrontRef);
+        await uploadCardToSupabase(frontCanvas, previewData.name);
+      }
     } catch (err) {
       console.error("JPEG download failed:", err);
     } finally {

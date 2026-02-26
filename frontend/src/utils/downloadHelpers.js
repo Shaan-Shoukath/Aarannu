@@ -1,10 +1,6 @@
 import { jsPDF } from "jspdf";
 
-/**
- * Convert canvas pixels → millimetres.
- * html2canvas captures at `scale: 2` and screen is 96 DPI, so:
- *   real_px = canvas_px / 2,  mm = real_px * 25.4 / 96
- */
+/** Convert canvas pixels to millimetres (html2canvas captures at scale:2, screen=96 DPI). */
 const pxToMm = (px, scale = 2) => (px / scale) * (25.4 / 96);
 
 /**
@@ -17,11 +13,8 @@ export function canvasesToPdfBlob(frontCanvas, backCanvas = null) {
   const orientation = w > h ? "landscape" : "portrait";
 
   const pdf = new jsPDF({ orientation, unit: "mm", format: [w, h] });
-
-  // Front page
   pdf.addImage(frontCanvas.toDataURL("image/png"), "PNG", 0, 0, w, h);
 
-  // Back page (optional)
   if (backCanvas) {
     const bw = pxToMm(backCanvas.width);
     const bh = pxToMm(backCanvas.height);
@@ -32,9 +25,7 @@ export function canvasesToPdfBlob(frontCanvas, backCanvas = null) {
   return pdf.output("blob");
 }
 
-/**
- * Trigger a browser download for any Blob.
- */
+/** Trigger a browser download for any Blob. */
 export function downloadBlob(blob, fileName) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -43,28 +34,22 @@ export function downloadBlob(blob, fileName) {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/**
- * Convert a canvas to a JPEG blob.
- */
+/** Convert a canvas to a JPEG blob. */
 export function canvasToJpegBlob(canvas, quality = 0.95) {
   return new Promise((resolve) =>
     canvas.toBlob(resolve, "image/jpeg", quality),
   );
 }
 
-/**
- * Convert a canvas to a PNG blob.
- */
+/** Convert a canvas to a PNG blob. */
 export function canvasToPngBlob(canvas) {
   return new Promise((resolve) => canvas.toBlob(resolve, "image/png", 1.0));
 }
 
-/**
- * Build a safe filename from a member name + index.
- */
+/** Build a safe filename from a member name + index. */
 export function safeFileName(name, index, ext = "pdf") {
   const safe = (name || "unnamed")
     .replace(/[^a-zA-Z0-9\s_-]/g, "")
