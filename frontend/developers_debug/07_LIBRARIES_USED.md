@@ -2,19 +2,19 @@
 
 ## Dependency Overview
 
-| Library                 | Version  | Purpose                                  | Required? |
-| ----------------------- | -------- | ---------------------------------------- | --------- |
-| `@supabase/supabase-js` | ^2.95.3  | Backend SDK (auth, DB, storage)          | Yes       |
-| `react`                 | ^19.2.0  | UI framework                             | Yes       |
-| `react-dom`             | ^19.2.0  | React DOM renderer                       | Yes       |
-| `react-router-dom`      | ^7.x     | Client-side routing                      | Yes       |
-| `html2canvas`           | ^1.4.1   | DOM-to-canvas conversion                 | Yes       |
-| `jspdf`                 | ^3.x     | Canvas-to-PDF generation                 | Yes       |
-| `jszip`                 | ^3.x     | ZIP archive creation in browser          | Yes       |
-| `file-saver`            | ^2.x     | Trigger browser file downloads           | Yes       |
-| `qrcode.react`          | ^4.x     | QR code generation on ID cards           | Yes       |
-| `tailwindcss`           | ^4.x     | Utility-first CSS                        | Yes       |
-| `@tailwindcss/vite`     | ^4.x     | Tailwind Vite integration                | Yes (dev) |
+| Library                 | Version | Purpose                         | Required? |
+| ----------------------- | ------- | ------------------------------- | --------- |
+| `@supabase/supabase-js` | ^2.95.3 | Backend SDK (auth, DB, storage) | Yes       |
+| `react`                 | ^19.2.0 | UI framework                    | Yes       |
+| `react-dom`             | ^19.2.0 | React DOM renderer              | Yes       |
+| `react-router-dom`      | ^7.x    | Client-side routing             | Yes       |
+| `html2canvas`           | ^1.4.1  | DOM-to-canvas conversion        | Yes       |
+| `jspdf`                 | ^3.x    | Canvas-to-PDF generation        | Yes       |
+| `jszip`                 | ^3.x    | ZIP archive creation in browser | Yes       |
+| `file-saver`            | ^2.x    | Trigger browser file downloads  | Yes       |
+| `qrcode.react`          | ^4.x    | QR code generation on ID cards  | Yes       |
+| `tailwindcss`           | ^4.x    | Utility-first CSS               | Yes       |
+| `@tailwindcss/vite`     | ^4.x    | Tailwind Vite integration       | Yes (dev) |
 
 ---
 
@@ -70,6 +70,7 @@ The `anon` key is embedded in the frontend. This is by design - it only grants a
 ### Why?
 
 Industry-standard library for building component-based UIs. Chosen because:
+
 - Supabase has first-class React support.
 - Component model fits the ID card use case (reusable card templates).
 - Large ecosystem and community.
@@ -78,11 +79,11 @@ Industry-standard library for building component-based UIs. Chosen because:
 
 ```javascript
 // Hooks
-useState()         // Manage component state (forms, loading, errors, progress)
-useEffect()        // Side effects (data fetching on mount, auth listener)
-useRef()           // DOM references (for html2canvas to capture front + back)
-useCallback()      // Memoized callbacks (captureRef in BulkGenerator)
-forwardRef()       // Pass refs through component boundaries (all card templates)
+useState(); // Manage component state (forms, loading, errors, progress)
+useEffect(); // Side effects (data fetching on mount, auth listener)
+useRef(); // DOM references (for html2canvas to capture front + back)
+useCallback(); // Memoized callbacks (captureRef in BulkGenerator)
+forwardRef(); // Pass refs through component boundaries (all card templates)
 
 // Patterns
 // Conditional rendering (approved? -> show button)
@@ -109,22 +110,48 @@ Provides client-side routing without full page reloads. Essential for SPAs.
 
 ```javascript
 import {
-  BrowserRouter, Routes, Route, Navigate,
-  useNavigate, useLocation, Link
-} from 'react-router-dom';
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useLocation,
+  Link,
+} from "react-router-dom";
 
 // Router setup (App.jsx)
 <BrowserRouter>
   <Routes>
     <Route path="/login" element={<Login />} />
-    <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
-    <Route path="/generate" element={<ProtectedRoute><Generate /></ProtectedRoute>} />
-    <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+    <Route
+      path="/templates"
+      element={
+        <ProtectedRoute>
+          <Templates />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/generate"
+      element={
+        <ProtectedRoute>
+          <Generate />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/dashboard"
+      element={
+        <ProtectedRoute>
+          <Dashboard />
+        </ProtectedRoute>
+      }
+    />
   </Routes>
-</BrowserRouter>
+</BrowserRouter>;
 
 // State passing (Templates -> Generate)
-navigate('/generate', { state: { template, orgName, logoUrl, watermark } });
+navigate("/generate", { state: { template, orgName, logoUrl, watermark } });
 
 // Receiving state
 const { template, orgName } = location.state || {};
@@ -162,9 +189,9 @@ HTML5 Canvas (in-memory)
 import html2canvas from "html2canvas";
 
 const canvas = await html2canvas(domElement, {
-  scale: 2,              // 2x resolution (retina quality)
-  useCORS: true,         // Allow cross-origin / proxied images
-  backgroundColor: '#ffffff',
+  scale: 2, // 2x resolution (retina quality)
+  useCORS: true, // Allow cross-origin / proxied images
+  backgroundColor: "#ffffff",
   logging: false,
 });
 ```
@@ -188,28 +215,28 @@ Client-side PDF generation. Each ID card needs to be delivered as a 2-page PDF (
 ### How it's used:
 
 ```javascript
-import { jsPDF } from 'jspdf';
+import { jsPDF } from "jspdf";
 
 // Used via downloadHelpers.js:
 export function canvasesToPdfBlob(frontCanvas, backCanvas = null) {
-  const w = pxToMm(frontCanvas.width);   // Convert canvas px to mm
+  const w = pxToMm(frontCanvas.width); // Convert canvas px to mm
   const h = pxToMm(frontCanvas.height);
-  const orientation = w > h ? 'landscape' : 'portrait';
+  const orientation = w > h ? "landscape" : "portrait";
 
-  const pdf = new jsPDF({ orientation, unit: 'mm', format: [w, h] });
+  const pdf = new jsPDF({ orientation, unit: "mm", format: [w, h] });
 
   // Front page
-  pdf.addImage(frontCanvas.toDataURL('image/png'), 'PNG', 0, 0, w, h);
+  pdf.addImage(frontCanvas.toDataURL("image/png"), "PNG", 0, 0, w, h);
 
   // Back page (optional)
   if (backCanvas) {
     const bw = pxToMm(backCanvas.width);
     const bh = pxToMm(backCanvas.height);
-    pdf.addPage([bw, bh], bw > bh ? 'landscape' : 'portrait');
-    pdf.addImage(backCanvas.toDataURL('image/png'), 'PNG', 0, 0, bw, bh);
+    pdf.addPage([bw, bh], bw > bh ? "landscape" : "portrait");
+    pdf.addImage(backCanvas.toDataURL("image/png"), "PNG", 0, 0, bw, bh);
   }
 
-  return pdf.output('blob');
+  return pdf.output("blob");
 }
 ```
 
@@ -231,24 +258,24 @@ When generating bulk ID cards, each member gets a 2-page PDF. JSZip bundles all 
 ### How it's used:
 
 ```javascript
-import JSZip from 'jszip';
+import JSZip from "jszip";
 
 const zip = new JSZip();
-const folder = zip.folder('id_cards');
+const folder = zip.folder("id_cards");
 
 // During bulk generation loop:
 for (const member of members) {
   const pdfBlob = canvasesToPdfBlob(frontCanvas, backCanvas);
-  folder.file(safeFileName(member.name, index, 'pdf'), pdfBlob);
+  folder.file(safeFileName(member.name, index, "pdf"), pdfBlob);
 }
 
 // After all members processed:
 const zipBlob = await zip.generateAsync(
-  { type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } },
+  { type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } },
   (meta) => {
     // Progress callback - updates UI with compression percentage
-    setProgress(p => ({ ...p, zipPercent: Math.round(meta.percent) }));
-  }
+    setProgress((p) => ({ ...p, zipPercent: Math.round(meta.percent) }));
+  },
 );
 ```
 
@@ -270,10 +297,10 @@ Provides a cross-browser `saveAs()` function that reliably triggers file downloa
 ### How it's used:
 
 ```javascript
-import { saveAs } from 'file-saver';
+import { saveAs } from "file-saver";
 
-const zipBlob = await zip.generateAsync({ type: 'blob' });
-saveAs(zipBlob, 'aarannu_id_cards.zip');
+const zipBlob = await zip.generateAsync({ type: "blob" });
+saveAs(zipBlob, "aarannu_id_cards.zip");
 ```
 
 ### Why not just use `<a download>`?
@@ -295,15 +322,15 @@ Generates QR codes directly as React components, embedded inside IDCard template
 ### How it's used:
 
 ```jsx
-import { QRCodeCanvas } from 'qrcode.react';
+import { QRCodeCanvas } from "qrcode.react";
 
 <QRCodeCanvas
   value={verificationUrl}
   size={60}
   bgColor="transparent"
   fgColor="#1e293b"
-  level="M"              // Error correction level (Medium)
-/>
+  level="M" // Error correction level (Medium)
+/>;
 ```
 
 ### Key details:
@@ -326,21 +353,24 @@ Utility-first CSS framework that allows rapid UI development without writing cus
 ```html
 <!-- Responsive design -->
 <div class="grid grid-cols-1 md:grid-cols-3">
+  <!-- Tailwind v4 gradient syntax (NOT bg-gradient-to-*) -->
+  <div class="bg-linear-to-br from-blue-600 to-indigo-800">
+    <!-- Arbitrary values for exact specs -->
+    <span class="text-[10px]">Small</span>
+    <div class="w-[86mm] h-[54mm]">
+      <!-- ID card dimensions -->
 
-<!-- Tailwind v4 gradient syntax (NOT bg-gradient-to-*) -->
-<div class="bg-linear-to-br from-blue-600 to-indigo-800">
-
-<!-- Arbitrary values for exact specs -->
-<span class="text-[10px]">Small</span>
-<div class="w-[86mm] h-[54mm]">  <!-- ID card dimensions -->
-
-<!-- Dark theme -->
-<div class="bg-slate-900 text-white">
+      <!-- Dark theme -->
+      <div class="bg-slate-900 text-white"></div>
+    </div>
+  </div>
+</div>
 ```
 
 ### Important: Tailwind v4 syntax
 
 This project uses **Tailwind CSS v4**, which has breaking changes from v3:
+
 - `bg-gradient-to-*` is now `bg-linear-to-*`
 - `@apply` works differently
 - Configuration is in `index.css` via `@import "tailwindcss"`, not `tailwind.config.js`
@@ -349,7 +379,7 @@ This project uses **Tailwind CSS v4**, which has breaking changes from v3:
 
 ```javascript
 // vite.config.js
-import tailwindcss from '@tailwindcss/vite';
+import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
 });
@@ -361,3 +391,27 @@ export default defineConfig({
 ```
 
 The `@tailwindcss/vite` plugin integrates Tailwind directly into Vite's build pipeline - no separate PostCSS config needed.
+
+---
+
+## Role of Libraries in Card Customization & Orientation
+
+The card customization system (introduced in `09_CARD_CUSTOMIZATION.md`) leverages the existing library ecosystem without adding any new dependencies:
+
+| Feature              | Library Used                       | How                                           |
+| -------------------- | ---------------------------------- | --------------------------------------------- |
+| Color pickers        | Native HTML `<input type="color">` | No library needed — browser-native            |
+| Font selector        | Native HTML `<select>`             | System fonts, no font-loading library         |
+| Border radius slider | Native HTML `<input type="range">` | CSS `borderRadius` via inline styles          |
+| Orientation switch   | React state + Tailwind             | `isVertical` toggles classes/inline styles    |
+| Real-time preview    | React (re-render on state change)  | `cardStyles` state triggers instant re-render |
+| PDF orientation      | jsPDF                              | Existing `w > h` check auto-detects portrait  |
+| Capture styled cards | html2canvas                        | Captures inline styles + Tailwind classes     |
+| Bulk export          | JSZip + file-saver                 | Unchanged — works with any card dimensions    |
+
+**Key principle:** The customization system uses **zero additional dependencies**. All visual customization is achieved through:
+
+- CSS inline styles (`style={{ backgroundColor: ... }}`)
+- Tailwind utility classes (conditional via template literals)
+- Native HTML form controls (color, range, select)
+- React state management (`useState`, functional updates)

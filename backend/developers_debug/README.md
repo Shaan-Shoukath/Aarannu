@@ -18,6 +18,7 @@ Internal documentation for the Aarannu Community ID Platform backend.
 | 06  | [06_EXPIRY_LOGIC.md](06_EXPIRY_LOGIC.md)                   | 15-day expiry enforcement                                                         |
 | 07  | [07_LIBRARIES_USED.md](07_LIBRARIES_USED.md)               | Every dependency explained                                                        |
 | 08  | [08_PRODUCTION_DEPLOYMENT.md](08_PRODUCTION_DEPLOYMENT.md) | Deployment, HTTPS, logging, scaling                                               |
+| 09  | [09_CARD_CUSTOMIZATION.md](09_CARD_CUSTOMIZATION.md)       | Frontend card styling/orientation — backend impact analysis                       |
 
 ---
 

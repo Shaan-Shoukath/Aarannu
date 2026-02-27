@@ -72,6 +72,38 @@ export default function Generate() {
   const [previewData, setPreviewData] = useState(null);
   const [showBack, setShowBack] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [downloadStatus, setDownloadStatus] = useState(""); // status message for download
+
+  // Gradient colors
+  const [gradientStart, setGradientStart] = useState(
+    ["corporate", "custom"].includes(templateId)
+      ? "#1152d4"
+      : templateId === "student"
+        ? "#f97316"
+        : "#f59e0b",
+  );
+  const [gradientEnd, setGradientEnd] = useState(
+    ["corporate", "custom"].includes(templateId)
+      ? "#ef4444"
+      : templateId === "student"
+        ? "#9333ea"
+        : "#6366f1",
+  );
+  const gradientColors = { start: gradientStart, end: gradientEnd };
+
+  // Card styling customization
+  const [cardStyles, setCardStyles] = useState({
+    bgColor: templateId === "event" ? "#1e1b4b" : "#ffffff",
+    fontColor: templateId === "event" ? "#e0e7ff" : "#1e293b",
+    fontFamily: "'Public Sans', sans-serif",
+    accentColor: templateId === "event" ? "#818cf8" : "#64748b",
+    borderRadius: 12,
+  });
+  const handleStyleChange = (key, value) =>
+    setCardStyles((prev) => ({ ...prev, [key]: value }));
+
+  // Card orientation: "horizontal" (landscape CR-80) or "vertical" (portrait)
+  const [orientation, setOrientation] = useState("horizontal");
 
   // Refs for single-card download capture
   const previewFrontRef = useRef(null);
@@ -109,6 +141,18 @@ export default function Generate() {
     event: "Event Access",
     student: "Student ID",
   };
+
+  /** Available font families for card styling */
+  const FONT_FAMILIES = [
+    { value: "'Public Sans', sans-serif", label: "Public Sans" },
+    { value: "Inter, sans-serif", label: "Inter" },
+    { value: "Arial, sans-serif", label: "Arial" },
+    { value: "Georgia, serif", label: "Georgia" },
+    { value: "'Times New Roman', serif", label: "Times New Roman" },
+    { value: "'Courier New', monospace", label: "Courier New" },
+    { value: "Verdana, sans-serif", label: "Verdana" },
+    { value: "'Trebuchet MS', sans-serif", label: "Trebuchet MS" },
+  ];
 
   const checkAccess = async () => {
     setLoading(true);
@@ -242,22 +286,28 @@ export default function Generate() {
   const handleDownloadPdf = async () => {
     if (!previewData) return;
     setDownloading(true);
+    setDownloadStatus("Capturing front side...");
     try {
       const frontCanvas = await captureRef(previewFrontRef);
+      if (!frontCanvas) throw new Error("Failed to capture front side");
+      setDownloadStatus("Capturing back side...");
       const backCanvas = await captureRef(previewBackRef);
+      setDownloadStatus("Building PDF...");
       const blob = canvasesToPdfBlob(frontCanvas, backCanvas);
       const safeName = (previewData.name || "id-card").replace(
         /[^a-zA-Z0-9]/g,
         "_",
       );
       downloadBlob(blob, `${safeName}_ID.pdf`);
-
-      // Also store in Supabase for Dashboard access
+      setDownloadStatus("Uploading to cloud...");
       await uploadCardToSupabase(frontCanvas, previewData.name);
+      setDownloadStatus("Done!");
     } catch (err) {
       console.error("PDF download failed:", err);
+      setDownloadStatus(`Error: ${err.message}`);
     } finally {
       setDownloading(false);
+      setTimeout(() => setDownloadStatus(""), 3000);
     }
   };
 
@@ -265,9 +315,12 @@ export default function Generate() {
   const handleDownloadJpeg = async () => {
     if (!previewData) return;
     setDownloading(true);
+    setDownloadStatus("Capturing card...");
     try {
       const ref = showBack ? previewBackRef : previewFrontRef;
       const canvas = await captureRef(ref);
+      if (!canvas) throw new Error("Failed to capture card");
+      setDownloadStatus("Converting to JPEG...");
       const blob = await canvasToJpegBlob(canvas);
       const safeName = (previewData.name || "id-card").replace(
         /[^a-zA-Z0-9]/g,
@@ -275,18 +328,54 @@ export default function Generate() {
       );
       const side = showBack ? "back" : "front";
       downloadBlob(blob, `${safeName}_${side}.jpg`);
-
-      // Upload front side to Supabase (reuse canvas if already front, else capture)
+      setDownloadStatus("Uploading to cloud...");
       if (!showBack) {
         await uploadCardToSupabase(canvas, previewData.name);
       } else {
         const frontCanvas = await captureRef(previewFrontRef);
         await uploadCardToSupabase(frontCanvas, previewData.name);
       }
+      setDownloadStatus("Done!");
     } catch (err) {
       console.error("JPEG download failed:", err);
+      setDownloadStatus(`Error: ${err.message}`);
     } finally {
       setDownloading(false);
+      setTimeout(() => setDownloadStatus(""), 3000);
+    }
+  };
+
+  /** Download the currently visible side as a PNG. */
+  const handleDownloadPng = async () => {
+    if (!previewData) return;
+    setDownloading(true);
+    setDownloadStatus("Capturing card...");
+    try {
+      const ref = showBack ? previewBackRef : previewFrontRef;
+      const canvas = await captureRef(ref);
+      if (!canvas) throw new Error("Failed to capture card");
+      setDownloadStatus("Converting to PNG...");
+      const blob = await canvasToPngBlob(canvas);
+      const safeName = (previewData.name || "id-card").replace(
+        /[^a-zA-Z0-9]/g,
+        "_",
+      );
+      const side = showBack ? "back" : "front";
+      downloadBlob(blob, `${safeName}_${side}.png`);
+      setDownloadStatus("Uploading to cloud...");
+      if (!showBack) {
+        await uploadCardToSupabase(canvas, previewData.name);
+      } else {
+        const frontCanvas = await captureRef(previewFrontRef);
+        await uploadCardToSupabase(frontCanvas, previewData.name);
+      }
+      setDownloadStatus("Done!");
+    } catch (err) {
+      console.error("PNG download failed:", err);
+      setDownloadStatus(`Error: ${err.message}`);
+    } finally {
+      setDownloading(false);
+      setTimeout(() => setDownloadStatus(""), 3000);
     }
   };
 
@@ -526,7 +615,7 @@ export default function Generate() {
   }
 
   /** Render the correct card component based on selected template */
-  const renderCard = (data, ref = null, back = showBack) => {
+  const renderCard = (data, ref = null, back = showBack, side = undefined) => {
     const props = {
       data,
       showBack: back,
@@ -535,6 +624,10 @@ export default function Generate() {
       ref,
       customFields: customFieldDefs,
       watermark,
+      gradientColors,
+      renderSide: side,
+      cardStyles,
+      orientation,
     };
     switch (templateId) {
       case "corporate":
@@ -913,6 +1006,301 @@ export default function Generate() {
 
             <hr className="border-slate-200" />
 
+            {/* Section 3b: Gradient Colors */}
+            <div className="space-y-4">
+              <h2 className="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-2 flex items-center gap-2">
+                <svg
+                  className="w-4 h-4 text-pink-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+                  />
+                </svg>
+                Card Gradient Colors
+              </h2>
+              <div className="flex gap-3 items-end">
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    Start Color
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={gradientStart}
+                      onChange={(e) => setGradientStart(e.target.value)}
+                      className="w-10 h-10 rounded-lg border border-slate-300 cursor-pointer p-0.5"
+                    />
+                    <input
+                      type="text"
+                      value={gradientStart}
+                      onChange={(e) => setGradientStart(e.target.value)}
+                      className="flex-1 rounded-lg border border-slate-300 bg-slate-50 text-xs font-mono focus:border-pink-500 focus:ring-pink-500 py-2 px-2 outline-none uppercase"
+                      maxLength={7}
+                    />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    End Color
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={gradientEnd}
+                      onChange={(e) => setGradientEnd(e.target.value)}
+                      className="w-10 h-10 rounded-lg border border-slate-300 cursor-pointer p-0.5"
+                    />
+                    <input
+                      type="text"
+                      value={gradientEnd}
+                      onChange={(e) => setGradientEnd(e.target.value)}
+                      className="flex-1 rounded-lg border border-slate-300 bg-slate-50 text-xs font-mono focus:border-pink-500 focus:ring-pink-500 py-2 px-2 outline-none uppercase"
+                      maxLength={7}
+                    />
+                  </div>
+                </div>
+              </div>
+              {/* Gradient preview */}
+              <div
+                className="h-6 rounded-lg border border-slate-200 overflow-hidden"
+                style={{
+                  background: `linear-gradient(to right, ${gradientStart}, ${gradientEnd})`,
+                }}
+              />
+              <p className="text-[10px] text-slate-400 leading-relaxed">
+                These colors control the decorative gradients on your ID cards.
+                Click the color swatch or type a hex code.
+              </p>
+            </div>
+
+            <hr className="border-slate-200" />
+
+            {/* Section: Card Orientation */}
+            <div className="space-y-4">
+              <h2 className="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-2 flex items-center gap-2">
+                <svg
+                  className="w-4 h-4 text-teal-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
+                  />
+                </svg>
+                Card Orientation
+              </h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setOrientation("horizontal")}
+                  className={`flex-1 py-2.5 px-3 rounded-lg border text-xs font-medium flex items-center justify-center gap-2 transition-colors ${
+                    orientation === "horizontal"
+                      ? "border-teal-500 bg-teal-50 text-teal-700"
+                      : "border-slate-300 text-slate-500 hover:bg-slate-50"
+                  }`}
+                >
+                  <svg
+                    className="w-5 h-3"
+                    viewBox="0 0 20 12"
+                    fill="currentColor"
+                  >
+                    <rect width="20" height="12" rx="2" />
+                  </svg>
+                  Horizontal
+                </button>
+                <button
+                  onClick={() => setOrientation("vertical")}
+                  className={`flex-1 py-2.5 px-3 rounded-lg border text-xs font-medium flex items-center justify-center gap-2 transition-colors ${
+                    orientation === "vertical"
+                      ? "border-teal-500 bg-teal-50 text-teal-700"
+                      : "border-slate-300 text-slate-500 hover:bg-slate-50"
+                  }`}
+                >
+                  <svg
+                    className="w-3 h-5"
+                    viewBox="0 0 12 20"
+                    fill="currentColor"
+                  >
+                    <rect width="12" height="20" rx="2" />
+                  </svg>
+                  Vertical
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-400 leading-relaxed">
+                Choose landscape (standard CR-80) or portrait orientation for
+                all generated cards.
+              </p>
+            </div>
+
+            <hr className="border-slate-200" />
+
+            {/* Section: Card Styling */}
+            <div className="space-y-4">
+              <h2 className="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-2 flex items-center gap-2">
+                <svg
+                  className="w-4 h-4 text-amber-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                  />
+                </svg>
+                Card Styling
+              </h2>
+
+              {/* Background Color */}
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Background Color
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={cardStyles.bgColor}
+                    onChange={(e) =>
+                      handleStyleChange("bgColor", e.target.value)
+                    }
+                    className="w-10 h-10 rounded-lg border border-slate-300 cursor-pointer p-0.5"
+                  />
+                  <input
+                    type="text"
+                    value={cardStyles.bgColor}
+                    onChange={(e) =>
+                      handleStyleChange("bgColor", e.target.value)
+                    }
+                    className="flex-1 rounded-lg border border-slate-300 bg-slate-50 text-xs font-mono focus:border-amber-500 focus:ring-amber-500 py-2 px-2 outline-none uppercase"
+                    maxLength={7}
+                  />
+                </div>
+              </div>
+
+              {/* Text Color */}
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Text Color
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={cardStyles.fontColor}
+                    onChange={(e) =>
+                      handleStyleChange("fontColor", e.target.value)
+                    }
+                    className="w-10 h-10 rounded-lg border border-slate-300 cursor-pointer p-0.5"
+                  />
+                  <input
+                    type="text"
+                    value={cardStyles.fontColor}
+                    onChange={(e) =>
+                      handleStyleChange("fontColor", e.target.value)
+                    }
+                    className="flex-1 rounded-lg border border-slate-300 bg-slate-50 text-xs font-mono focus:border-amber-500 focus:ring-amber-500 py-2 px-2 outline-none uppercase"
+                    maxLength={7}
+                  />
+                </div>
+              </div>
+
+              {/* Accent Color */}
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Label / Accent Color
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={cardStyles.accentColor}
+                    onChange={(e) =>
+                      handleStyleChange("accentColor", e.target.value)
+                    }
+                    className="w-10 h-10 rounded-lg border border-slate-300 cursor-pointer p-0.5"
+                  />
+                  <input
+                    type="text"
+                    value={cardStyles.accentColor}
+                    onChange={(e) =>
+                      handleStyleChange("accentColor", e.target.value)
+                    }
+                    className="flex-1 rounded-lg border border-slate-300 bg-slate-50 text-xs font-mono focus:border-amber-500 focus:ring-amber-500 py-2 px-2 outline-none uppercase"
+                    maxLength={7}
+                  />
+                </div>
+              </div>
+
+              {/* Font Family */}
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Font Family
+                </label>
+                <select
+                  value={cardStyles.fontFamily}
+                  onChange={(e) =>
+                    handleStyleChange("fontFamily", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-amber-500 focus:ring-amber-500 py-2 px-3 outline-none"
+                >
+                  {FONT_FAMILIES.map((f) => (
+                    <option key={f.value} value={f.value}>
+                      {f.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Border Radius */}
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Corner Radius: {cardStyles.borderRadius}px
+                </label>
+                <input
+                  type="range"
+                  min={0}
+                  max={24}
+                  value={cardStyles.borderRadius}
+                  onChange={(e) =>
+                    handleStyleChange(
+                      "borderRadius",
+                      parseInt(e.target.value, 10),
+                    )
+                  }
+                  className="w-full accent-amber-500"
+                />
+              </div>
+
+              {/* Preview swatch */}
+              <div
+                className="h-10 rounded-lg border border-slate-200 flex items-center justify-center text-sm"
+                style={{
+                  backgroundColor: cardStyles.bgColor,
+                  color: cardStyles.fontColor,
+                  fontFamily: cardStyles.fontFamily,
+                  borderRadius: `${cardStyles.borderRadius}px`,
+                }}
+              >
+                Preview Text
+              </div>
+
+              <p className="text-[10px] text-slate-400 leading-relaxed">
+                Customize the card appearance. Background, text, and accent
+                colors apply to all cards in this session.
+              </p>
+            </div>
+
+            <hr className="border-slate-200" />
+
             {/* Section 4: Custom Fields */}
             <div className="space-y-4">
               <h2 className="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-2 flex items-center gap-2">
@@ -1136,7 +1524,7 @@ export default function Generate() {
                 </div>
 
                 {/* Download buttons */}
-                <div className="flex items-center justify-center gap-3">
+                <div className="flex items-center justify-center gap-3 flex-wrap">
                   <button
                     onClick={handleDownloadPdf}
                     disabled={downloading}
@@ -1165,22 +1553,61 @@ export default function Generate() {
                     </svg>
                     {downloading ? "Processing…" : "Download JPEG"}
                   </button>
+                  <button
+                    onClick={handleDownloadPng}
+                    disabled={downloading}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                  >
+                    <svg
+                      className="w-3.5 h-3.5"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
+                    </svg>
+                    {downloading ? "Processing…" : "Download PNG"}
+                  </button>
                 </div>
+                {/* Download status bar */}
+                {downloadStatus && (
+                  <div
+                    className={`text-center text-xs font-medium py-1.5 px-3 rounded-lg border ${
+                      downloadStatus.startsWith("Error")
+                        ? "bg-red-50 text-red-600 border-red-200"
+                        : downloadStatus === "Done!"
+                          ? "bg-green-50 text-green-600 border-green-200"
+                          : "bg-blue-50 text-blue-600 border-blue-200"
+                    }`}
+                  >
+                    {downloadStatus.startsWith("Error")
+                      ? ""
+                      : downloadStatus === "Done!"
+                        ? "✓ "
+                        : "⏳ "}
+                    {downloadStatus}
+                  </div>
+                )}
                 <p className="text-[10px] text-slate-400 text-center">
-                  PDF includes front &amp; back · JPEG downloads the currently
-                  visible side
+                  PDF includes front &amp; back · JPEG/PNG downloads the
+                  currently visible side
                 </p>
 
-                {/* Hidden off-screen captures for PDF (front + back) */}
+                {/* Hidden off-screen captures for PDF (front + back separately) */}
                 <div
-                  className="fixed -left-full top-0 pointer-events-none"
+                  style={{
+                    position: "absolute",
+                    left: "-9999px",
+                    top: 0,
+                    zIndex: -1,
+                    pointerEvents: "none",
+                  }}
                   aria-hidden="true"
                 >
                   <div ref={previewFrontRef}>
-                    {renderCard(previewData, null, false)}
+                    {renderCard(previewData, null, false, "front")}
                   </div>
                   <div ref={previewBackRef}>
-                    {renderCard(previewData, null, true)}
+                    {renderCard(previewData, null, true, "back")}
                   </div>
                 </div>
               </div>
@@ -1266,6 +1693,9 @@ export default function Generate() {
                   logoUrl={logoUrl}
                   customFields={customFieldDefs}
                   watermark={watermark}
+                  gradientColors={gradientColors}
+                  cardStyles={cardStyles}
+                  orientation={orientation}
                 />
               </div>
             )}

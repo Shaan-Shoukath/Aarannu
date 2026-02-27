@@ -306,3 +306,51 @@ const zipBlob = await zip.generateAsync(
 - Single card PDF: ~150-300 KB (depends on photo)
 - 50-card ZIP: ~10-15 MB
 - 200-card ZIP: ~40-60 MB (max daily batch)
+
+---
+
+## Impact of Card Customization & Orientation on Downloads
+
+### Orientation-Aware PDF Generation
+
+The `canvasesToPdfBlob()` function in `downloadHelpers.js` automatically handles vertical cards:
+
+```javascript
+const w = pxToMm(frontCanvas.width); // narrower for vertical
+const h = pxToMm(frontCanvas.height); // taller for vertical
+const orientation = w > h ? "landscape" : "portrait"; // auto-detects
+
+const pdf = new jsPDF({ orientation, unit: "mm", format: [w, h] });
+```
+
+- **Horizontal cards** → `w > h` → landscape PDF page
+- **Vertical cards** → `w < h` → portrait PDF page
+- **No code changes needed** — the existing math is orientation-agnostic
+
+### Custom Styling Capture
+
+All card styling (bgColor, fontColor, fontFamily, accent, borderRadius) is applied via inline CSS `style={}` attributes. html2canvas captures these accurately:
+
+```
+Card Component (React)
+    │  style={{ backgroundColor: '#1e1b4b', fontFamily: 'Georgia' }}
+    │
+    ▼  html2canvas reads computed styles
+    │
+Canvas (in-memory)  → All custom colors/fonts baked into pixels
+    │
+    ▼
+PNG/PDF → Final output reflects all customization
+```
+
+**Important:** System fonts are used exclusively to ensure html2canvas can always render text. Web fonts (Google Fonts) would risk capture failures if the font hasn't loaded when html2canvas runs.
+
+### File Size Impact
+
+| Customization        | Size Impact | Why                                          |
+| -------------------- | ----------- | -------------------------------------------- |
+| Custom bg color      | Negligible  | Flat colors compress well in PNG             |
+| Gradient colors      | Negligible  | Gradients are few pixels of SVG overlay      |
+| Font family          | None        | Text is rasterized, font doesn't affect size |
+| Border radius        | None        | CSS property, no extra pixels                |
+| Vertical orientation | Similar     | Same total pixel area as horizontal          |

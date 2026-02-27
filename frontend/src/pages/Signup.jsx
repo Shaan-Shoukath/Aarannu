@@ -73,7 +73,30 @@ export default function Signup() {
       // Save user ID for member insert after OTP verification
       setSignupUserId(authData.user.id);
 
-      // 2. Send OTP to email for verification
+      // If email confirmation is disabled (autoconfirm), session is already active.
+      // Skip OTP step and insert member directly.
+      if (authData.session) {
+        const userId = authData.user.id;
+        const { error: memberError } = await supabase.from("members").insert({
+          user_id: userId,
+          name: name.trim(),
+          role: role.trim() || "Member",
+          approved: true,
+        });
+
+        if (memberError && memberError.code !== "23505") {
+          setError(
+            "Account created but profile setup failed. Please contact admin.",
+          );
+          console.error("Member insert error:", memberError);
+          return;
+        }
+
+        setSuccess(true);
+        return;
+      }
+
+      // 2. Send OTP to email for verification (when email confirmation is ON)
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email: email.trim(),
       });

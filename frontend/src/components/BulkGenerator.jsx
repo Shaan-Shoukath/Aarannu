@@ -49,6 +49,15 @@ export default function BulkGenerator({
   logoUrl = "",
   customFields = [],
   watermark = {},
+  gradientColors = { start: "#1152d4", end: "#ef4444" },
+  cardStyles = {
+    bgColor: "#ffffff",
+    fontColor: "#1e293b",
+    fontFamily: "'Public Sans', sans-serif",
+    accentColor: "#64748b",
+    borderRadius: 12,
+  },
+  orientation = "horizontal",
 }) {
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState({
@@ -631,7 +640,13 @@ export default function BulkGenerator({
 
       {/* ─── Off-screen card renderers (front + back) ─── */}
       <div
-        className="fixed -left-full top-0 pointer-events-none"
+        style={{
+          position: "absolute",
+          left: "-9999px",
+          top: 0,
+          zIndex: -1,
+          pointerEvents: "none",
+        }}
         aria-hidden="true"
       >
         <div ref={frontRef}>
@@ -642,6 +657,10 @@ export default function BulkGenerator({
             logoUrl={logoUrl}
             customFields={customFields}
             watermark={watermark}
+            gradientColors={gradientColors}
+            cardStyles={cardStyles}
+            orientation={orientation}
+            renderSide="front"
           />
         </div>
         <div ref={backRef}>
@@ -652,6 +671,10 @@ export default function BulkGenerator({
             logoUrl={logoUrl}
             customFields={customFields}
             watermark={watermark}
+            gradientColors={gradientColors}
+            cardStyles={cardStyles}
+            orientation={orientation}
+            renderSide="back"
           />
         </div>
       </div>

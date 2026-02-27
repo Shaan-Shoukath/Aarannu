@@ -67,6 +67,27 @@ User navigates to /templates
       { template, orgName, logoUrl, watermark }
 ```
 
+### Card Customization & Orientation (Generate Page)
+
+```
+User lands on Generate page
+  -> Sidebar sections for customization:
+     1. Gradient Colors → picks start + end colors (swatches + hex inputs)
+     2. Card Orientation → toggles Horizontal / Vertical (button group)
+     3. Card Styling:
+        - Background Color (color picker + hex)
+        - Text Color (color picker + hex)
+        - Label / Accent Color (color picker + hex)
+        - Font Family (dropdown: 8 system fonts)
+        - Corner Radius (range slider 0-24px)
+  -> All changes instantly re-render the live preview
+  -> State objects passed downstream:
+      cardStyles:     { bgColor, fontColor, fontFamily, accentColor, borderRadius }
+      orientation:    "horizontal" | "vertical"
+      gradientColors: { start, end }
+  -> Passed to: renderCard() → CardComponent, BulkGenerator
+```
+
 ### ID Card Generation (Single)
 
 ```
@@ -213,6 +234,10 @@ src/
 - **PDF delivery via jsPDF** - Each card becomes a 2-page PDF (front + back). For bulk, all PDFs are zipped. For single preview, PDF downloads instantly.
 - **Watermark is optional** - Templates page has a collapsed watermark config section with toggle. When disabled, `watermark: null` is passed downstream.
 - **Custom fields are dynamic** - Users define field label + side (front/back) at runtime. Google Sheets extra columns auto-register as custom fields.
+- **Card customization (bgColor, fontColor, fontFamily, accentColor, borderRadius)** — All card visual properties are controlled via a `cardStyles` state object in `Generate.jsx`, passed as a prop to every card component. Uses inline `style={}` for bg/font/radius and Tailwind classes for layout. See `09_CARD_CUSTOMIZATION.md` for full details.
+- **Horizontal / Vertical orientation** — A single `orientation` state (`"horizontal"` | `"vertical"`) switches every card between landscape (85.6 × 53.98 mm) and portrait (53.98 × 85.6 mm). Each card component derives `isVertical` and adjusts flex direction, sizing, and aspect ratio conditionally. Same component handles both layouts (no separate vertical components).
+- **Gradient color picker** — Two color swatches + hex inputs (start/end) in the sidebar control the decorative gradient overlays on all 4 templates. State in `Generate.jsx` (`gradientStart`/`gradientEnd`) → `gradientColors` prop → card SVGs/backgrounds.
+- **System fonts only** — 8 curated system fonts (Public Sans, Inter, Arial, Georgia, etc.) ensure html2canvas captures them reliably — no web font loading failures.
 - **Single-card uploads to Supabase** - Both PDF and JPEG downloads also upload the front PNG to Supabase Storage + insert a `generated_ids` row, so every card appears in the Dashboard.
 - **Column mapping for Sheets import** - 2-phase flow: Phase 1 fetches CSV and shows auto-guessed mapping UI; Phase 2 confirms mappings and imports. Unmapped columns become custom fields automatically.
 - **Image preloading before capture** - `captureRef()` waits for all `<img>` elements inside the card to finish loading before calling `html2canvas`, preventing blank photos.
