@@ -3,6 +3,7 @@ import html2canvas from "html2canvas";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { supabase } from "../lib/supabaseClient";
+import { fixOklabColors } from "../utils/fixOklabColors";
 import {
   canvasesToPdfBlob,
   canvasToPngBlob,
@@ -58,6 +59,7 @@ export default function BulkGenerator({
     borderRadius: 12,
   },
   orientation = "horizontal",
+  validityText = "Valid for 15 days from issue",
 }) {
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState({
@@ -115,12 +117,19 @@ export default function BulkGenerator({
       ),
     );
 
-    return html2canvas(ref.current, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      logging: false,
-    });
+    // Fix Tailwind v4 oklab() colors that html2canvas can't parse
+    const restoreColors = fixOklabColors(ref.current);
+    try {
+      const canvas = await html2canvas(ref.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+      });
+      return canvas;
+    } finally {
+      restoreColors();
+    }
   };
 
   /** Check how many cards this user uploaded today */
@@ -140,207 +149,219 @@ export default function BulkGenerator({
 
   /** Generate cards -> upload PNGs to Supabase + build ZIP of PDFs */
   const handleGenerate = useCallback(async () => {
-    // ── 0. Queue size check ──
-    if (members.length > MAX_QUEUE_SIZE) {
-      setError(
-        `Queue too large (${members.length}). Maximum ${MAX_QUEUE_SIZE} members per session.`,
-      );
-      return;
-    }
-
-    // ── 1. Check daily limit ──
-    const { used, err: usageErr } = await checkDailyUsage();
-    if (usageErr) {
-      setError(`Could not check daily usage: ${usageErr}`);
-      return;
-    }
-    const remaining = DAILY_LIMIT - used;
-    if (remaining <= 0) {
-      setError(
-        `Daily limit reached (${DAILY_LIMIT} cards/day). Please try again tomorrow.`,
-      );
-      return;
-    }
-    const toProcess = Math.min(members.length, remaining);
-    if (toProcess < members.length) {
-      setError(
-        `Only ${remaining} of ${members.length} cards will be processed (daily limit: ${DAILY_LIMIT}).`,
-      );
-    }
-
-    setGenerating(true);
-    setResults([]);
-    setLiveLog([]);
-    setError("");
-    cancelRef.current = false;
-    const startTime = Date.now();
-    setProgress({
-      current: 0,
-      total: toProcess,
-      phase: "Generating",
-      step: "",
-      zipPercent: null,
-      startedAt: startTime,
-    });
-
-    const newResults = [];
-    const zip = new JSZip();
-    const pdfFolder = zip.folder("id-cards");
-
-    // ── 2. Render, upload & collect PDFs ──
-    for (let i = 0; i < toProcess; i++) {
-      if (cancelRef.current) {
-        newResults.push({ name: "—", success: false, error: "Cancelled" });
-        setLiveLog((prev) => [
-          ...prev,
-          {
-            name: "—",
-            status: "cancelled",
-            time: ((Date.now() - startTime) / 1000).toFixed(1),
-          },
-        ]);
-        break;
-      }
-
-      const member = members[i];
-      setCurrentMember(member);
-      setProgress((prev) => ({ ...prev, current: i + 1, step: "capture" }));
-
-      const cardStart = Date.now();
-
-      try {
-        // Capture front + back canvases
-        setProgress((prev) => ({ ...prev, step: "capture" }));
-        const frontCanvas = await captureRef(frontRef);
-        const backCanvas = await captureRef(backRef);
-
-        // Upload front PNG to Supabase (for Dashboard signed-URL access)
-        setProgress((prev) => ({ ...prev, step: "upload" }));
-        const pngBlob = await canvasToPngBlob(frontCanvas);
-        const filePath = buildFilePath(userId, member.name);
-
-        const { error: uploadError } = await supabase.storage
-          .from("id-cards")
-          .upload(filePath, pngBlob, {
-            contentType: "image/png",
-            upsert: false,
-          });
-
-        if (uploadError) {
-          newResults.push({
-            name: member.name,
-            success: false,
-            error: uploadError.message,
-          });
-          setLiveLog((prev) => [
-            ...prev,
-            {
-              name: member.name,
-              status: "failed",
-              detail: "Upload: " + uploadError.message,
-              time: ((Date.now() - startTime) / 1000).toFixed(1),
-            },
-          ]);
-          continue;
-        }
-
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 15);
-
-        const { error: insertError } = await supabase
-          .from("generated_ids")
-          .insert({
-            user_id: userId,
-            file_url: filePath,
-            expires_at: expiresAt.toISOString(),
-          });
-
-        if (insertError) {
-          newResults.push({
-            name: member.name,
-            success: false,
-            error: insertError.message,
-          });
-          setLiveLog((prev) => [
-            ...prev,
-            {
-              name: member.name,
-              status: "failed",
-              detail: "DB: " + insertError.message,
-              time: ((Date.now() - startTime) / 1000).toFixed(1),
-            },
-          ]);
-          continue;
-        }
-
-        // Build 2-page PDF (front + back) and add to ZIP
-        setProgress((prev) => ({ ...prev, step: "pdf" }));
-        const pdfBlob = canvasesToPdfBlob(frontCanvas, backCanvas);
-        pdfFolder.file(safeFileName(member.name, i, "pdf"), pdfBlob);
-
-        const cardTime = ((Date.now() - cardStart) / 1000).toFixed(1);
-        newResults.push({ name: member.name, success: true });
-        setLiveLog((prev) => [
-          ...prev,
-          { name: member.name, status: "ok", time: cardTime },
-        ]);
-      } catch (err) {
-        newResults.push({
-          name: member.name,
-          success: false,
-          error: err.message,
-        });
-        setLiveLog((prev) => [
-          ...prev,
-          {
-            name: member.name,
-            status: "failed",
-            detail: err.message,
-            time: ((Date.now() - startTime) / 1000).toFixed(1),
-          },
-        ]);
-      }
-
-      // Yield to UI every batch
-      if ((i + 1) % BATCH_SIZE === 0) {
-        await new Promise((r) => setTimeout(r, 50));
-      }
-    }
-
-    // ── 3. Compress & download ZIP of PDFs ──
-    const okCount = newResults.filter((r) => r.success).length;
-    if (okCount > 0 && !cancelRef.current) {
-      setProgress((prev) => ({
-        ...prev,
-        phase: "Compressing ZIP",
-        step: "zip",
-      }));
-      try {
-        const zipBlob = await zip.generateAsync(
-          {
-            type: "blob",
-            compression: "DEFLATE",
-            compressionOptions: { level: 6 },
-          },
-          (meta) =>
-            setProgress((prev) => ({
-              ...prev,
-              zipPercent: Math.round(meta.percent),
-            })),
+    try {
+      // ── 0. Queue size check ──
+      if (members.length > MAX_QUEUE_SIZE) {
+        setError(
+          `Queue too large (${members.length}). Maximum ${MAX_QUEUE_SIZE} members per session.`,
         );
-        saveAs(zipBlob, `id-cards-${templateId}-${Date.now()}.zip`);
-        setProgress((prev) => ({ ...prev, phase: "Done", step: "done" }));
-      } catch (zipErr) {
-        setError(`ZIP creation failed: ${zipErr.message}`);
+        return;
       }
-    } else {
-      setProgress((prev) => ({ ...prev, phase: "Done", step: "done" }));
-    }
 
-    setResults(newResults);
-    setGenerating(false);
-    setCurrentMember(null);
-    if (onComplete) onComplete(newResults);
+      // ── 1. Check daily limit (non-fatal – default to allowing if check fails) ──
+      let remaining = members.length;
+      try {
+        const { used, err: usageErr } = await checkDailyUsage();
+        if (usageErr) {
+          console.warn("Daily usage check failed:", usageErr);
+          // Continue anyway – don't block generation for a usage-check failure
+        } else {
+          remaining = DAILY_LIMIT - (used || 0);
+        }
+      } catch (usageCheckErr) {
+        console.warn("Daily usage check threw:", usageCheckErr);
+        // Continue anyway
+      }
+
+      if (remaining <= 0) {
+        setError(
+          `Daily limit reached (${DAILY_LIMIT} cards/day). Please try again tomorrow.`,
+        );
+        return;
+      }
+      const toProcess = Math.min(members.length, remaining);
+      if (toProcess < members.length) {
+        setError(
+          `Only ${remaining} of ${members.length} cards will be processed (daily limit: ${DAILY_LIMIT}).`,
+        );
+      }
+
+      setGenerating(true);
+      setResults([]);
+      setLiveLog([]);
+      setError("");
+      cancelRef.current = false;
+      const startTime = Date.now();
+      setProgress({
+        current: 0,
+        total: toProcess,
+        phase: "Generating",
+        step: "",
+        zipPercent: null,
+        startedAt: startTime,
+      });
+
+      const newResults = [];
+      const zip = new JSZip();
+      const pdfFolder = zip.folder("id-cards");
+
+      // ── 2. Render, upload & collect PDFs ──
+      for (let i = 0; i < toProcess; i++) {
+        if (cancelRef.current) {
+          newResults.push({ name: "—", success: false, error: "Cancelled" });
+          setLiveLog((prev) => [
+            ...prev,
+            {
+              name: "—",
+              status: "cancelled",
+              time: ((Date.now() - startTime) / 1000).toFixed(1),
+            },
+          ]);
+          break;
+        }
+
+        const member = members[i];
+        setCurrentMember(member);
+        setProgress((prev) => ({ ...prev, current: i + 1, step: "capture" }));
+
+        const cardStart = Date.now();
+
+        try {
+          // Capture front + back canvases
+          setProgress((prev) => ({ ...prev, step: "capture" }));
+          const frontCanvas = await captureRef(frontRef);
+          const backCanvas = await captureRef(backRef);
+
+          // Upload front PNG to Supabase (for Dashboard signed-URL access)
+          setProgress((prev) => ({ ...prev, step: "upload" }));
+          const pngBlob = await canvasToPngBlob(frontCanvas);
+          const filePath = buildFilePath(userId, member.name);
+
+          // Build 2-page PDF (front + back) and add to ZIP FIRST
+          // so local download always works even if cloud upload fails
+          setProgress((prev) => ({ ...prev, step: "pdf" }));
+          const pdfBlob = canvasesToPdfBlob(frontCanvas, backCanvas);
+          pdfFolder.file(safeFileName(member.name, i, "pdf"), pdfBlob);
+
+          // Attempt cloud upload (non-blocking for local download)
+          let cloudWarning = "";
+          try {
+            setProgress((prev) => ({ ...prev, step: "upload" }));
+            const { error: uploadError } = await supabase.storage
+              .from("id-cards")
+              .upload(filePath, pngBlob, {
+                contentType: "image/png",
+                upsert: false,
+              });
+
+            if (uploadError) {
+              cloudWarning = `Upload: ${uploadError.message}`;
+              console.warn(
+                `Cloud upload failed for ${member.name}:`,
+                uploadError.message,
+              );
+            } else {
+              const expiresAt = new Date();
+              expiresAt.setDate(expiresAt.getDate() + 15);
+
+              const { error: insertError } = await supabase
+                .from("generated_ids")
+                .insert({
+                  user_id: userId,
+                  file_url: filePath,
+                  expires_at: expiresAt.toISOString(),
+                });
+
+              if (insertError) {
+                cloudWarning = `DB: ${insertError.message}`;
+                console.warn(
+                  `DB insert failed for ${member.name}:`,
+                  insertError.message,
+                );
+              }
+            }
+          } catch (cloudErr) {
+            cloudWarning = `Cloud: ${cloudErr.message}`;
+            console.warn(
+              `Cloud save failed for ${member.name}:`,
+              cloudErr.message,
+            );
+          }
+
+          const cardTime = ((Date.now() - cardStart) / 1000).toFixed(1);
+          newResults.push({ name: member.name, success: true, cloudWarning });
+          setLiveLog((prev) => [
+            ...prev,
+            {
+              name: member.name,
+              status: cloudWarning ? "warn" : "ok",
+              detail: cloudWarning || undefined,
+              time: cardTime,
+            },
+          ]);
+        } catch (err) {
+          newResults.push({
+            name: member.name,
+            success: false,
+            error: err.message,
+          });
+          setLiveLog((prev) => [
+            ...prev,
+            {
+              name: member.name,
+              status: "failed",
+              detail: err.message,
+              time: ((Date.now() - startTime) / 1000).toFixed(1),
+            },
+          ]);
+        }
+
+        // Yield to UI every batch
+        if ((i + 1) % BATCH_SIZE === 0) {
+          await new Promise((r) => setTimeout(r, 50));
+        }
+      }
+
+      // ── 3. Compress & download ZIP of PDFs ──
+      const okCount = newResults.filter((r) => r.success).length;
+      if (okCount > 0 && !cancelRef.current) {
+        setProgress((prev) => ({
+          ...prev,
+          phase: "Compressing ZIP",
+          step: "zip",
+        }));
+        try {
+          const zipBlob = await zip.generateAsync(
+            {
+              type: "blob",
+              compression: "DEFLATE",
+              compressionOptions: { level: 6 },
+            },
+            (meta) =>
+              setProgress((prev) => ({
+                ...prev,
+                zipPercent: Math.round(meta.percent),
+              })),
+          );
+          saveAs(zipBlob, `id-cards-${templateId}-${Date.now()}.zip`);
+          setProgress((prev) => ({ ...prev, phase: "Done", step: "done" }));
+        } catch (zipErr) {
+          setError(`ZIP creation failed: ${zipErr.message}`);
+        }
+      } else {
+        setProgress((prev) => ({ ...prev, phase: "Done", step: "done" }));
+      }
+
+      setResults(newResults);
+      setGenerating(false);
+      setCurrentMember(null);
+      if (onComplete) onComplete(newResults);
+    } catch (fatalErr) {
+      console.error("Fatal generation error:", fatalErr);
+      setError(`Generation failed: ${fatalErr.message}`);
+      setGenerating(false);
+      setCurrentMember(null);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [members, userId, templateId, orgName, logoUrl, customFields, watermark]);
 
@@ -551,6 +572,8 @@ export default function BulkGenerator({
                     <span className="flex items-center gap-1.5 truncate">
                       {entry.status === "ok" ? (
                         <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+                      ) : entry.status === "warn" ? (
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
                       ) : entry.status === "failed" ? (
                         <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
                       ) : (
@@ -660,6 +683,7 @@ export default function BulkGenerator({
             gradientColors={gradientColors}
             cardStyles={cardStyles}
             orientation={orientation}
+            validityText={validityText}
             renderSide="front"
           />
         </div>
@@ -674,6 +698,7 @@ export default function BulkGenerator({
             gradientColors={gradientColors}
             cardStyles={cardStyles}
             orientation={orientation}
+            validityText={validityText}
             renderSide="back"
           />
         </div>

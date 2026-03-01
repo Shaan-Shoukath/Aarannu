@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import html2canvas from "html2canvas";
 import { supabase } from "../lib/supabaseClient";
+import { fixOklabColors } from "../utils/fixOklabColors";
 import {
   canvasesToPdfBlob,
   canvasToJpegBlob,
@@ -104,6 +105,15 @@ export default function Generate() {
 
   // Card orientation: "horizontal" (landscape CR-80) or "vertical" (portrait)
   const [orientation, setOrientation] = useState("horizontal");
+
+  // Validity text shown on the back of the card
+  const [validityText, setValidityText] = useState(
+    templateId === "event"
+      ? "Valid for event duration only"
+      : templateId === "student"
+        ? "Valid for current academic session"
+        : "Valid for 15 days from issue",
+  );
 
   // Refs for single-card download capture
   const previewFrontRef = useRef(null);
@@ -241,12 +251,19 @@ export default function Generate() {
         ),
       );
     }
-    return html2canvas(ref.current, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      logging: false,
-    });
+    // Fix Tailwind v4 oklab() colors that html2canvas can't parse
+    const restoreColors = fixOklabColors(ref.current);
+    try {
+      const canvas = await html2canvas(ref.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+      });
+      return canvas;
+    } finally {
+      restoreColors();
+    }
   };
 
   /**
@@ -380,7 +397,9 @@ export default function Generate() {
   };
 
   const handleGenerationComplete = () => {
-    setMembers([]);
+    // Delay clearing so BulkGenerator stays mounted showing results
+    // Only clear after user has time to see the outcome
+    setTimeout(() => setMembers([]), 8000);
   };
 
   /** ── Google Sheets CSV Import ── */
@@ -628,6 +647,7 @@ export default function Generate() {
       renderSide: side,
       cardStyles,
       orientation,
+      validityText,
     };
     switch (templateId) {
       case "corporate":
@@ -1301,6 +1321,43 @@ export default function Generate() {
 
             <hr className="border-slate-200" />
 
+            {/* Section: Validity Text */}
+            <div className="space-y-4">
+              <h2 className="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-2 flex items-center gap-2">
+                <svg
+                  className="w-4 h-4 text-green-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                  />
+                </svg>
+                Card Validity
+              </h2>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Validity Text (shown on back)
+                </label>
+                <input
+                  type="text"
+                  value={validityText}
+                  onChange={(e) => setValidityText(e.target.value)}
+                  placeholder="e.g. Valid for 30 days from issue"
+                  className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-green-500 focus:ring-green-500 py-2 px-3 outline-none"
+                />
+              </div>
+              <p className="text-[10px] text-slate-400 leading-relaxed">
+                This text appears at the bottom of the back side of every card.
+              </p>
+            </div>
+
+            <hr className="border-slate-200" />
+
             {/* Section 4: Custom Fields */}
             <div className="space-y-4">
               <h2 className="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-2 flex items-center gap-2">
@@ -1696,6 +1753,7 @@ export default function Generate() {
                   gradientColors={gradientColors}
                   cardStyles={cardStyles}
                   orientation={orientation}
+                  validityText={validityText}
                 />
               </div>
             )}

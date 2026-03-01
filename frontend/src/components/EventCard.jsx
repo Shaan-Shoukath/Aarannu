@@ -24,6 +24,7 @@ const EventCard = forwardRef(function EventCard(
       borderRadius: 12,
     },
     orientation = "horizontal",
+    validityText = "Valid for event duration only",
   },
   ref,
 ) {
@@ -151,10 +152,10 @@ const EventCard = forwardRef(function EventCard(
 
           {/* Content */}
           <div
-            className={`absolute ${isVertical ? "top-14 left-4 right-4 bottom-4" : "top-16 left-6 right-6 bottom-6"} flex ${isVertical ? "flex-col items-center gap-2" : "gap-6"} z-10`}
+            className={`absolute ${isVertical ? "top-14 left-4 right-4 bottom-4" : "top-16 left-6 right-6 bottom-4"} flex ${isVertical ? "flex-col items-center gap-3" : "gap-6"} z-10`}
           >
             <div
-              className={`${isVertical ? "w-20 h-24" : "w-28 h-32"} shrink-0 relative`}
+              className={`${isVertical ? "w-24 h-28 mt-2" : "w-32 h-36 mt-2"} shrink-0 relative`}
             >
               {photo_url ? (
                 <img
@@ -269,11 +270,11 @@ const EventCard = forwardRef(function EventCard(
                   </div>
                 )}
               </div>
-              <div className="w-32 flex flex-col justify-center items-end">
+              <div className="w-32 flex flex-col justify-center items-center">
                 <div className="w-28 h-28 bg-white p-2 rounded-lg shadow-sm flex items-center justify-center">
                   <QRCodeCanvas value={id_number} size={96} level="M" />
                 </div>
-                <span className="text-[9px] text-indigo-400 mt-2 text-right">
+                <span className="text-[9px] text-indigo-400 mt-2 text-center">
                   Scan for entry
                 </span>
               </div>
@@ -282,9 +283,7 @@ const EventCard = forwardRef(function EventCard(
               <span className="text-[8px] text-indigo-400">
                 {orgName || "aarannu"}
               </span>
-              <span className="text-[8px] text-indigo-400">
-                Valid for event duration only
-              </span>
+              <span className="text-[8px] text-indigo-400">{validityText}</span>
             </div>
           </div>
 

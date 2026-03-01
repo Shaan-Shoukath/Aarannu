@@ -24,6 +24,7 @@ const StudentCard = forwardRef(function StudentCard(
       borderRadius: 12,
     },
     orientation = "horizontal",
+    validityText = "Valid for current academic session",
   },
   ref,
 ) {
@@ -141,10 +142,10 @@ const StudentCard = forwardRef(function StudentCard(
 
           {/* Content */}
           <div
-            className={`absolute ${isVertical ? "top-14 left-4 right-4 bottom-4" : "top-18 left-6 right-6 bottom-5"} flex ${isVertical ? "flex-col items-center gap-2" : "gap-5"} z-10`}
+            className={`absolute ${isVertical ? "top-14 left-4 right-4 bottom-4" : "top-18 left-6 right-6 bottom-4"} flex ${isVertical ? "flex-col items-center gap-3" : "gap-5"} z-10`}
           >
             <div
-              className={`${isVertical ? "w-20 h-24" : "w-26 h-30"} shrink-0 relative ${isVertical ? "" : "mt-1"}`}
+              className={`${isVertical ? "w-24 h-28 mt-2" : "w-30 h-34 mt-2"} shrink-0 relative ${isVertical ? "" : "mt-1"}`}
             >
               {photo_url ? (
                 <img
@@ -284,11 +285,11 @@ const StudentCard = forwardRef(function StudentCard(
                   </div>
                 )}
               </div>
-              <div className="w-32 flex flex-col justify-center items-end">
+              <div className="w-32 flex flex-col justify-center items-center">
                 <div className="w-28 h-28 bg-white p-2 rounded-lg border border-slate-200 shadow-sm flex items-center justify-center">
                   <QRCodeCanvas value={id_number} size={96} level="M" />
                 </div>
-                <span className="text-[9px] text-slate-400 mt-2 text-right">
+                <span className="text-[9px] text-slate-400 mt-2 text-center">
                   Scan to verify
                 </span>
               </div>
@@ -297,9 +298,7 @@ const StudentCard = forwardRef(function StudentCard(
               <span className="text-[8px] text-slate-400">
                 {orgName || "aarannu"}
               </span>
-              <span className="text-[8px] text-slate-400">
-                Valid for current academic session
-              </span>
+              <span className="text-[8px] text-slate-400">{validityText}</span>
             </div>
           </div>
 
