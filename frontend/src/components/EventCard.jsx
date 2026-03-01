@@ -64,15 +64,15 @@ const EventCard = forwardRef(function EventCard(
           {/* Decorative elements */}
           <div className="absolute inset-0 z-0">
             <div
-              className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl"
+              className="absolute top-0 right-0 w-64 h-64 rounded-full"
               style={{
-                background: `linear-gradient(to bottom left, ${gc.start}33, transparent)`,
+                background: `radial-gradient(circle, ${gc.start}33 0%, ${gc.start}15 40%, transparent 70%)`,
               }}
             />
             <div
-              className="absolute bottom-0 left-0 w-48 h-48 rounded-full blur-2xl"
+              className="absolute bottom-0 left-0 w-56 h-56 rounded-full"
               style={{
-                background: `linear-gradient(to top right, ${gc.end}33, transparent)`,
+                background: `radial-gradient(circle, ${gc.end}33 0%, ${gc.end}15 40%, transparent 70%)`,
               }}
             />
             <div
@@ -155,7 +155,7 @@ const EventCard = forwardRef(function EventCard(
             className={`absolute ${isVertical ? "top-14 left-4 right-4 bottom-4" : "top-16 left-6 right-6 bottom-4"} flex ${isVertical ? "flex-col items-center gap-3" : "gap-6"} z-10`}
           >
             <div
-              className={`${isVertical ? "w-24 h-28 mt-2" : "w-32 h-36 mt-2"} shrink-0 relative`}
+              className={`${isVertical ? "w-28 h-32 mt-1" : "w-32 h-36 mt-2"} shrink-0 relative`}
             >
               {photo_url ? (
                 <img
@@ -179,22 +179,22 @@ const EventCard = forwardRef(function EventCard(
             <div className="flex-1 flex flex-col justify-center space-y-3">
               <div>
                 <h3
-                  className={`${isVertical ? "text-base" : "text-xl"} font-bold`}
-                  style={{ color: cs.fontColor }}
+                  className="font-bold"
+                  style={{ color: cs.fontColor, fontSize: `${cs.nameFontSize || 20}px` }}
                 >
                   {name}
                 </h3>
                 {dob && (
-                  <p className="text-[10px] text-indigo-300 font-medium mt-0.5">
+                  <p className="text-indigo-300 font-medium mt-0.5" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
                     DOB: {dob}
                   </p>
                 )}
               </div>
               <div className="mt-2 pt-2 border-t border-indigo-500/30">
-                <p className="text-[9px] text-indigo-400 uppercase font-semibold mb-0.5">
+                <p className="text-indigo-400 uppercase font-semibold mb-0.5" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
                   Pass ID
                 </p>
-                <p className="text-lg font-mono font-bold text-amber-300 tracking-widest">
+                <p className="font-mono font-bold text-amber-300 tracking-widest" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>
                   {id_number}
                 </p>
               </div>
@@ -270,7 +270,9 @@ const EventCard = forwardRef(function EventCard(
                   </div>
                 )}
               </div>
-              <div className="w-32 flex flex-col justify-center items-center">
+              <div
+                className={`${isVertical ? "w-full flex-1" : "w-32"} flex flex-col justify-center items-center`}
+              >
                 <div className="w-28 h-28 bg-white p-2 rounded-lg shadow-sm flex items-center justify-center">
                   <QRCodeCanvas value={id_number} size={96} level="M" />
                 </div>

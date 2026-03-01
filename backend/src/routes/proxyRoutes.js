@@ -18,16 +18,14 @@ const router = express.Router();
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10 MB
 
-// Allowed domains for image proxying (prevent SSRF)
-const ALLOWED_HOSTS = [
-  "drive.google.com",
-  "www.drive.google.com",
-  "docs.google.com",
-  "lh3.googleusercontent.com",
-  "lh4.googleusercontent.com",
-  "lh5.googleusercontent.com",
-  "lh6.googleusercontent.com",
-  "googleusercontent.com",
+// Blocked domains to prevent SSRF against internal services
+const BLOCKED_HOSTS = [
+  "localhost",
+  "127.0.0.1",
+  "0.0.0.0",
+  "[::1]",
+  "metadata.google.internal",
+  "169.254.169.254",
 ];
 
 /**
@@ -69,12 +67,21 @@ router.get("/image", apiLimiter, async (req, res) => {
     return res.status(400).json({ error: "Missing 'url' query parameter." });
   }
 
-  // Validate URL domain against allowlist to prevent SSRF
+  // Validate URL and block internal/private addresses (SSRF protection)
   try {
     const parsed = new URL(url);
-    if (!ALLOWED_HOSTS.includes(parsed.hostname)) {
+    if (
+      BLOCKED_HOSTS.includes(parsed.hostname) ||
+      parsed.hostname.endsWith(".local")
+    ) {
       return res.status(403).json({
-        error: "Domain not allowed. Only Google Drive URLs are supported.",
+        error: "Proxying to internal addresses is not allowed.",
+      });
+    }
+    // Block private IP ranges
+    if (/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(parsed.hostname)) {
+      return res.status(403).json({
+        error: "Proxying to private IP addresses is not allowed.",
       });
     }
   } catch {

@@ -5,21 +5,28 @@ const pxToMm = (px, scale = 2) => (px / scale) * (25.4 / 96);
 
 /**
  * Create a PDF blob from one or two canvases (front + optional back).
- * Each canvas becomes its own page, sized exactly to the card.
+ * Each canvas becomes its own page with padding so the card's rounded
+ * corners and box-shadow are visible against the white page.
  */
 export function canvasesToPdfBlob(frontCanvas, backCanvas = null) {
-  const w = pxToMm(frontCanvas.width);
-  const h = pxToMm(frontCanvas.height);
-  const orientation = w > h ? "landscape" : "portrait";
+  const PAD = 3; // mm padding on each side
 
-  const pdf = new jsPDF({ orientation, unit: "mm", format: [w, h] });
-  pdf.addImage(frontCanvas.toDataURL("image/png"), "PNG", 0, 0, w, h);
+  const cw = pxToMm(frontCanvas.width);
+  const ch = pxToMm(frontCanvas.height);
+  const pw = cw + PAD * 2;
+  const ph = ch + PAD * 2;
+  const orientation = pw > ph ? "landscape" : "portrait";
+
+  const pdf = new jsPDF({ orientation, unit: "mm", format: [pw, ph] });
+  pdf.addImage(frontCanvas.toDataURL("image/png"), "PNG", PAD, PAD, cw, ch);
 
   if (backCanvas) {
     const bw = pxToMm(backCanvas.width);
     const bh = pxToMm(backCanvas.height);
-    pdf.addPage([bw, bh], bw > bh ? "landscape" : "portrait");
-    pdf.addImage(backCanvas.toDataURL("image/png"), "PNG", 0, 0, bw, bh);
+    const bpw = bw + PAD * 2;
+    const bph = bh + PAD * 2;
+    pdf.addPage([bpw, bph], bpw > bph ? "landscape" : "portrait");
+    pdf.addImage(backCanvas.toDataURL("image/png"), "PNG", PAD, PAD, bw, bh);
   }
 
   return pdf.output("blob");

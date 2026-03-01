@@ -131,6 +131,40 @@ export default function Dashboard() {
     if (url) window.open(url, "_blank");
   };
 
+  /** Delete an ID card from Supabase Storage + DB via the backend. */
+  const handleDelete = async (recordId) => {
+    if (!confirm("Delete this ID card? This cannot be undone.")) return;
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        alert("Session expired — please sign in again.");
+        return;
+      }
+
+      const backendUrl =
+        import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+      const res = await fetch(`${backendUrl}/api/ids/${recordId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+
+      // Optimistically remove from local state
+      setGeneratedIds((prev) => prev.filter((g) => g.id !== recordId));
+    } catch (err) {
+      console.error("Delete failed:", err);
+      alert(`Delete failed: ${err.message}`);
+    }
+  };
+
   // days remaining helper
   const daysRemaining = (expiresAt) => {
     const diff = new Date(expiresAt) - new Date();
@@ -414,6 +448,7 @@ export default function Dashboard() {
                   getSignedUrl={getSignedUrl}
                   onPreview={handlePreview}
                   onDownload={handleDownload}
+                  onDelete={handleDelete}
                 />
               ))}
             </div>
@@ -433,6 +468,7 @@ function DashboardCard({
   getSignedUrl,
   onPreview,
   onDownload,
+  onDelete,
 }) {
   const [thumbUrl, setThumbUrl] = useState(null);
   const [thumbLoading, setThumbLoading] = useState(true);
@@ -568,6 +604,13 @@ function DashboardCard({
             className="flex-1 py-1.5 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors text-center"
           >
             Download
+          </button>
+          <button
+            onClick={() => onDelete(record.id)}
+            className="flex-1 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors text-center"
+            title="Delete from Supabase"
+          >
+            Delete
           </button>
         </div>
       </div>

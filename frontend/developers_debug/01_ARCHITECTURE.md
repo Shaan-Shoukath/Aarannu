@@ -41,6 +41,10 @@
 |  |  Auth    |  |   ID     |  |  Admin    |  |  Proxy (Google     |   |
 |  | Routes   |  |  Routes  |  |  Routes   |  |  Drive images)     |   |
 |  +----------+  +----------+  +-----------+  +--------------------+   |
+|  +----------+                                                        |
+|  |  Email   |  Brevo v3 REST API (transactional email w/ PDF attach) |
+|  | Routes   |                                                        |
+|  +----------+                                                        |
 +-----------------------------------------------------------------------+
 ```
 
@@ -119,7 +123,7 @@ User pastes a Google Sheets URL and clicks "Import"
     -> CSV fetched and parsed (custom parseCSV handles quoted fields)
     -> Headers extracted; auto-guess mapping via GUESS_RULES aliases
     -> Column Mapping UI shown: dropdowns for each standard field
-       (name, role, id_number, dob, gender, photo_url, address)
+       (name, email, role, id_number, dob, gender, photo_url, address)
     -> Data preview table shows first 3 rows
   Phase 2 — Confirm & Import:
     -> User adjusts mappings, clicks "Confirm & Import"
@@ -133,7 +137,12 @@ User pastes a Google Sheets URL and clicks "Import"
 
 ```
 User adds multiple members to the queue
-  -> BulkGenerator processes each member in sequence:
+  -> Generation Settings panel (optional):
+      - Range Start / End: generate only a subset (e.g. members 5–20)
+      - Per-Person Cap: max cards per unique name (0 = unlimited)
+      - Email via Brevo: toggle to email each card after generation
+  -> getFilteredMembers() applies range + per-person cap filters
+  -> BulkGenerator processes each filtered member in sequence:
     FOR EACH member:
       1. Set currentMember -> React re-renders off-screen front + back cards
       2. html2canvas captures front ref -> PNG blob
@@ -141,10 +150,17 @@ User adds multiple members to the queue
       4. PNG blob uploaded to Supabase Storage (for Dashboard / signed URLs)
       5. Metadata inserted into generated_ids (file_url, expires_at)
       6. canvasesToPdfBlob(frontCanvas, backCanvas) -> 2-page PDF blob
-      7. PDF added to JSZip folder
+      7. PDF blob stored in pdfBlobsRef (for email step)
+      8. PDF added to JSZip folder
     END FOR
   -> JSZip compresses all PDFs into a single .zip
   -> file-saver triggers browser download of the ZIP
+  -> IF "Email via Brevo" is enabled:
+      FOR EACH member with an email address:
+        1. Convert PDF blob -> base64
+        2. POST /api/email/send-card { recipientEmail, pdfBase64, ... }
+        3. Email delivery progress shown in dedicated panel
+      END FOR
   -> Results summary displayed (success / failed counts)
 ```
 
@@ -193,7 +209,8 @@ The project started as a pure Supabase client-side app. The Express backend was 
 1. **Google Drive image proxy** - Google Drive blocks CORS for direct image fetches. The backend proxies image requests server-side so `html2canvas` can render member photos hosted on Drive.
 2. **Server-side validation** - Bulk generation payloads are validated with max batch size (50) enforcement.
 3. **Admin operations** - Approve members, cleanup expired records.
-4. **Rate limiting** - Per-IP limits prevent abuse (100 req/15 min general, 20/15 min auth).
+4. **Rate limiting** - Per-IP limits prevent abuse (100 req/15 min general, 20/15 min auth, 30/15 min email).
+5. **Email delivery** - Sends generated ID card PDFs to members via Brevo's transactional email API.
 
 The frontend still talks directly to Supabase for auth, database queries, and storage uploads. The Express backend supplements - it does not replace - Supabase.
 

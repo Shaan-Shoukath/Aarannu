@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef, useId } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { proxyImageUrl } from "../lib/proxyImage";
 
@@ -49,6 +49,8 @@ const CorporateCard = forwardRef(function CorporateCard(
   const isVertical = orientation === "vertical";
   const cs = cardStyles;
 
+  const uid = useId().replace(/:/g, "");
+
   return (
     <div ref={ref} className="flex flex-col items-center gap-8">
       {/* ═══ FRONT ═══ */}
@@ -65,22 +67,22 @@ const CorporateCard = forwardRef(function CorporateCard(
           {/* Background gradients */}
           <div className="absolute inset-0 z-0">
             <div
-              className="absolute -top-10 -right-10 w-56 h-56 rounded-full blur-3xl opacity-20"
+              className="absolute -top-14 -right-14 w-64 h-64 rounded-full"
               style={{
-                background: `linear-gradient(to bottom left, ${gc.start}, ${gc.start}cc)`,
+                background: `radial-gradient(circle, ${gc.start}33 0%, ${gc.start}15 40%, transparent 70%)`,
               }}
             />
             <div
-              className="absolute -bottom-10 -left-10 w-48 h-48 rounded-full blur-2xl opacity-15"
+              className="absolute -bottom-14 -left-14 w-56 h-56 rounded-full"
               style={{
-                background: `linear-gradient(to top right, ${gc.end}, ${gc.end}99)`,
+                background: `radial-gradient(circle, ${gc.end}26 0%, ${gc.end}0d 40%, transparent 70%)`,
               }}
             />
             <div className="absolute top-0 right-0 w-40 h-40">
               <svg viewBox="0 0 100 100" fill="none">
                 <defs>
                   <linearGradient
-                    id="corp-tr"
+                    id={`corp-tr-${uid}`}
                     x1="0"
                     y1="0"
                     x2="100"
@@ -93,7 +95,7 @@ const CorporateCard = forwardRef(function CorporateCard(
                 </defs>
                 <path
                   d="M0 0H100V100L50 50L0 0Z"
-                  fill="url(#corp-tr)"
+                  fill={`url(#corp-tr-${uid})`}
                   fillOpacity="0.85"
                 />
               </svg>
@@ -102,7 +104,7 @@ const CorporateCard = forwardRef(function CorporateCard(
               <svg viewBox="0 0 100 100" fill="none">
                 <defs>
                   <linearGradient
-                    id="corp-bl"
+                    id={`corp-bl-${uid}`}
                     x1="0"
                     y1="0"
                     x2="100"
@@ -115,7 +117,7 @@ const CorporateCard = forwardRef(function CorporateCard(
                 </defs>
                 <path
                   d="M0 0H100V100L50 50L0 0Z"
-                  fill="url(#corp-bl)"
+                  fill={`url(#corp-bl-${uid})`}
                   fillOpacity="0.7"
                 />
               </svg>
@@ -191,7 +193,7 @@ const CorporateCard = forwardRef(function CorporateCard(
             className={`absolute ${isVertical ? "top-14 left-4 right-4 bottom-4" : "top-16 left-6 right-6 bottom-4"} flex ${isVertical ? "flex-col items-center gap-3" : "gap-6"} z-10`}
           >
             <div
-              className={`${isVertical ? "w-24 h-28 mt-2" : "w-32 h-36 mt-2"} shrink-0 relative`}
+              className={`${isVertical ? "w-28 h-32 mt-1" : "w-32 h-36 mt-2"} shrink-0 relative`}
             >
               {photo_url ? (
                 <img
@@ -215,41 +217,41 @@ const CorporateCard = forwardRef(function CorporateCard(
             <div className="flex-1 flex flex-col justify-center space-y-3">
               <div>
                 <h3
-                  className={`${isVertical ? "text-base" : "text-xl"} font-bold`}
-                  style={{ color: cs.fontColor }}
+                  className="font-bold"
+                  style={{ color: cs.fontColor, fontSize: `${cs.nameFontSize || 20}px` }}
                 >
                   {name}
                 </h3>
                 <p
-                  className="text-[10px] font-medium uppercase tracking-wide mt-0.5"
-                  style={{ color: cs.accentColor }}
+                  className="font-medium uppercase tracking-wide mt-0.5"
+                  style={{ color: cs.accentColor, fontSize: `${cs.labelFontSize || 9}px` }}
                 >
                   {role}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-y-2 gap-x-4">
                 <div>
-                  <p className="text-[9px] text-slate-400 uppercase font-semibold">
+                  <p className="text-slate-400 uppercase font-semibold" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
                     Date of Birth
                   </p>
-                  <p className="text-xs font-semibold text-slate-700">{dob}</p>
+                  <p className="font-semibold text-slate-700" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>{dob}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-slate-400 uppercase font-semibold">
+                  <p className="text-slate-400 uppercase font-semibold" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
                     Gender
                   </p>
-                  <p className="text-xs font-semibold text-slate-700">
+                  <p className="font-semibold text-slate-700" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>
                     {gender}
                   </p>
                 </div>
               </div>
               <div className="mt-2 pt-2 border-t border-slate-100">
-                <p className="text-[9px] text-slate-400 uppercase font-semibold mb-0.5">
+                <p className="text-slate-400 uppercase font-semibold mb-0.5" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
                   ID Number
                 </p>
                 <p
-                  className="text-lg font-mono font-bold tracking-widest"
-                  style={{ color: gc.start }}
+                  className="font-mono font-bold tracking-widest"
+                  style={{ color: gc.start, fontSize: `${cs.valueFontSize || 14}px` }}
                 >
                   {id_number}
                 </p>
@@ -328,7 +330,9 @@ const CorporateCard = forwardRef(function CorporateCard(
                   </div>
                 )}
               </div>
-              <div className="w-32 flex flex-col justify-center items-center">
+              <div
+                className={`${isVertical ? "w-full flex-1" : "w-32"} flex flex-col justify-center items-center`}
+              >
                 <div className="w-28 h-28 bg-white p-2 rounded-lg border border-slate-200 shadow-sm flex items-center justify-center">
                   <QRCodeCanvas value={id_number} size={96} level="M" />
                 </div>

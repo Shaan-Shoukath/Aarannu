@@ -47,6 +47,11 @@ This document explains why no backend changes were needed and what would change 
 
 **Key insight:** The PNG uploaded to Supabase Storage is a **rasterized image** — it already contains all the visual customization (colors, fonts, layout). The backend never needs to know what colors or fonts were used because the output is a flat image.
 
+> **Note — oklch/oklab color compatibility:**  
+> Tailwind CSS v4 internally outputs colors in `oklch()` format, which `html2canvas` and `jsPDF` cannot parse.  
+> This is fixed on the frontend via HEX-only `@theme` overrides in `index.css` (see `frontend/developers_debug/07_LIBRARIES_USED.md`, Tailwind CSS section).  
+> The backend is unaffected since it never processes CSS colors — it only stores the final rasterized PNG.
+
 ### Comparison: Client-Side vs Server-Side Customization
 
 | Approach              | Client-Side (current)            | Server-Side (alternative)      |

@@ -2,13 +2,13 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import html2canvas from "html2canvas";
 import { supabase } from "../lib/supabaseClient";
-import { fixOklabColors } from "../utils/fixOklabColors";
 import {
   canvasesToPdfBlob,
   canvasToJpegBlob,
   canvasToPngBlob,
   downloadBlob,
 } from "../utils/downloadHelpers";
+import { fixOklabColors } from "../utils/fixOklabColors";
 import BulkGenerator from "../components/BulkGenerator";
 import IDCard from "../components/IDCard";
 import CorporateCard from "../components/CorporateCard";
@@ -36,6 +36,24 @@ export default function Generate() {
   // Template info from /templates page
   const templateId = location.state?.template || "custom";
   const orgName = location.state?.orgName || "";
+
+  /**
+   * Generate a membership ID in the pattern: ORG-YYMM-NNNNN
+   * e.g. "NAV-2603-00001" for org "Navodaya", March 2026, row 1.
+   * @param {number} rowNum - 1-based row/sequence number
+   */
+  const generateMemberId = (rowNum) => {
+    const prefix =
+      (orgName || "ORG")
+        .replace(/[^A-Za-z]/g, "")
+        .slice(0, 3)
+        .toUpperCase() || "ORG";
+    const now = new Date();
+    const yy = String(now.getFullYear()).slice(-2);
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const seq = String(rowNum).padStart(5, "0");
+    return `${prefix}-${yy}${mm}-${seq}`;
+  };
   const logoUrl = location.state?.logoUrl || "";
   const watermark = location.state?.watermark || {
     text: "",
@@ -52,6 +70,16 @@ export default function Generate() {
   // Members to generate IDs for
   const [members, setMembers] = useState([]);
 
+  // Range controls: which members (by 1-based queue position) to generate
+  const [rangeStart, setRangeStart] = useState(1);
+  const [rangeEnd, setRangeEnd] = useState(""); // "" means all
+
+  // Per-person generation cap (max cards per unique person name across sessions)
+  const [perPersonCap, setPerPersonCap] = useState(""); // "" means no cap
+
+  // Derived: whether any member has email sending enabled
+  const emailAfterGenerate = members.some((m) => m.sendEmail);
+
   // Custom field definitions: [{label, side: 'front'|'back'}]
   const [customFieldDefs, setCustomFieldDefs] = useState([]);
   const [newFieldLabel, setNewFieldLabel] = useState("");
@@ -60,6 +88,7 @@ export default function Generate() {
   // Form state for adding a new member
   const [form, setForm] = useState({
     name: "",
+    email: "",
     role: "",
     id_number: "",
     dob: "",
@@ -99,12 +128,19 @@ export default function Generate() {
     fontFamily: "'Public Sans', sans-serif",
     accentColor: templateId === "event" ? "#818cf8" : "#64748b",
     borderRadius: 12,
+    nameFontSize: 20,   // px – name / heading
+    valueFontSize: 14,  // px – detail values (dob, gender, id)
+    labelFontSize: 9,   // px – field labels (uppercase tiny)
+    photoScale: 100,    // % – photo size scale (50-150)
   });
   const handleStyleChange = (key, value) =>
     setCardStyles((prev) => ({ ...prev, [key]: value }));
 
   // Card orientation: "horizontal" (landscape CR-80) or "vertical" (portrait)
   const [orientation, setOrientation] = useState("horizontal");
+
+  // Whether to upload generated cards to Supabase cloud storage
+  const [uploadToCloud, setUploadToCloud] = useState(true);
 
   // Validity text shown on the back of the card
   const [validityText, setValidityText] = useState(
@@ -137,6 +173,7 @@ export default function Generate() {
   /** Standard fields the user can map sheet columns to */
   const MAPPABLE_FIELDS = [
     { key: "name", label: "Full Name", required: true },
+    { key: "email", label: "Email Address" },
     { key: "role", label: "Role / Designation" },
     { key: "id_number", label: "ID Number" },
     { key: "dob", label: "Date of Birth" },
@@ -197,6 +234,13 @@ export default function Generate() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Keep rangeEnd clamped when members change
+  useEffect(() => {
+    if (members.length > 0 && rangeEnd === "") {
+      // leave as "" (meaning "all")
+    }
+  }, [members.length, rangeEnd]);
+
   const handleFormChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
@@ -207,15 +251,17 @@ export default function Generate() {
     const newMember = {
       ...form,
       name: form.name.trim(),
+      email: form.email.trim(),
       role: form.role.trim() || "Member",
-      id_number:
-        form.id_number.trim() || `ID-${Date.now().toString(36).toUpperCase()}`,
+      id_number: form.id_number.trim() || generateMemberId(members.length + 1),
       customValues: { ...form.customValues },
+      sendEmail: false,
     };
 
     setMembers((prev) => [...prev, newMember]);
     setForm({
       name: "",
+      email: "",
       role: "",
       id_number: "",
       dob: "",
@@ -251,13 +297,12 @@ export default function Generate() {
         ),
       );
     }
-    // Fix Tailwind v4 oklab() colors that html2canvas can't parse
     const restoreColors = fixOklabColors(ref.current);
     try {
       const canvas = await html2canvas(ref.current, {
         scale: 2,
         useCORS: true,
-        backgroundColor: "#ffffff",
+        backgroundColor: null, // transparent so rounded corners & shadow show in PDF
         logging: false,
       });
       return canvas;
@@ -397,9 +442,7 @@ export default function Generate() {
   };
 
   const handleGenerationComplete = () => {
-    // Delay clearing so BulkGenerator stays mounted showing results
-    // Only clear after user has time to see the outcome
-    setTimeout(() => setMembers([]), 8000);
+    // Don't auto-clear members — keep results visible until user clears queue
   };
 
   /** ── Google Sheets CSV Import ── */
@@ -463,6 +506,7 @@ export default function Generate() {
 
       const GUESS_RULES = {
         name: ["name", "full name", "fullname", "member name"],
+        email: ["email", "e-mail", "email address", "mail", "email_address"],
         role: ["role", "designation", "title", "position"],
         id_number: ["id", "id_number", "id number", "member id", "memberid"],
         dob: ["dob", "date of birth", "birthday", "birth date"],
@@ -533,14 +577,16 @@ export default function Generate() {
 
       imported.push({
         name,
+        email: getVal("email"),
         role: getVal("role") || "Member",
         id_number:
           getVal("id_number") ||
-          `ID-${Date.now().toString(36).toUpperCase()}-${i}`,
+          generateMemberId(members.length + imported.length + 1),
         dob: getVal("dob"),
         gender: getVal("gender") || "N/A",
         photo_url: getVal("photo_url"),
         address: getVal("address"),
+        sendEmail: false,
         customValues: Object.fromEntries(
           extraColumns.map((c) => [
             c.header.charAt(0).toUpperCase() + c.header.slice(1),
@@ -907,6 +953,22 @@ export default function Generate() {
                     placeholder="Aarav Sharma"
                     className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-3 outline-none"
                   />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => handleFormChange("email", e.target.value)}
+                    placeholder="aarav@example.com"
+                    className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-3 outline-none"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    Used for emailing the generated ID card via Brevo
+                  </p>
                 </div>
 
                 <div>
@@ -1300,6 +1362,86 @@ export default function Generate() {
                 />
               </div>
 
+              {/* Font Size Controls */}
+              <div className="space-y-3 pt-2 border-t border-slate-100">
+                <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wide">
+                  Text &amp; Photo Sizes
+                </p>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    Photo: {cardStyles.photoScale}%
+                  </label>
+                  <input
+                    type="range"
+                    min={50}
+                    max={150}
+                    step={5}
+                    value={cardStyles.photoScale}
+                    onChange={(e) =>
+                      handleStyleChange(
+                        "photoScale",
+                        parseInt(e.target.value, 10),
+                      )
+                    }
+                    className="w-full accent-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    Name: {cardStyles.nameFontSize}px
+                  </label>
+                  <input
+                    type="range"
+                    min={12}
+                    max={32}
+                    value={cardStyles.nameFontSize}
+                    onChange={(e) =>
+                      handleStyleChange(
+                        "nameFontSize",
+                        parseInt(e.target.value, 10),
+                      )
+                    }
+                    className="w-full accent-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    Details: {cardStyles.valueFontSize}px
+                  </label>
+                  <input
+                    type="range"
+                    min={8}
+                    max={20}
+                    value={cardStyles.valueFontSize}
+                    onChange={(e) =>
+                      handleStyleChange(
+                        "valueFontSize",
+                        parseInt(e.target.value, 10),
+                      )
+                    }
+                    className="w-full accent-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    Labels: {cardStyles.labelFontSize}px
+                  </label>
+                  <input
+                    type="range"
+                    min={6}
+                    max={14}
+                    value={cardStyles.labelFontSize}
+                    onChange={(e) =>
+                      handleStyleChange(
+                        "labelFontSize",
+                        parseInt(e.target.value, 10),
+                      )
+                    }
+                    className="w-full accent-amber-500"
+                  />
+                </div>
+              </div>
+
               {/* Preview swatch */}
               <div
                 className="h-10 rounded-lg border border-slate-200 flex items-center justify-center text-sm"
@@ -1660,10 +1802,13 @@ export default function Generate() {
                   }}
                   aria-hidden="true"
                 >
-                  <div ref={previewFrontRef}>
+                  <div
+                    ref={previewFrontRef}
+                    style={{ display: "inline-block" }}
+                  >
                     {renderCard(previewData, null, false, "front")}
                   </div>
-                  <div ref={previewBackRef}>
+                  <div ref={previewBackRef} style={{ display: "inline-block" }}>
                     {renderCard(previewData, null, true, "back")}
                   </div>
                 </div>
@@ -1697,10 +1842,34 @@ export default function Generate() {
               >
                 {/* Member queue */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="px-4 py-3 border-b border-slate-200 bg-slate-50">
+                  <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-slate-700">
                       Generation Queue
                     </h3>
+                    {members.some((m) => m.email?.trim()) && (
+                      <button
+                        onClick={() => {
+                          const hasEmailMembers = members.filter((m) =>
+                            m.email?.trim(),
+                          );
+                          const allOn = hasEmailMembers.every(
+                            (m) => m.sendEmail,
+                          );
+                          setMembers((prev) =>
+                            prev.map((m) =>
+                              m.email?.trim() ? { ...m, sendEmail: !allOn } : m,
+                            ),
+                          );
+                        }}
+                        className="text-[10px] font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                      >
+                        {members
+                          .filter((m) => m.email?.trim())
+                          .every((m) => m.sendEmail)
+                          ? "Deselect all emails"
+                          : "Select all emails"}
+                      </button>
+                    )}
                   </div>
                   <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto">
                     {members.map((m, i) => (
@@ -1718,10 +1887,54 @@ export default function Generate() {
                             </p>
                             <p className="text-xs text-slate-500">
                               {m.role} · {m.id_number}
+                              {m.email && (
+                                <span className="text-blue-500 ml-1">
+                                  · {m.email}
+                                </span>
+                              )}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
+                          {/* Per-member email toggle */}
+                          {m.email?.trim() && (
+                            <button
+                              onClick={() =>
+                                setMembers((prev) =>
+                                  prev.map((mem, idx) =>
+                                    idx === i
+                                      ? { ...mem, sendEmail: !mem.sendEmail }
+                                      : mem,
+                                  ),
+                                )
+                              }
+                              title={
+                                m.sendEmail
+                                  ? "Email ON — click to disable"
+                                  : "Email OFF — click to enable"
+                              }
+                              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
+                                m.sendEmail
+                                  ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                                  : "bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600"
+                              }`}
+                            >
+                              <svg
+                                className="w-3 h-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                strokeWidth={2}
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                                />
+                              </svg>
+                              {m.sendEmail ? "Email ON" : "Email"}
+                            </button>
+                          )}
                           <button
                             onClick={() => handlePreview(m)}
                             className="text-xs text-[#1152d4] hover:underline"
@@ -1737,6 +1950,184 @@ export default function Generate() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                  {emailAfterGenerate && (
+                    <div className="px-4 py-2 bg-amber-50 border-t border-amber-200">
+                      <p className="text-[10px] text-amber-700">
+                        <strong>Brevo API key required</strong> in backend env
+                        var{" "}
+                        <code className="bg-amber-100 px-1 py-0.5 rounded text-[10px]">
+                          BREVO_API_KEY
+                        </code>
+                        . {members.filter((m) => m.sendEmail).length} member(s)
+                        will receive email after generation.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bulk generation controls: range, cap, email */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="px-4 py-3 border-b border-slate-200 bg-slate-50">
+                    <h3 className="text-sm font-semibold text-slate-700">
+                      Generation Settings
+                    </h3>
+                  </div>
+                  <div className="p-4 space-y-4">
+                    {/* Range Start / End */}
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                        Generate Range (Member #)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={1}
+                          max={members.length}
+                          value={rangeStart}
+                          onChange={(e) =>
+                            setRangeStart(
+                              Math.max(1, parseInt(e.target.value, 10) || 1),
+                            )
+                          }
+                          className="w-24 rounded-lg border border-slate-300 bg-slate-50 text-sm text-center focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-2 outline-none"
+                          placeholder="From"
+                        />
+                        <span className="text-slate-400 text-xs">to</span>
+                        <input
+                          type="number"
+                          min={rangeStart}
+                          max={members.length}
+                          value={rangeEnd}
+                          onChange={(e) =>
+                            setRangeEnd(
+                              e.target.value === ""
+                                ? ""
+                                : Math.max(
+                                    rangeStart,
+                                    parseInt(e.target.value, 10) || rangeStart,
+                                  ),
+                            )
+                          }
+                          className="w-24 rounded-lg border border-slate-300 bg-slate-50 text-sm text-center focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-2 outline-none"
+                          placeholder={`${members.length}`}
+                        />
+                        <span className="text-[10px] text-slate-400">
+                          of {members.length} total
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        Leave &ldquo;to&rdquo; empty to generate all from the
+                        start position.
+                      </p>
+                    </div>
+
+                    {/* Per-Person Generation Cap */}
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                        Per-Person Cap
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={1}
+                          value={perPersonCap}
+                          onChange={(e) =>
+                            setPerPersonCap(
+                              e.target.value === ""
+                                ? ""
+                                : Math.max(
+                                    1,
+                                    parseInt(e.target.value, 10) || 1,
+                                  ),
+                            )
+                          }
+                          className="w-24 rounded-lg border border-slate-300 bg-slate-50 text-sm text-center focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-2 outline-none"
+                          placeholder="No limit"
+                        />
+                        <span className="text-[10px] text-slate-400">
+                          max cards per person
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        If a person appears multiple times in the queue, only
+                        the first N are generated. Leave empty for no limit.
+                      </p>
+                    </div>
+
+                    {/* Cloud Upload Toggle */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <svg
+                          className="w-4 h-4 text-indigo-500"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                          />
+                        </svg>
+                        <div>
+                          <label className="text-xs font-medium text-slate-700">
+                            Upload to Supabase
+                          </label>
+                          <p className="text-[10px] text-slate-400">
+                            Store cards in cloud for Dashboard access
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setUploadToCloud((v) => !v)}
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                          uploadToCloud
+                            ? "bg-indigo-500"
+                            : "bg-slate-300"
+                        }`}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform duration-200 ease-in-out ${
+                            uploadToCloud
+                              ? "translate-x-5"
+                              : "translate-x-0"
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    {/* Email info */}
+                    <div className="rounded-lg bg-slate-50 border border-slate-200 p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <svg
+                          className="w-3.5 h-3.5 text-blue-500"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                          />
+                        </svg>
+                        <span className="text-xs font-medium text-slate-700">
+                          Email Delivery
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-500">
+                        Toggle email per member in the queue above using the
+                        <span className="inline-flex items-center mx-1 px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 text-[9px] font-medium">
+                          Email
+                        </span>
+                        button. Only members with email ON will receive their
+                        card as a PDF attachment via Brevo after generation.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -1754,6 +2145,11 @@ export default function Generate() {
                   cardStyles={cardStyles}
                   orientation={orientation}
                   validityText={validityText}
+                  rangeStart={rangeStart}
+                  rangeEnd={rangeEnd === "" ? members.length : rangeEnd}
+                  perPersonCap={perPersonCap === "" ? 0 : perPersonCap}
+                  emailAfterGenerate={emailAfterGenerate}
+                  uploadToCloud={uploadToCloud}
                 />
               </div>
             )}

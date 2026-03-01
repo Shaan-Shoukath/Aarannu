@@ -56,7 +56,7 @@ Request → Middleware → Controller → Service → Supabase
 | **Service**    | Pure business logic + Supabase queries                 |
 | **Utils**      | Helpers (expiry math, validation rules)                |
 | **Config**     | Supabase client singletons                             |
-| **Routes**     | Express Router wiring + proxy routes                   |
+| **Routes**     | Express Router wiring + proxy routes + email routes    |
 
 Controllers are intentionally thin — they contain zero database logic.  
 Services know nothing about HTTP — they return `{ data, error }`.
@@ -110,3 +110,42 @@ GET /api/proxy/image?url=<encoded-url>
 ```
 
 This is a standalone route file that does not use controllers or services — it's a simple pass-through proxy with security guards.
+
+---
+
+## Email Delivery (Brevo)
+
+### Why does it exist?
+
+After bulk ID card generation, users can optionally email each card PDF to the member. The backend provides a `POST /api/email/send-card` endpoint that calls Brevo's v3 transactional email REST API.
+
+### How it works
+
+```
+Frontend: BulkGenerator.jsx
+    │
+    │  After ZIP download, if "Email via Brevo" toggle is enabled:
+    │  For each member with an email address:
+    │    1. Convert PDF blob → base64
+    │    2. POST /api/email/send-card { recipientEmail, pdfBase64, ... }
+    │
+    ▼
+Backend: emailRoutes.js → emailController.js
+    │
+    ├── Rate-limited (30 req / 15 min per IP)
+    ├── Validates recipientEmail + pdfBase64 required
+    ├── Checks BREVO_API_KEY is configured
+    ├── Builds styled HTML email + PDF attachment
+    ├── Calls Brevo v3 REST API (native fetch, no SDK)
+    │
+    ▼
+Brevo delivers email with ID card PDF attached
+```
+
+### Route file: `src/routes/emailRoutes.js`
+
+```
+POST /api/email/send-card
+```
+
+Uses its own `emailLimiter` (30 requests / 15 min) separate from the global API limiter.

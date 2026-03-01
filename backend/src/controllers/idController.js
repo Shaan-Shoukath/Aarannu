@@ -10,6 +10,7 @@
 const {
   insertGeneratedIds,
   getActiveIds,
+  deleteGeneratedId,
 } = require("../services/supabaseService");
 const { getSignedUrls } = require("../services/storageService");
 const { validateBulkPayload } = require("../utils/validators");
@@ -107,4 +108,34 @@ const getMyIds = async (req, res, next) => {
   }
 };
 
-module.exports = { generateIds, getMyIds };
+/**
+ * DELETE /api/ids/:id
+ * ───────────────────
+ * Deletes a single generated-ID record and its storage file.
+ * Only the owning user can delete their own records.
+ */
+const deleteId = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: "Missing id parameter." });
+    }
+
+    const { error } = await deleteGeneratedId(id, userId);
+
+    if (error) {
+      const status = error.message === "Unauthorized" ? 403
+        : error.message === "Record not found" ? 404
+        : 500;
+      return res.status(status).json({ error: error.message });
+    }
+
+    return res.status(200).json({ message: "ID card deleted successfully." });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { generateIds, getMyIds, deleteId };

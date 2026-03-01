@@ -3,12 +3,12 @@ import html2canvas from "html2canvas";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { supabase } from "../lib/supabaseClient";
-import { fixOklabColors } from "../utils/fixOklabColors";
 import {
   canvasesToPdfBlob,
   canvasToPngBlob,
   safeFileName,
 } from "../utils/downloadHelpers";
+import { fixOklabColors } from "../utils/fixOklabColors";
 import IDCard from "./IDCard";
 import CorporateCard from "./CorporateCard";
 import EventCard from "./EventCard";
@@ -60,6 +60,11 @@ export default function BulkGenerator({
   },
   orientation = "horizontal",
   validityText = "Valid for 15 days from issue",
+  rangeStart = 1,
+  rangeEnd = 0, // 0 means "all"
+  perPersonCap = 0, // 0 means "no limit"
+  emailAfterGenerate = false,
+  uploadToCloud = true,
 }) {
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState({
@@ -77,6 +82,40 @@ export default function BulkGenerator({
   const backRef = useRef(null);
   const [currentMember, setCurrentMember] = useState(null);
   const cancelRef = useRef(false);
+
+  // Email step state
+  const [emailProgress, setEmailProgress] = useState({
+    sending: false,
+    current: 0,
+    total: 0,
+    phase: "", // "Sending" | "Done"
+  });
+  // Email results keyed by member name for inline display
+  const [emailResults, setEmailResults] = useState({});
+  // Store PDF blobs keyed by member index for email attachments
+  const pdfBlobsRef = useRef({});
+
+  /**
+   * Apply range + per-person cap filtering.
+   * rangeStart/rangeEnd are 1-based inclusive indices.
+   * perPersonCap = max cards per unique person name (0 = unlimited).
+   */
+  const getFilteredMembers = useCallback(() => {
+    const start = Math.max(0, (rangeStart || 1) - 1);
+    const end =
+      rangeEnd > 0 ? Math.min(rangeEnd, members.length) : members.length;
+    const sliced = members.slice(start, end);
+
+    if (!perPersonCap || perPersonCap <= 0) return sliced;
+
+    // Apply per-person cap: track how many times each name appears
+    const nameCount = {};
+    return sliced.filter((m) => {
+      const key = (m.name || "").trim().toLowerCase();
+      nameCount[key] = (nameCount[key] || 0) + 1;
+      return nameCount[key] <= perPersonCap;
+    });
+  }, [members, rangeStart, rangeEnd, perPersonCap]);
 
   /** Format seconds to mm:ss */
   const fmtTime = (s) => {
@@ -117,13 +156,12 @@ export default function BulkGenerator({
       ),
     );
 
-    // Fix Tailwind v4 oklab() colors that html2canvas can't parse
     const restoreColors = fixOklabColors(ref.current);
     try {
       const canvas = await html2canvas(ref.current, {
         scale: 2,
         useCORS: true,
-        backgroundColor: "#ffffff",
+        backgroundColor: null, // transparent so rounded corners & shadow show in PDF
         logging: false,
       });
       return canvas;
@@ -150,27 +188,35 @@ export default function BulkGenerator({
   /** Generate cards -> upload PNGs to Supabase + build ZIP of PDFs */
   const handleGenerate = useCallback(async () => {
     try {
+      // Apply range + per-person cap
+      const filteredMembers = getFilteredMembers();
+
       // ── 0. Queue size check ──
-      if (members.length > MAX_QUEUE_SIZE) {
+      if (filteredMembers.length > MAX_QUEUE_SIZE) {
         setError(
-          `Queue too large (${members.length}). Maximum ${MAX_QUEUE_SIZE} members per session.`,
+          `Queue too large (${filteredMembers.length}). Maximum ${MAX_QUEUE_SIZE} members per session.`,
+        );
+        return;
+      }
+
+      if (filteredMembers.length === 0) {
+        setError(
+          "No members to generate after applying range and per-person cap filters.",
         );
         return;
       }
 
       // ── 1. Check daily limit (non-fatal – default to allowing if check fails) ──
-      let remaining = members.length;
+      let remaining = filteredMembers.length;
       try {
         const { used, err: usageErr } = await checkDailyUsage();
         if (usageErr) {
           console.warn("Daily usage check failed:", usageErr);
-          // Continue anyway – don't block generation for a usage-check failure
         } else {
           remaining = DAILY_LIMIT - (used || 0);
         }
       } catch (usageCheckErr) {
         console.warn("Daily usage check threw:", usageCheckErr);
-        // Continue anyway
       }
 
       if (remaining <= 0) {
@@ -179,10 +225,10 @@ export default function BulkGenerator({
         );
         return;
       }
-      const toProcess = Math.min(members.length, remaining);
-      if (toProcess < members.length) {
+      const toProcess = Math.min(filteredMembers.length, remaining);
+      if (toProcess < filteredMembers.length) {
         setError(
-          `Only ${remaining} of ${members.length} cards will be processed (daily limit: ${DAILY_LIMIT}).`,
+          `Only ${remaining} of ${filteredMembers.length} cards will be processed (daily limit: ${DAILY_LIMIT}).`,
         );
       }
 
@@ -191,6 +237,9 @@ export default function BulkGenerator({
       setLiveLog([]);
       setError("");
       cancelRef.current = false;
+      pdfBlobsRef.current = {};
+      setEmailResults({});
+      setEmailProgress({ sending: false, current: 0, total: 0, phase: "" });
       const startTime = Date.now();
       setProgress({
         current: 0,
@@ -220,7 +269,7 @@ export default function BulkGenerator({
           break;
         }
 
-        const member = members[i];
+        const member = filteredMembers[i];
         setCurrentMember(member);
         setProgress((prev) => ({ ...prev, current: i + 1, step: "capture" }));
 
@@ -243,53 +292,65 @@ export default function BulkGenerator({
           const pdfBlob = canvasesToPdfBlob(frontCanvas, backCanvas);
           pdfFolder.file(safeFileName(member.name, i, "pdf"), pdfBlob);
 
+          // Store PDF blob for potential email step
+          pdfBlobsRef.current[i] = { blob: pdfBlob, member };
+
           // Attempt cloud upload (non-blocking for local download)
           let cloudWarning = "";
-          try {
-            setProgress((prev) => ({ ...prev, step: "upload" }));
-            const { error: uploadError } = await supabase.storage
-              .from("id-cards")
-              .upload(filePath, pngBlob, {
-                contentType: "image/png",
-                upsert: false,
-              });
-
-            if (uploadError) {
-              cloudWarning = `Upload: ${uploadError.message}`;
-              console.warn(
-                `Cloud upload failed for ${member.name}:`,
-                uploadError.message,
-              );
-            } else {
-              const expiresAt = new Date();
-              expiresAt.setDate(expiresAt.getDate() + 15);
-
-              const { error: insertError } = await supabase
-                .from("generated_ids")
-                .insert({
-                  user_id: userId,
-                  file_url: filePath,
-                  expires_at: expiresAt.toISOString(),
+          if (uploadToCloud) {
+            try {
+              setProgress((prev) => ({ ...prev, step: "upload" }));
+              const { error: uploadError } = await supabase.storage
+                .from("id-cards")
+                .upload(filePath, pngBlob, {
+                  contentType: "image/png",
+                  upsert: false,
                 });
 
-              if (insertError) {
-                cloudWarning = `DB: ${insertError.message}`;
+              if (uploadError) {
+                cloudWarning = `Upload: ${uploadError.message}`;
                 console.warn(
-                  `DB insert failed for ${member.name}:`,
-                  insertError.message,
+                  `Cloud upload failed for ${member.name}:`,
+                  uploadError.message,
                 );
+              } else {
+                const expiresAt = new Date();
+                expiresAt.setDate(expiresAt.getDate() + 15);
+
+                const { error: insertError } = await supabase
+                  .from("generated_ids")
+                  .insert({
+                    user_id: userId,
+                    file_url: filePath,
+                    expires_at: expiresAt.toISOString(),
+                  });
+
+                if (insertError) {
+                  cloudWarning = `DB: ${insertError.message}`;
+                  console.warn(
+                    `DB insert failed for ${member.name}:`,
+                    insertError.message,
+                  );
+                }
               }
+            } catch (cloudErr) {
+              cloudWarning = `Cloud: ${cloudErr.message}`;
+              console.warn(
+                `Cloud save failed for ${member.name}:`,
+                cloudErr.message,
+              );
             }
-          } catch (cloudErr) {
-            cloudWarning = `Cloud: ${cloudErr.message}`;
-            console.warn(
-              `Cloud save failed for ${member.name}:`,
-              cloudErr.message,
-            );
+          } else {
+            cloudWarning = "Skipped (upload disabled)";
           }
 
           const cardTime = ((Date.now() - cardStart) / 1000).toFixed(1);
-          newResults.push({ name: member.name, success: true, cloudWarning });
+          newResults.push({
+            name: member.name,
+            id_number: member.id_number,
+            success: true,
+            cloudWarning,
+          });
           setLiveLog((prev) => [
             ...prev,
             {
@@ -302,6 +363,7 @@ export default function BulkGenerator({
         } catch (err) {
           newResults.push({
             name: member.name,
+            id_number: member.id_number,
             success: false,
             error: err.message,
           });
@@ -344,13 +406,18 @@ export default function BulkGenerator({
               })),
           );
           saveAs(zipBlob, `id-cards-${templateId}-${Date.now()}.zip`);
-          setProgress((prev) => ({ ...prev, phase: "Done", step: "done" }));
         } catch (zipErr) {
           setError(`ZIP creation failed: ${zipErr.message}`);
         }
-      } else {
-        setProgress((prev) => ({ ...prev, phase: "Done", step: "done" }));
       }
+
+      // ── 4. Email cards via Brevo (if enabled) ──
+      if (emailAfterGenerate && okCount > 0 && !cancelRef.current) {
+        setProgress((prev) => ({ ...prev, phase: "Emailing", step: "email" }));
+        await handleEmailCards(pdfBlobsRef.current);
+      }
+
+      setProgress((prev) => ({ ...prev, phase: "Done", step: "done" }));
 
       setResults(newResults);
       setGenerating(false);
@@ -363,7 +430,86 @@ export default function BulkGenerator({
       setCurrentMember(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [members, userId, templateId, orgName, logoUrl, customFields, watermark]);
+  }, [
+    members,
+    userId,
+    templateId,
+    orgName,
+    logoUrl,
+    customFields,
+    watermark,
+    getFilteredMembers,
+    emailAfterGenerate,
+  ]);
+
+  /**
+   * Email generated PDF cards via the backend Brevo endpoint.
+   * Iterates over generated PDF blobs; for each member with an email,
+   * sends a POST to /api/email/send-card with the PDF as base64.
+   */
+  const handleEmailCards = async (pdfBlobs) => {
+    // Only email members who have sendEmail turned ON and have a valid email
+    const entries = Object.values(pdfBlobs).filter(
+      (e) => e.member?.sendEmail && e.member?.email?.trim(),
+    );
+    if (entries.length === 0) {
+      return;
+    }
+
+    setEmailProgress({
+      sending: true,
+      current: 0,
+      total: entries.length,
+      phase: "Sending",
+    });
+    const backendUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+    for (let i = 0; i < entries.length; i++) {
+      if (cancelRef.current) break;
+      const { blob, member } = entries[i];
+      setEmailProgress((prev) => ({ ...prev, current: i + 1 }));
+
+      try {
+        // Convert blob to base64
+        const arrayBuf = await blob.arrayBuffer();
+        const base64 = btoa(
+          new Uint8Array(arrayBuf).reduce(
+            (data, byte) => data + String.fromCharCode(byte),
+            "",
+          ),
+        );
+
+        const res = await fetch(`${backendUrl}/api/email/send-card`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            recipientEmail: member.email.trim(),
+            recipientName: member.name,
+            pdfBase64: base64,
+            fileName: safeFileName(member.name, i, "pdf"),
+            orgName: orgName || "Community ID",
+          }),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || `HTTP ${res.status}`);
+        }
+
+        setEmailResults((prev) => ({
+          ...prev,
+          [member.name]: { status: "ok", detail: member.email },
+        }));
+      } catch (err) {
+        setEmailResults((prev) => ({
+          ...prev,
+          [member.name]: { status: "failed", detail: err.message },
+        }));
+      }
+    }
+
+    setEmailProgress((prev) => ({ ...prev, sending: false, phase: "Done" }));
+  };
 
   const handleCancel = () => {
     cancelRef.current = true;
@@ -381,10 +527,18 @@ export default function BulkGenerator({
             Bulk ID Generator
           </h3>
           <p className="text-sm text-slate-500">
-            {members.length.toLocaleString()} member
-            {members.length !== 1 ? "s" : ""} ready
+            {(() => {
+              const filtered = getFilteredMembers();
+              const rangeInfo =
+                filtered.length !== members.length
+                  ? `${filtered.length} of ${members.length} (filtered)`
+                  : `${members.length}`;
+              return `${rangeInfo} member${filtered.length !== 1 ? "s" : ""} ready`;
+            })()}
             {" · "}Limited to {DAILY_LIMIT} cards/day · Max {MAX_QUEUE_SIZE} per
             queue
+            {emailAfterGenerate &&
+              ` · ${members.filter((m) => m.sendEmail).length} email(s)`}
           </p>
         </div>
 
@@ -455,8 +609,24 @@ export default function BulkGenerator({
                 label: "ZIP",
                 icon: "M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4",
               },
+              ...(emailAfterGenerate
+                ? [
+                    {
+                      key: "email",
+                      label: "Email",
+                      icon: "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
+                    },
+                  ]
+                : []),
             ].map((s, idx) => {
-              const steps = ["capture", "upload", "pdf", "zip", "done"];
+              const steps = [
+                "capture",
+                "upload",
+                "pdf",
+                "zip",
+                ...(emailAfterGenerate ? ["email"] : []),
+                "done",
+              ];
               const currentIdx = steps.indexOf(progress.step);
               const thisIdx = idx;
               const isActive = progress.step === s.key;
@@ -593,6 +763,33 @@ export default function BulkGenerator({
                           — {entry.detail}
                         </span>
                       )}
+                      {/* Inline email status */}
+                      {emailResults[entry.name] && (
+                        <span
+                          className={`ml-2 flex items-center gap-0.5 ${
+                            emailResults[entry.name].status === "ok"
+                              ? "text-blue-500"
+                              : "text-red-400"
+                          }`}
+                        >
+                          <svg
+                            className="w-3 h-3"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            strokeWidth={2}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                            />
+                          </svg>
+                          {emailResults[entry.name].status === "ok"
+                            ? "Sent"
+                            : emailResults[entry.name].detail}
+                        </span>
+                      )}
                     </span>
                     <span className="text-slate-400 tabular-nums shrink-0 ml-2">
                       {entry.time}s
@@ -612,7 +809,7 @@ export default function BulkGenerator({
             <span className="text-sm font-medium text-slate-700">
               Generation Results
             </span>
-            <div className="flex gap-3 text-xs">
+            <div className="flex gap-3 text-xs items-center">
               <span className="text-green-600 font-semibold">
                 {successCount.toLocaleString()} uploaded + zipped
               </span>
@@ -620,6 +817,65 @@ export default function BulkGenerator({
                 <span className="text-red-600 font-semibold">
                   {failedResults.length.toLocaleString()} failed
                 </span>
+              )}
+              {Object.keys(emailResults).length > 0 && (
+                <span className="text-blue-600 font-semibold">
+                  {
+                    Object.values(emailResults).filter((e) => e.status === "ok")
+                      .length
+                  }{" "}
+                  emailed
+                </span>
+              )}
+              {successCount > 0 && (
+                <>
+                  <button
+                    onClick={() => {
+                      const header = "Name,ID Number,Status,Email Status";
+                      const rows = results.map((r) => {
+                        const emailSt = emailResults[r.name]
+                          ? emailResults[r.name].status === "ok"
+                            ? "Sent"
+                            : "Failed"
+                          : "";
+                        return `"${(r.name || "").replace(/"/g, '""')}","${(r.id_number || "").replace(/"/g, '""')}",${r.success ? "Success" : "Failed"},${emailSt}`;
+                      });
+                      const csv = [header, ...rows].join("\n");
+                      const blob = new Blob([csv], { type: "text/csv" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `generated-ids-${Date.now()}.csv`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded text-[10px] font-medium transition-colors"
+                    title="Download CSV to import back into Google Sheets"
+                  >
+                    ⬇ Download CSV
+                  </button>
+                  <button
+                    onClick={() => {
+                      const header = "Name\tID Number\tStatus";
+                      const rows = results.map(
+                        (r) =>
+                          `${r.name || ""}\t${r.id_number || ""}\t${r.success ? "Success" : "Failed"}`,
+                      );
+                      const tsv = [header, ...rows].join("\n");
+                      navigator.clipboard.writeText(tsv).then(
+                        () =>
+                          alert(
+                            "Copied! Paste directly into your Google Sheet (Ctrl+V).",
+                          ),
+                        () => alert("Could not copy to clipboard."),
+                      );
+                    }}
+                    className="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded text-[10px] font-medium transition-colors"
+                    title="Copy tab-separated data to paste into Google Sheets"
+                  >
+                    📋 Copy for Sheets
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -629,21 +885,58 @@ export default function BulkGenerator({
                 key={i}
                 className="px-4 py-2.5 flex items-center justify-between text-sm"
               >
-                <span className="text-slate-700">{r.name}</span>
-                {r.success ? (
-                  <span className="flex items-center gap-1 text-green-600 text-xs font-medium">
-                    <svg
-                      className="w-4 h-4"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
+                <div className="flex items-center gap-3">
+                  <span className="text-slate-700">{r.name}</span>
+                  {r.id_number && (
+                    <span className="text-xs font-mono text-slate-400">
+                      {r.id_number}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  {/* Email status (inline after generation status) */}
+                  {emailResults[r.name] && (
+                    <span
+                      className={`flex items-center gap-1 text-xs font-medium ${
+                        emailResults[r.name].status === "ok"
+                          ? "text-blue-600"
+                          : "text-red-500"
+                      }`}
                     >
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                    </svg>
-                    Done
-                  </span>
-                ) : (
-                  <span className="text-red-500 text-xs">{r.error}</span>
-                )}
+                      <svg
+                        className="w-3.5 h-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                        />
+                      </svg>
+                      {emailResults[r.name].status === "ok"
+                        ? "Emailed"
+                        : emailResults[r.name].detail}
+                    </span>
+                  )}
+                  {/* Generation status */}
+                  {r.success ? (
+                    <span className="flex items-center gap-1 text-green-600 text-xs font-medium">
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                      </svg>
+                      Done
+                    </span>
+                  ) : (
+                    <span className="text-red-500 text-xs">{r.error}</span>
+                  )}
+                </div>
               </div>
             ))}
             {results.length > 200 && (
@@ -652,6 +945,46 @@ export default function BulkGenerator({
               </div>
             )}
           </div>
+          {/* Email progress bar (shows during email sending phase) */}
+          {(emailProgress.sending || emailProgress.phase === "Done") &&
+            emailProgress.total > 0 && (
+              <div className="border-t border-slate-200 px-4 py-3 bg-blue-50">
+                <div className="flex items-center justify-between text-xs text-blue-700 mb-1.5">
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <svg
+                      className="w-3.5 h-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                      />
+                    </svg>
+                    Email Delivery
+                  </span>
+                  <span>
+                    {emailProgress.current}/{emailProgress.total}
+                    {emailProgress.phase === "Done" && " — Complete"}
+                  </span>
+                </div>
+                <div className="w-full bg-blue-100 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      emailProgress.phase === "Done"
+                        ? "bg-green-500"
+                        : "bg-blue-500"
+                    }`}
+                    style={{
+                      width: `${(emailProgress.current / emailProgress.total) * 100}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
         </div>
       )}
 
@@ -672,7 +1005,7 @@ export default function BulkGenerator({
         }}
         aria-hidden="true"
       >
-        <div ref={frontRef}>
+        <div ref={frontRef} style={{ display: "inline-block" }}>
           <CardComponent
             data={currentMember}
             showBack={false}
@@ -687,7 +1020,7 @@ export default function BulkGenerator({
             renderSide="front"
           />
         </div>
-        <div ref={backRef}>
+        <div ref={backRef} style={{ display: "inline-block" }}>
           <CardComponent
             data={currentMember}
             showBack={true}

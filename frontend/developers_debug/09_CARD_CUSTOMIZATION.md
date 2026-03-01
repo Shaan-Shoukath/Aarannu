@@ -83,6 +83,14 @@ const [orientation, setOrientation] = useState("horizontal");
 
 **Two values:** `"horizontal"` (standard CR-80 landscape, 85.6 × 53.98 mm) or `"vertical"` (portrait, 53.98 × 85.6 mm — same card, rotated 90°).
 
+### uploadToCloud State
+
+```javascript
+const [uploadToCloud, setUploadToCloud] = useState(true);
+```
+
+**Controls whether** generated cards are uploaded to Supabase Storage and recorded in the `generated_ids` table. When OFF, cards are only generated locally (PDF/ZIP). Default is ON for backward compatibility.
+
 ### gradientColors Object (pre-existing)
 
 ```javascript
@@ -154,28 +162,71 @@ When orientation switches to vertical, the card's internal layout changes:
 HORIZONTAL (landscape):                    VERTICAL (portrait):
 ┌──────────────────────┐                   ┌──────────┐
 │ [Header]             │                   │ [Header] │
-│ ┌──────┐ Name        │                   │          │
-│ │Photo │ Role        │                   │ ┌──────┐ │
+│ ┌──────┐   Name      │                   │          │
+│ │Photo │   Role      │                   │ ┌──────┐ │
 │ │      │ DOB | Gender│                   │ │Photo │ │
-│ │      │ ID Number   │                   │ └──────┘ │
-│ └──────┘             │                   │  Name    │
+│ └──────┘             │                   │ └──────┘ │
+│ ────── ID Number ──── │                   │  Name    │
 └──────────────────────┘                   │  Role    │
                                            │  DOB     │
                                            │  ID No.  │
                                            └──────────┘
 ```
 
+**Horizontal layout structure (IDCard):**
+
+The horizontal layout uses a **two-row flex-col** approach:
+
+1. **Top row** (`flex-1`): Photo LEFT + Details RIGHT, flex items-center
+2. **Bottom row**: ID Number bordered at top, full-width centered
+
+```jsx
+// Content container for horizontal mode
+<div className="absolute top-14 left-10 right-10 bottom-3 flex flex-col z-10">
+  {/* Row: Photo LEFT + Details RIGHT */}
+  <div className="flex-1 flex gap-5 items-center">
+    <div className="w-24 h-32 shrink-0 relative ml-1">  {/* Photo */}
+    <div className="flex-1 flex flex-col justify-center items-center space-y-2">
+      {/* Name, Role (text-center), DOB/Gender grid, custom fields */}
+    </div>
+  </div>
+  {/* ID Number – centered full-width at bottom */}
+  <div className="border-t border-slate-100 pt-1.5 text-center">
+    <p className="text-base font-mono font-bold tracking-widest">{id_number}</p>
+  </div>
+</div>
+```
+
+**Why Photo LEFT instead of RIGHT?**
+
+The decorative SVG triangles occupy the corners:
+- **Top-right triangle**: `w-28 h-28` (112×112px) — gradient accent
+- **Bottom-left triangle**: `w-20 h-20` (80×80px) — smaller accent
+
+Placing the photo LEFT avoids the larger top-right triangle entirely. The smaller
+bottom-left triangle is at the very corner and doesn't reach the photo (which is
+vertically centered with `left-10` = 40px inset).
+
+**Content padding** (`left-10 right-10 top-14 bottom-3`) keeps all elements
+well-inset from the decorative corner gradients.
+
 **Implementation in each card component:**
 
 ```jsx
-// Front content — switches from horizontal flex to vertical flex-col
-<div className={`... flex ${isVertical ? 'flex-col items-center gap-2' : 'gap-6'} ...`}>
+// Outer content — horizontal uses flex-col (two rows), vertical uses flex-col with gap
+<div className={`absolute ${
+  isVertical
+    ? "top-14 left-4 right-4 bottom-4 flex flex-col items-center gap-3"
+    : "top-14 left-10 right-10 bottom-3 flex flex-col"
+} z-10`}>
 
-// Photo — smaller in vertical mode
-<div className={`${isVertical ? 'w-20 h-24' : 'w-28 h-32'} shrink-0 relative`}>
+// Photo — smaller in horizontal mode (LEFT side) vs vertical mode (centered)
+// Horizontal: w-24 h-32 (96×128px) with ml-1 offset
+// Vertical:   w-36 h-40 (144×160px) centered
 
-// Text — smaller heading in vertical mode
-<h3 className={`${isVertical ? 'text-base' : 'text-xl'} font-bold`}>
+// Text — center-aligned in both modes
+// Horizontal: text-lg name, text-center alignment within details column
+// Vertical:   text-base name, text-center
 
 // Back content — same flex-direction switch
 <div className={`flex-1 flex ${isVertical ? 'flex-col gap-4' : 'gap-6'}`}>
@@ -250,10 +301,11 @@ interface CardProps {
 
 ### Props Added in This Update
 
-| Prop          | Type                           | Default            | Purpose                                        |
-| ------------- | ------------------------------ | ------------------ | ---------------------------------------------- |
-| `cardStyles`  | Object                         | Template-dependent | Controls bg, text color, font, accent, radius  |
-| `orientation` | `"horizontal"` \| `"vertical"` | `"horizontal"`     | Switches layout between landscape and portrait |
+| Prop            | Type                           | Default            | Purpose                                        |
+| --------------- | ------------------------------ | ------------------ | ---------------------------------------------- |
+| `cardStyles`    | Object                         | Template-dependent | Controls bg, text color, font, accent, radius  |
+| `orientation`   | `"horizontal"` \| `"vertical"` | `"horizontal"`     | Switches layout between landscape and portrait |
+| `uploadToCloud` | `boolean`                      | `true`             | Skip Supabase Storage upload when false        |
 
 ---
 
@@ -336,8 +388,9 @@ Shows how bg + text + font + radius look together before checking the actual car
   userId={user?.id}
   ...
   gradientColors={gradientColors}
-  cardStyles={cardStyles}       // NEW
-  orientation={orientation}     // NEW
+  cardStyles={cardStyles}
+  orientation={orientation}
+  uploadToCloud={uploadToCloud}   // NEW: skip Supabase upload when false
 />
 ```
 
@@ -471,3 +524,210 @@ Single Tailwind class toggle switches the entire layout axis.
 4. **Pattern Backgrounds** — Subtle patterns (dots, lines) as bg options
 5. **Dark/Light Mode Toggle** — Quick switch instead of manual color picking
 6. **Export/Import Styles** — JSON export of style configuration for sharing
+
+---
+
+## Supabase Cloud Upload Toggle
+
+### Overview
+
+By default, every generated card is uploaded to Supabase Storage (PNG) and a row is inserted into the `generated_ids` table for Dashboard access with 15-day expiry. The **Upload to Supabase** toggle lets users skip cloud upload entirely — cards are still generated locally as PDF/ZIP.
+
+### State & Flow
+
+```javascript
+// Generate.jsx
+const [uploadToCloud, setUploadToCloud] = useState(true);
+
+// Passed to BulkGenerator as prop:
+<BulkGenerator ... uploadToCloud={uploadToCloud} />
+```
+
+### BulkGenerator Behavior
+
+```javascript
+// BulkGenerator.jsx — conditional upload
+if (uploadToCloud) {
+  // Upload PNG to supabase.storage.from("id-cards")
+  // Insert row into generated_ids with 15-day expiry
+} else {
+  cloudWarning = "Skipped (upload disabled)";
+}
+```
+
+When upload is OFF:
+- **Local PDF/ZIP** still works normally (always generated first)
+- **Email delivery** still works (uses local PDF blob)
+- **Dashboard** won't show the card (no `generated_ids` row)
+- **Signed URLs** won't be available (no storage object)
+- Progress step "upload" is skipped (faster generation)
+
+### UI Toggle (Generation Settings panel)
+
+An iOS-style toggle switch with cloud upload icon in the Generation Settings section:
+
+```jsx
+<button
+  onClick={() => setUploadToCloud((v) => !v)}
+  className={`... rounded-full ${uploadToCloud ? "bg-indigo-500" : "bg-slate-300"}`}
+>
+  <span className={`... rounded-full bg-white ${uploadToCloud ? "translate-x-5" : "translate-x-0"}`} />
+</button>
+```
+
+---
+
+## ID Generation Pattern
+
+### Format: `{ORG}-{YYMM}-{NNNNN}`
+
+Each member receives a unique ID number when added to the generation queue:
+
+```
+NAV-2603-00001
+│   │     └── 5-digit zero-padded sequence number
+│   └── Year (26) + Month (03) = March 2026
+└── First 3 letters of organization name (uppercase)
+```
+
+### Implementation
+
+```javascript
+// Generate.jsx — generateMemberId(rowNum)
+const generateMemberId = (rowNum) => {
+  const prefix = (orgName || "ORG")
+    .replace(/[^A-Za-z]/g, "")
+    .slice(0, 3)
+    .toUpperCase() || "ORG";
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(-2);
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const seq = String(rowNum).padStart(5, "0");
+  return `${prefix}-${yy}${mm}-${seq}`;
+};
+```
+
+The ID is assigned when a member is added (manually or via Google Sheets import) and
+stored in `member.id_number`. The sequence number is based on the member's row position
+in the queue (1-based).
+
+---
+
+## html2canvas Compatibility Rules
+
+### CSS Features to AVOID in Card Templates
+
+html2canvas v1.4.1 has limited CSS support. These features cause **visual mismatches** between the live preview and captured/downloaded images:
+
+| CSS Feature         | Issue                                                  | Solution Used                                         |
+| ------------------- | ------------------------------------------------------ | ----------------------------------------------------- |
+| `blur()` filter     | Ignores `backdrop-filter` and `filter: blur()` entirely | Replace with `radial-gradient()` for soft glow effects |
+| `mix-blend-mode`    | Not supported — element becomes invisible               | Remove; use direct opacity instead                     |
+| `backdrop-blur`     | Ignored — backdrop effects not rendered                  | Remove; use `bg-opacity` with solid color              |
+| `oklch()` / `oklab()`| Not recognized — defaults to black                     | `fixOklabColors()` utility converts to rgba at capture |
+| `color-mix()`       | Not recognized by html2canvas color parser               | Same `fixOklabColors()` utility handles this           |
+| `background-clip: text` | Not supported — text disappears                     | Replace with solid color on text                       |
+| SVG gradient ID collisions | Multiple cards share same `<linearGradient id>`, only first renders | Use `useId()` hook for unique IDs per instance |
+
+### fixOklabColors Utility
+
+```
+Frontend captures card → fixOklabColors(element) called →
+  Walks all DOM descendants →
+  For each element's computed style:
+    - SIMPLE_COLOR_PROPS: color, backgroundColor, borderColor, outlineColor,
+      borderTopColor, borderBottomColor, borderLeftColor, borderRightColor,
+      fill, stroke, textDecorationColor
+    - COMPLEX_PROPS: background, boxShadow
+  If value contains /oklab|oklch|color-mix/i:
+    - Parse to rgba via canvas 2D context
+    - Inline-set the property on the element
+  Returns restore() function to undo all changes
+→ html2canvas runs on clean inline styles
+→ restore() called in finally block
+```
+
+### Radial Gradient Blobs (replacing blur filters)
+
+All 4 card templates replaced `blur-2xl` / `blur-3xl` divs with `radial-gradient`:
+
+```jsx
+// BEFORE (broken in html2canvas):
+<div className="absolute w-56 h-56 bg-blue-500/20 blur-3xl rounded-full" />
+
+// AFTER (works in html2canvas):
+<div
+  className="absolute w-56 h-56 rounded-full"
+  style={{
+    background: `radial-gradient(circle,
+      ${gc.start}33 0%,     /* 20% opacity at center */
+      ${gc.start}15 40%,    /* 8% at mid-radius */
+      transparent 70%)`,    /* fade to transparent */
+  }}
+/>
+```
+
+### Unique SVG Gradient IDs (useId hook)
+
+```jsx
+const uid = useId().replace(/:/g, "");   // e.g. "r3" — unique per instance
+
+// SVG linearGradient uses unique ID:
+<linearGradient id={`idcard-grad-front-tr-${uid}`} ...>
+<path fill={`url(#idcard-grad-front-tr-${uid})`} />
+```
+
+This prevents the "first card renders gradients, rest show black" bug when multiple
+cards exist simultaneously (e.g., BulkGenerator off-screen captures).
+
+---
+
+## CSV & Google Sheets Export (BulkGenerator Results)
+
+After generation completes, the results panel offers two export options:
+
+### Download CSV
+
+Generates a `.csv` file with columns: `Name, ID Number, Status, Email Status`
+
+```javascript
+const csv = [
+  "Name,ID Number,Status,Email Status",
+  ...results.map(r =>
+    `"${r.name}","${r.id_number || "—"}",${r.success ? "OK" : "FAIL"},"${r.cloudWarning || "—"}"`
+  ),
+].join("\n");
+```
+
+### Copy for Sheets
+
+Copies tab-separated data to clipboard for direct Ctrl+V paste into Google Sheets:
+
+```javascript
+const tsv = results
+  .map(r => `${r.name}\t${r.id_number || "—"}\t${r.success ? "OK" : "FAIL"}\t${r.cloudWarning || "—"}`)
+  .join("\n");
+navigator.clipboard.writeText(tsv);
+```
+
+---
+
+## Decorative Corner Triangles
+
+The IDCard template uses SVG triangles as corner accents:
+
+| Triangle       | Size      | Position             | Opacity | Purpose                     |
+| -------------- | --------- | -------------------- | ------- | --------------------------- |
+| Top-right      | `w-28 h-28` (112px) | `top-0 right-0`    | 0.9     | Primary gradient accent     |
+| Bottom-left    | `w-20 h-20` (80px)  | `bottom-0 left-0` | 0.8     | Secondary gradient accent   |
+
+**Sizing rationale**: Triangles are sized to be decorative corner accents without
+overlapping the content area. The content is inset `left-10 right-10 top-14 bottom-3`
+(40px horizontal, 56px top, 12px bottom padding), keeping all text and photos within
+the safe zone between the triangles.
+
+Both triangles use the same SVG path with unique gradient IDs per card instance:
+```svg
+<path d="M0 0H100V100L50 50L0 0Z" fill={url(#unique-id)} fillOpacity="0.9" />
+```
+The bottom-left triangle is rotated 180° to mirror the shape into the opposite corner.

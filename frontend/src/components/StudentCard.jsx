@@ -71,15 +71,15 @@ const StudentCard = forwardRef(function StudentCard(
               }}
             />
             <div
-              className="absolute -top-16 -right-16 w-64 h-64 rounded-full blur-3xl"
+              className="absolute -top-16 -right-16 w-72 h-72 rounded-full"
               style={{
-                background: `linear-gradient(to bottom left, ${gc.start}26, transparent)`,
+                background: `radial-gradient(circle, ${gc.start}26 0%, ${gc.start}10 40%, transparent 70%)`,
               }}
             />
             <div
-              className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full blur-2xl"
+              className="absolute -bottom-10 -left-10 w-48 h-48 rounded-full"
               style={{
-                background: `linear-gradient(to top right, ${gc.end}1a, transparent)`,
+                background: `radial-gradient(circle, ${gc.end}1a 0%, ${gc.end}0d 40%, transparent 70%)`,
               }}
             />
           </div>
@@ -145,7 +145,7 @@ const StudentCard = forwardRef(function StudentCard(
             className={`absolute ${isVertical ? "top-14 left-4 right-4 bottom-4" : "top-18 left-6 right-6 bottom-4"} flex ${isVertical ? "flex-col items-center gap-3" : "gap-5"} z-10`}
           >
             <div
-              className={`${isVertical ? "w-24 h-28 mt-2" : "w-30 h-34 mt-2"} shrink-0 relative ${isVertical ? "" : "mt-1"}`}
+              className={`${isVertical ? "w-28 h-32 mt-1" : "w-30 h-34 mt-1"} shrink-0 relative`}
             >
               {photo_url ? (
                 <img
@@ -169,45 +169,44 @@ const StudentCard = forwardRef(function StudentCard(
             <div className="flex-1 flex flex-col justify-center space-y-2.5">
               <div>
                 <h3
-                  className={`${isVertical ? "text-sm" : "text-lg"} font-bold`}
-                  style={{ color: cs.fontColor }}
+                  className="font-bold"
+                  style={{ color: cs.fontColor, fontSize: `${cs.nameFontSize || 20}px` }}
                 >
                   {name}
                 </h3>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-linear-to-r from-orange-100 to-purple-100 text-purple-700 border border-purple-200/50">
+                  <span className="px-2 py-0.5 rounded-full font-semibold bg-linear-to-r from-orange-100 to-purple-100 text-purple-700 border border-purple-200/50" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
                     {role}
                   </span>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-y-1.5 gap-x-4">
                 <div>
-                  <p className="text-[8px] text-slate-400 uppercase font-semibold">
+                  <p className="text-slate-400 uppercase font-semibold" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
                     DOB
                   </p>
-                  <p className="text-[11px] font-semibold text-slate-700">
+                  <p className="font-semibold text-slate-700" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>
                     {dob}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[8px] text-slate-400 uppercase font-semibold">
+                  <p className="text-slate-400 uppercase font-semibold" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
                     Gender
                   </p>
-                  <p className="text-[11px] font-semibold text-slate-700">
+                  <p className="font-semibold text-slate-700" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>
                     {gender}
                   </p>
                 </div>
               </div>
               <div className="pt-1.5 border-t border-slate-100">
-                <p className="text-[8px] text-slate-400 uppercase font-semibold mb-0.5">
+                <p className="text-slate-400 uppercase font-semibold mb-0.5" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
                   Student ID
                 </p>
                 <p
-                  className="text-base font-mono font-bold tracking-widest"
+                  className="font-mono font-bold tracking-widest"
                   style={{
-                    background: `linear-gradient(to right, ${gc.start}, ${gc.end})`,
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
+                    color: gc.start,
+                    fontSize: `${cs.valueFontSize || 14}px`,
                   }}
                 >
                   {id_number}
@@ -285,7 +284,9 @@ const StudentCard = forwardRef(function StudentCard(
                   </div>
                 )}
               </div>
-              <div className="w-32 flex flex-col justify-center items-center">
+              <div
+                className={`${isVertical ? "w-full flex-1" : "w-32"} flex flex-col justify-center items-center`}
+              >
                 <div className="w-28 h-28 bg-white p-2 rounded-lg border border-slate-200 shadow-sm flex items-center justify-center">
                   <QRCodeCanvas value={id_number} size={96} level="M" />
                 </div>

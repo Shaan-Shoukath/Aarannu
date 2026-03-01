@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef, useId } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { proxyImageUrl } from "../lib/proxyImage";
 
@@ -63,6 +63,10 @@ const IDCard = forwardRef(function IDCard(
   const isVertical = orientation === "vertical";
   const cs = cardStyles;
 
+  // Unique suffix for SVG gradient IDs – prevents collisions when
+  // multiple card instances exist in the DOM simultaneously
+  const uid = useId().replace(/:/g, "");
+
   return (
     <div ref={ref} className="flex flex-col items-center gap-8">
       {/* ═══════════════════════════════════════════
@@ -78,84 +82,100 @@ const IDCard = forwardRef(function IDCard(
             borderRadius: `${cs.borderRadius}px`,
           }}
         >
-          {/* Geometric Background */}
+          {/* Geometric Background – triangle sizes adjust dynamically to stay
+              proportional to the photo scale so content never overlaps */}
           <div className="absolute inset-0 z-0">
-            {/* Top-right gradient blob */}
-            <div
-              className="absolute -top-10 -right-10 w-48 h-48 rounded-full blur-2xl opacity-20"
-              style={{
-                background: `linear-gradient(to bottom left, ${gc.start}, ${gc.start}cc)`,
-              }}
-            />
-            {/* Top-right triangle */}
-            <div className="absolute top-0 right-0 w-40 h-40">
-              <svg
-                viewBox="0 0 100 100"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <defs>
-                  <linearGradient
-                    id="idcard-grad-front-tr"
-                    x1="0"
-                    y1="0"
-                    x2="100"
-                    y2="100"
-                    gradientUnits="userSpaceOnUse"
+            {(() => {
+              // Dynamic gradient size: base 36 (w-36=144px) scaled with photo
+              const scale = (cs.photoScale || 100) / 100;
+              const triSize = Math.round(Math.max(20, 36 * (1 - (scale - 1) * 0.6)));
+              return (
+                <>
+                  {/* Top-right gradient blob */}
+                  <div
+                    className="absolute -top-14 -right-14 w-56 h-56 rounded-full"
+                    style={{
+                      background: `radial-gradient(circle, ${gc.start}33 0%, ${gc.start}15 40%, transparent 70%)`,
+                    }}
+                  />
+                  {/* Top-right triangle */}
+                  <div
+                    className="absolute top-0 right-0"
+                    style={{ width: `${triSize * 4}px`, height: `${triSize * 4}px` }}
                   >
-                    <stop stopColor={gc.start} />
-                    <stop offset="1" stopColor={gc.end} />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M0 0H100V100L50 50L0 0Z"
-                  fill="url(#idcard-grad-front-tr)"
-                  fillOpacity="0.9"
-                />
-              </svg>
-            </div>
-            {/* Bottom-left gradient blob */}
-            <div
-              className="absolute -bottom-10 -left-10 w-48 h-48 rounded-full blur-2xl opacity-10"
-              style={{
-                background: `linear-gradient(to top right, ${gc.end}, ${gc.end}99)`,
-              }}
-            />
-            {/* Bottom-left triangle */}
-            <div className="absolute bottom-0 left-0 w-32 h-32 rotate-180">
-              <svg
-                viewBox="0 0 100 100"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <defs>
-                  <linearGradient
-                    id="idcard-grad-front-bl"
-                    x1="0"
-                    y1="0"
-                    x2="100"
-                    y2="100"
-                    gradientUnits="userSpaceOnUse"
+                    <svg
+                      viewBox="0 0 100 100"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <defs>
+                        <linearGradient
+                          id={`idcard-grad-front-tr-${uid}`}
+                          x1="0"
+                          y1="0"
+                          x2="100"
+                          y2="100"
+                          gradientUnits="userSpaceOnUse"
+                        >
+                          <stop stopColor={gc.start} />
+                          <stop offset="1" stopColor={gc.end} />
+                        </linearGradient>
+                      </defs>
+                      <path
+                        d="M0 0H100V100L50 50L0 0Z"
+                        fill={`url(#idcard-grad-front-tr-${uid})`}
+                        fillOpacity="0.9"
+                      />
+                    </svg>
+                  </div>
+                  {/* Bottom-left gradient blob */}
+                  <div
+                    className="absolute -bottom-14 -left-14 w-56 h-56 rounded-full"
+                    style={{
+                      background: `radial-gradient(circle, ${gc.end}1a 0%, ${gc.end}0d 40%, transparent 70%)`,
+                    }}
+                  />
+                  {/* Bottom-left triangle */}
+                  <div
+                    className="absolute bottom-0 left-0 rotate-180"
+                    style={{ width: `${triSize * 4}px`, height: `${triSize * 4}px` }}
                   >
-                    <stop stopColor={gc.start} />
-                    <stop offset="1" stopColor={gc.end} />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M0 0H100V100L50 50L0 0Z"
-                  fill="url(#idcard-grad-front-bl)"
-                  fillOpacity="0.8"
-                />
-              </svg>
-            </div>
+                    <svg
+                      viewBox="0 0 100 100"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <defs>
+                        <linearGradient
+                          id={`idcard-grad-front-bl-${uid}`}
+                          x1="0"
+                          y1="0"
+                          x2="100"
+                          y2="100"
+                          gradientUnits="userSpaceOnUse"
+                        >
+                          <stop stopColor={gc.start} />
+                          <stop offset="1" stopColor={gc.end} />
+                        </linearGradient>
+                      </defs>
+                      <path
+                        d="M0 0H100V100L50 50L0 0Z"
+                        fill={`url(#idcard-grad-front-bl-${uid})`}
+                        fillOpacity="0.8"
+                      />
+                    </svg>
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
-          {/* Hologram overlay */}
+          {/* Hologram overlay – no mix-blend-mode (unsupported by html2canvas) */}
           <div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full border border-white/20 z-20 opacity-30 mix-blend-overlay pointer-events-none"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full border border-white/10 z-20 pointer-events-none"
             style={{
               background:
-                "radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%)",
+                "radial-gradient(circle, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 70%)",
             }}
           />
 
@@ -188,122 +208,255 @@ const IDCard = forwardRef(function IDCard(
           )}
 
           {/* Header bar */}
-          <div className="absolute top-4 left-6 right-6 flex items-center gap-2 z-10">
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white shadow-sm"
-              style={{
-                background: `linear-gradient(to bottom right, ${gc.start}, ${gc.start}cc)`,
-              }}
-            >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
-              </svg>
-            </div>
-            <div className="flex flex-col leading-tight">
-              <span
-                className="text-[10px] font-bold uppercase tracking-wide"
-                style={{ color: gc.start }}
-              >
-                Community ID
-              </span>
-              <span className="text-[8px] text-slate-500 font-medium">
-                Digital Identity Card
-              </span>
-            </div>
-          </div>
-
-          {/* Main content */}
-          <div
-            className={`absolute ${isVertical ? "top-14 left-4 right-4 bottom-4" : "top-16 left-6 right-6 bottom-4"} flex ${isVertical ? "flex-col items-center gap-3" : "gap-6"} z-10`}
-          >
-            {/* Photo */}
-            <div
-              className={`${isVertical ? "w-24 h-28 mt-2" : "w-32 h-36 mt-2"} shrink-0 relative`}
-            >
-              {photo_url ? (
+          <div className="absolute top-0 left-0 right-0 z-10">
+            <div className="flex items-center gap-2.5 px-5 py-2.5">
+              {logoUrl ? (
                 <img
-                  src={photoSrc}
-                  alt={`${name} profile`}
-                  className="w-full h-full object-cover rounded-md shadow-md border-2 border-white ring-1 ring-[#1152d4]/20"
+                  src={logoUrl}
+                  alt="Logo"
+                  className="w-9 h-9 object-contain rounded-lg shadow-sm"
                   crossOrigin="anonymous"
                 />
               ) : (
-                <div className="w-full h-full rounded-md shadow-md border-2 border-white ring-1 ring-[#1152d4]/20 bg-slate-100 flex items-center justify-center">
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center text-white shadow-sm"
+                  style={{
+                    background: `linear-gradient(135deg, ${gc.start}, ${gc.end})`,
+                  }}
+                >
                   <svg
-                    className="w-12 h-12 text-slate-300"
+                    className="w-4.5 h-4.5"
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
                   </svg>
                 </div>
               )}
-              <div className="absolute bottom-0 w-full bg-black/50 backdrop-blur-[1px] text-center py-0.5 rounded-b-md">
-                <span className="text-[8px] text-white font-mono">
-                  VERIFIED
+              <div className="flex flex-col leading-tight">
+                <span
+                  className="text-sm font-bold uppercase tracking-wide"
+                  style={{ color: gc.start }}
+                >
+                  {orgName || "Community ID"}
+                </span>
+                <span className="text-[9px] text-slate-400 font-medium tracking-wide">
+                  Digital Identity Card
                 </span>
               </div>
             </div>
+          </div>
 
-            {/* Details */}
-            <div className="flex-1 flex flex-col justify-center space-y-3">
-              <div>
-                <h3
-                  className={`${isVertical ? "text-base" : "text-xl"} font-bold`}
-                  style={{ color: cs.fontColor }}
-                >
-                  {name}
-                </h3>
-                <p
-                  className="text-[10px] font-medium uppercase tracking-wide mt-0.5"
-                  style={{ color: cs.accentColor }}
-                >
-                  {role}
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-y-2 gap-x-4">
-                <div>
-                  <p className="text-[9px] text-slate-400 uppercase font-semibold">
-                    Date of Birth
-                  </p>
-                  <p className="text-xs font-semibold text-slate-700">{dob}</p>
-                </div>
-                <div>
-                  <p className="text-[9px] text-slate-400 uppercase font-semibold">
-                    Gender
-                  </p>
-                  <p className="text-xs font-semibold text-slate-700">
-                    {gender}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-2 pt-2 border-t border-slate-100">
-                <p className="text-[9px] text-slate-400 uppercase font-semibold mb-0.5">
-                  ID Number
-                </p>
-                <p
-                  className="text-lg font-mono font-bold tracking-widest"
-                  style={{ color: gc.start }}
-                >
-                  {id_number}
-                </p>
-              </div>
-              {/* Front custom fields */}
-              {frontFields.length > 0 && (
-                <div className="grid grid-cols-2 gap-y-1 gap-x-4 mt-1">
-                  {frontFields.map((f) => (
-                    <div key={f.label}>
-                      <p className="text-[8px] text-slate-400 uppercase font-semibold">
-                        {f.label}
-                      </p>
-                      <p className="text-[11px] font-semibold text-slate-700">
-                        {customValues[f.label] || "—"}
+          {/* Main content – standard top-to-bottom flow */}
+          <div
+            className="absolute inset-0 flex flex-col z-10"
+            style={{ paddingTop: "48px" }}
+          >
+            {isVertical ? (
+              <>
+                {/* ── BODY (vertical) ── */}
+                <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6">
+                  {/* Photo */}
+                  {(() => {
+                    const scale = (cs.photoScale || 100) / 100;
+                    const pw = Math.round(100 * scale);
+                    const ph = Math.round(125 * scale);
+                    return (
+                      <div
+                        className="shrink-0 rounded-lg p-0.5 shadow-md"
+                        style={{ background: `linear-gradient(135deg, ${gc.start}40, ${gc.end}40)` }}
+                      >
+                        <div
+                          className="relative overflow-hidden rounded-[5px]"
+                          style={{ width: `${pw}px`, height: `${ph}px` }}
+                        >
+                          {photo_url ? (
+                            <img
+                              src={photoSrc}
+                              alt={`${name} profile`}
+                              className="w-full h-full object-cover"
+                              crossOrigin="anonymous"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-slate-50 flex items-center justify-center">
+                              <svg className="w-10 h-10 text-slate-300" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Details */}
+                  <div className="w-full space-y-2 text-center">
+                    <div>
+                      <h3
+                        className="font-bold leading-snug"
+                        style={{ color: cs.fontColor, fontSize: `${cs.nameFontSize || 20}px` }}
+                      >
+                        {name}
+                      </h3>
+                      <p
+                        className="font-semibold uppercase tracking-widest mt-0.5"
+                        style={{ color: cs.accentColor, fontSize: `${(cs.labelFontSize || 9) + 1}px` }}
+                      >
+                        {role}
                       </p>
                     </div>
-                  ))}
+                    <div className="grid grid-cols-2 gap-y-1.5 gap-x-4 text-left">
+                      <div>
+                        <p className="text-slate-400 uppercase font-semibold" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                          Date of Birth
+                        </p>
+                        <p className="font-semibold text-slate-700" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>
+                          {dob}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-slate-400 uppercase font-semibold" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                          Gender
+                        </p>
+                        <p className="font-semibold text-slate-700" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>
+                          {gender}
+                        </p>
+                      </div>
+                    </div>
+                    {frontFields.length > 0 && (
+                      <div className="grid grid-cols-2 gap-y-1 gap-x-4 text-left">
+                        {frontFields.map((f) => (
+                          <div key={f.label}>
+                            <p className="text-slate-400 uppercase font-semibold" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                              {f.label}
+                            </p>
+                            <p className="font-semibold text-slate-700" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>
+                              {customValues[f.label] || "—"}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
+
+                {/* ── FOOTER (vertical): Membership ID ── */}
+                <div className="text-center py-3 mx-5">
+                  <p className="text-slate-400 uppercase font-bold tracking-widest mb-0.5" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                    Membership ID
+                  </p>
+                  <p
+                    className="font-mono font-bold tracking-widest"
+                    style={{ color: gc.start, fontSize: `${(cs.valueFontSize || 14) + 2}px` }}
+                  >
+                    {id_number}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* ── BODY (horizontal) ── */}
+                <div className="flex-1 flex items-center justify-center px-8 gap-6">
+                  {/* Photo */}
+                  {(() => {
+                    const scale = (cs.photoScale || 100) / 100;
+                    const pw = Math.round(105 * scale);
+                    const ph = Math.round(130 * scale);
+                    return (
+                      <div
+                        className="shrink-0 rounded-lg p-0.5 shadow-md"
+                        style={{ background: `linear-gradient(135deg, ${gc.start}40, ${gc.end}40)` }}
+                      >
+                        <div
+                          className="relative overflow-hidden rounded-[5px]"
+                          style={{ width: `${pw}px`, height: `${ph}px` }}
+                        >
+                          {photo_url ? (
+                            <img
+                              src={photoSrc}
+                              alt={`${name} profile`}
+                              className="w-full h-full object-cover"
+                              crossOrigin="anonymous"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-slate-50 flex items-center justify-center">
+                              <svg className="w-10 h-10 text-slate-300" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Details */}
+                  <div className="flex-1 flex flex-col justify-center space-y-2.5 min-w-0">
+                    <div>
+                      <h3
+                        className="font-bold leading-snug"
+                        style={{ color: cs.fontColor, fontSize: `${cs.nameFontSize || 20}px` }}
+                      >
+                        {name}
+                      </h3>
+                      <p
+                        className="font-semibold uppercase tracking-widest mt-0.5"
+                        style={{ color: cs.accentColor, fontSize: `${(cs.labelFontSize || 9) + 1}px` }}
+                      >
+                        {role}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-y-1.5 gap-x-6">
+                      <div>
+                        <p className="text-slate-400 uppercase font-semibold" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                          Date of Birth
+                        </p>
+                        <p className="font-semibold text-slate-700" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>
+                          {dob}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-slate-400 uppercase font-semibold" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                          Gender
+                        </p>
+                        <p className="font-semibold text-slate-700" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>
+                          {gender}
+                        </p>
+                      </div>
+                    </div>
+
+                    {frontFields.length > 0 && (
+                      <div className="grid grid-cols-2 gap-y-1 gap-x-6">
+                        {frontFields.map((f) => (
+                          <div key={f.label}>
+                            <p className="text-slate-400 uppercase font-semibold" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                              {f.label}
+                            </p>
+                            <p className="font-semibold text-slate-700 truncate" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>
+                              {customValues[f.label] || "—"}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── FOOTER (horizontal): Membership ID ── */}
+                <div className="text-center py-3 mx-6">
+                  <p className="text-slate-400 uppercase font-bold tracking-widest mb-0.5" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                    Membership ID
+                  </p>
+                  <p
+                    className="font-mono font-bold tracking-widest"
+                    style={{ color: gc.start, fontSize: `${(cs.valueFontSize || 14) + 2}px` }}
+                  >
+                    {id_number}
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -337,7 +490,7 @@ const IDCard = forwardRef(function IDCard(
               >
                 <defs>
                   <linearGradient
-                    id="idcard-grad-back"
+                    id={`idcard-grad-back-${uid}`}
                     x1="0"
                     y1="0"
                     x2="100"
@@ -350,7 +503,7 @@ const IDCard = forwardRef(function IDCard(
                 </defs>
                 <path
                   d="M0 0H100V100L50 50L0 0Z"
-                  fill="url(#idcard-grad-back)"
+                  fill={`url(#idcard-grad-back-${uid})`}
                   fillOpacity="0.1"
                 />
               </svg>
@@ -362,7 +515,7 @@ const IDCard = forwardRef(function IDCard(
               className={`flex-1 flex ${isVertical ? "flex-col gap-4" : "gap-6"}`}
             >
               {/* Address block */}
-              <div className="flex-1 space-y-4">
+              <div className={`${isVertical ? "" : "flex-1"} space-y-4`}>
                 <div>
                   <h4 className="text-xs font-bold text-slate-800 mb-1 uppercase tracking-wide border-b border-[#1152d4]/20 pb-1 inline-block">
                     Address
@@ -397,7 +550,9 @@ const IDCard = forwardRef(function IDCard(
               </div>
 
               {/* QR Code */}
-              <div className="w-32 flex flex-col justify-center items-center">
+              <div
+                className={`${isVertical ? "w-full flex-1" : "w-32"} flex flex-col justify-center items-center`}
+              >
                 <div className="w-28 h-28 bg-white p-2 rounded-lg border border-slate-200 shadow-sm flex items-center justify-center">
                   <QRCodeCanvas value={id_number} size={96} level="M" />
                 </div>
@@ -409,9 +564,7 @@ const IDCard = forwardRef(function IDCard(
 
             {/* Footer */}
             <div className="h-6 border-t border-slate-100 flex items-center justify-between mt-auto">
-              <span className="text-[8px] text-slate-400">
-                community-id-platform
-              </span>
+              <span className="text-[8px] text-slate-400">aarannu</span>
               <span className="text-[8px] text-slate-400">{validityText}</span>
             </div>
           </div>

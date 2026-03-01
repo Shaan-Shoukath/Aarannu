@@ -18,7 +18,7 @@ Every dependency and why it's here.
 - `app.use()` — register middleware
 - `Router()` — modular route groups
 - `app.listen()` — start HTTP server
-- `express.json()` — parse JSON request bodies
+- `express.json({ limit: '10mb' })` — parse JSON request bodies (10 MB limit to support PDF base64 email payloads)
 
 ---
 
@@ -66,10 +66,11 @@ Every dependency and why it's here.
 
 - `rateLimit({ windowMs, max, message })` — creates a limiter middleware.
 
-**Two limiters in this project:**
+**Three limiters in this project:**
 
-- `apiLimiter` — 100 requests / 15 min (general)
+- `apiLimiter` — 100 requests / 15 min (general API endpoints)
 - `authLimiter` — 20 requests / 15 min (auth endpoints)
+- `emailLimiter` — 30 requests / 15 min (email endpoints, defined in `emailRoutes.js`)
 
 ---
 
@@ -135,3 +136,45 @@ Every dependency and why it's here.
 ```bash
 npm run dev   # → nodemon src/server.js
 ```
+
+---
+
+## Email Integration (Brevo)
+
+### Architecture
+
+The backend provides a `POST /api/email/send-card` endpoint that sends generated ID card PDFs as email attachments via Brevo's v3 REST API.
+
+**No additional npm package required** — uses Node 18+ native `fetch`.
+
+### Environment Variables
+
+| Variable             | Required? | Default                     | Description                      |
+| -------------------- | --------- | --------------------------- | -------------------------------- |
+| `BREVO_API_KEY`      | Yes       | —                           | Your Brevo transactional API key |
+| `BREVO_SENDER_EMAIL` | No        | `noreply@communityid.app`   | The "from" email address         |
+| `BREVO_SENDER_NAME`  | No        | `orgName` or `Community ID` | The "from" display name          |
+
+### Request Body
+
+```json
+{
+  "recipientEmail": "user@example.com",
+  "recipientName": "Aarav Sharma",
+  "pdfBase64": "<base64-encoded PDF>",
+  "fileName": "Aarav_Sharma_ID.pdf",
+  "orgName": "TinkerSpace"
+}
+```
+
+### Rate Limiting
+
+Email route is rate-limited to **30 emails per 15 minutes per IP** via `express-rate-limit`.
+
+### Flow
+
+1. Frontend generates PDF blobs during bulk generation
+2. If "Email via Brevo" toggle is enabled, frontend converts each PDF to base64
+3. For each member with an email, POSTs to `/api/email/send-card`
+4. Backend validates, builds HTML email with attachment, calls Brevo v3 API
+5. Brevo delivers the email with the PDF attached

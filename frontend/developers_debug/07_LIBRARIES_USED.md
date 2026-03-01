@@ -7,14 +7,16 @@
 | `@supabase/supabase-js` | ^2.95.3 | Backend SDK (auth, DB, storage) | Yes       |
 | `react`                 | ^19.2.0 | UI framework                    | Yes       |
 | `react-dom`             | ^19.2.0 | React DOM renderer              | Yes       |
-| `react-router-dom`      | ^7.x    | Client-side routing             | Yes       |
+| `react-router-dom`      | ^7.13.0 | Client-side routing             | Yes       |
 | `html2canvas`           | ^1.4.1  | DOM-to-canvas conversion        | Yes       |
-| `jspdf`                 | ^3.x    | Canvas-to-PDF generation        | Yes       |
-| `jszip`                 | ^3.x    | ZIP archive creation in browser | Yes       |
-| `file-saver`            | ^2.x    | Trigger browser file downloads  | Yes       |
-| `qrcode.react`          | ^4.x    | QR code generation on ID cards  | Yes       |
-| `tailwindcss`           | ^4.x    | Utility-first CSS               | Yes       |
-| `@tailwindcss/vite`     | ^4.x    | Tailwind Vite integration       | Yes (dev) |
+| `jspdf`                 | ^4.1.0  | Canvas-to-PDF generation        | Yes       |
+| `jszip`                 | ^3.10.1 | ZIP archive creation in browser | Yes       |
+| `file-saver`            | ^2.0.5  | Trigger browser file downloads  | Yes       |
+| `qrcode.react`          | ^4.2.0  | QR code generation on ID cards  | Yes       |
+| `tailwindcss`           | ^4.1.18 | Utility-first CSS               | Yes       |
+| `@tailwindcss/vite`     | ^4.1.18 | Tailwind Vite integration       | Yes (dev) |
+| `vite`                  | ^7.3.1  | Frontend build tool & dev server| Yes (dev) |
+| `nodemon`               | ^3.1.11 | Auto-restart dev server on edit | Dev only  |
 
 ---
 
@@ -203,6 +205,7 @@ const canvas = await html2canvas(domElement, {
 - SVGs with external references may not render.
 - Performance degrades with very complex DOM trees.
 - Google Drive images require the backend proxy (see proxyImage.js).
+- **Cannot parse oklch/oklab colors** — Tailwind v4's default output format. Fixed via HEX `@theme` overrides in `index.css` (see Tailwind CSS section below).
 
 ---
 
@@ -375,6 +378,41 @@ This project uses **Tailwind CSS v4**, which has breaking changes from v3:
 - `@apply` works differently
 - Configuration is in `index.css` via `@import "tailwindcss"`, not `tailwind.config.js`
 
+### Critical: HEX Color Overrides (oklch compatibility fix)
+
+Tailwind CSS v4 internally uses **oklch()** color functions for its default palette.  
+Both **html2canvas v1.x** and **jsPDF** cannot parse oklch/oklab color values, causing:
+
+```
+Attempting to parse an unsupported color function "oklab"
+```
+
+**Solution:** In `index.css`, a `@theme` block overrides every default color with its **HEX equivalent**:
+
+```css
+@theme {
+  /* ── Slate ── */
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  /* ... all shades for all 20 color families ... */
+}
+```
+
+**Why this approach?**
+
+| Approach                                   | Pros                                                                   | Cons                                                     |
+| ------------------------------------------ | ---------------------------------------------------------------------- | -------------------------------------------------------- |
+| HEX `@theme` overrides (chosen)            | Zero component changes, all utilities keep working, visually identical | Large CSS block (~300 lines)                             |
+| Runtime DOM patching (`fixOklabColors.js`) | No config changes                                                      | Fragile, slow for bulk generation, doesn't fix gradients |
+| Replace html2canvas with html-to-image     | Supports native oklch                                                  | Different rendering engine, potential regressions        |
+| Downgrade to Tailwind v3                   | No oklch at all                                                        | Loses v4 features, major refactor                        |
+
+The `@theme` block covers all 20 color families (slate through rose) with full 50–950 shades.  
+All existing utility classes (`bg-blue-500`, `text-slate-600`, `from-purple-600`, etc.) output HEX automatically — **no component code changes required**.
+
+> **If adding a new color family:** Add its HEX overrides to the `@theme` block in `index.css` to prevent oklch leaking into the rendered CSS.
+
 ### Integration with Vite:
 
 ```javascript
@@ -415,3 +453,40 @@ The card customization system (introduced in `09_CARD_CUSTOMIZATION.md`) leverag
 - Tailwind utility classes (conditional via template literals)
 - Native HTML form controls (color, range, select)
 - React state management (`useState`, functional updates)
+
+---
+
+## Bulk Generation Controls
+
+### Range Start / End
+
+Controls which subset of the member queue gets generated (1-based inclusive). Configured in `Generate.jsx` and passed to `BulkGenerator` as `rangeStart` / `rangeEnd` props.
+
+```
+members[rangeStart - 1 ... rangeEnd - 1]  →  filtered members
+```
+
+### Per-Person Cap
+
+Limits how many cards are generated for the same person name within a single generation run. Useful when duplicates exist in the queue.
+
+```
+perPersonCap = 0   →  no limit (default)
+perPersonCap = 2   →  max 2 cards per unique name
+```
+
+### Email via Brevo
+
+After generation completes, the frontend can optionally email each card to the member's email address:
+
+1. Toggle "Email cards via Brevo" in Generation Settings
+2. Each member's `email` field is used as the recipient
+3. PDF blob is converted to base64 and sent to `POST /api/email/send-card`
+4. Backend sends the email via Brevo's v3 REST API
+5. Progress is shown in a dedicated "Email Delivery" panel
+
+**Requirements:**
+
+- `BREVO_API_KEY` set in backend `.env`
+- `VITE_API_URL` set in frontend `.env` (defaults to `http://localhost:5000`)
+- Members must have an email address to receive cards

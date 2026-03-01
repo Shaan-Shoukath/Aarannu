@@ -158,6 +158,48 @@ const cleanupExpiredIds = async () => {
   return { data, error, deletedFiles };
 };
 
+/**
+ * Delete a single generated-ID row AND its storage file.
+ * Only deletes if the row belongs to the given userId (ownership check).
+ *
+ * @param   {string} id      – UUID of the generated_ids row
+ * @param   {string} userId  – authenticated user's id (ownership guard)
+ * @returns {Promise<{data, error}>}
+ */
+const deleteGeneratedId = async (id, userId) => {
+  // 1. Fetch the row to get file_url and verify ownership
+  const { data: row, error: fetchError } = await supabase
+    .from("generated_ids")
+    .select("id, file_url, user_id")
+    .eq("id", id)
+    .single();
+
+  if (fetchError) return { data: null, error: fetchError };
+  if (!row) return { data: null, error: { message: "Record not found" } };
+  if (row.user_id !== userId)
+    return { data: null, error: { message: "Unauthorized" } };
+
+  // 2. Delete the storage file (best-effort)
+  if (row.file_url) {
+    try {
+      await deleteFile(row.file_url);
+    } catch (err) {
+      console.warn(
+        `[deleteGeneratedId] Could not delete file ${row.file_url}:`,
+        err.message,
+      );
+    }
+  }
+
+  // 3. Delete the DB row
+  const { data, error } = await supabase
+    .from("generated_ids")
+    .delete()
+    .eq("id", id);
+
+  return { data, error };
+};
+
 module.exports = {
   getMemberByUserId,
   getPendingMembers,
@@ -165,4 +207,5 @@ module.exports = {
   insertGeneratedIds,
   getActiveIds,
   cleanupExpiredIds,
+  deleteGeneratedId,
 };

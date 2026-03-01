@@ -59,14 +59,15 @@ app.use(
   }),
 );
 
-// Parse JSON bodies (with 1 MB limit to prevent abuse)
-app.use(express.json({ limit: "1mb" }));
+// Parse JSON bodies (with 10 MB limit to support PDF base64 email attachments)
+app.use(express.json({ limit: "10mb" }));
 
 // ── 4. Routes ───────────────────────────────────────────────
 const authRoutes = require("./routes/authRoutes");
 const idRoutes = require("./routes/idRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const proxyRoutes = require("./routes/proxyRoutes");
+const emailRoutes = require("./routes/emailRoutes");
 
 // Health check (no auth required)
 app.get("/api/health", (_req, res) => {
@@ -81,6 +82,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/ids", idRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/proxy", proxyRoutes);
+app.use("/api/email", emailRoutes);
 
 // 404 catch-all for unknown routes
 app.use((_req, res) => {
