@@ -170,36 +170,57 @@ const StudentCard = forwardRef(function StudentCard(
               <div>
                 <h3
                   className="font-bold"
-                  style={{ color: cs.fontColor, fontSize: `${cs.nameFontSize || 20}px` }}
+                  style={{
+                    color: cs.fontColor,
+                    fontSize: `${cs.nameFontSize || 20}px`,
+                  }}
                 >
                   {name}
                 </h3>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="px-2 py-0.5 rounded-full font-semibold bg-linear-to-r from-orange-100 to-purple-100 text-purple-700 border border-purple-200/50" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                  <span
+                    className="px-2 py-0.5 rounded-full font-semibold bg-linear-to-r from-orange-100 to-purple-100 text-purple-700 border border-purple-200/50"
+                    style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                  >
                     {role}
                   </span>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-y-1.5 gap-x-4">
                 <div>
-                  <p className="text-slate-400 uppercase font-semibold" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                  <p
+                    className="text-slate-400 uppercase font-semibold"
+                    style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                  >
                     DOB
                   </p>
-                  <p className="font-semibold text-slate-700" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>
+                  <p
+                    className="font-semibold text-slate-700"
+                    style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                  >
                     {dob}
                   </p>
                 </div>
                 <div>
-                  <p className="text-slate-400 uppercase font-semibold" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                  <p
+                    className="text-slate-400 uppercase font-semibold"
+                    style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                  >
                     Gender
                   </p>
-                  <p className="font-semibold text-slate-700" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>
+                  <p
+                    className="font-semibold text-slate-700"
+                    style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                  >
                     {gender}
                   </p>
                 </div>
               </div>
               <div className="pt-1.5 border-t border-slate-100">
-                <p className="text-slate-400 uppercase font-semibold mb-0.5" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                <p
+                  className="text-slate-400 uppercase font-semibold mb-0.5"
+                  style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                >
                   Student ID
                 </p>
                 <p

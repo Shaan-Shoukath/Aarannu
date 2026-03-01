@@ -218,40 +218,66 @@ const CorporateCard = forwardRef(function CorporateCard(
               <div>
                 <h3
                   className="font-bold"
-                  style={{ color: cs.fontColor, fontSize: `${cs.nameFontSize || 20}px` }}
+                  style={{
+                    color: cs.fontColor,
+                    fontSize: `${cs.nameFontSize || 20}px`,
+                  }}
                 >
                   {name}
                 </h3>
                 <p
                   className="font-medium uppercase tracking-wide mt-0.5"
-                  style={{ color: cs.accentColor, fontSize: `${cs.labelFontSize || 9}px` }}
+                  style={{
+                    color: cs.accentColor,
+                    fontSize: `${cs.labelFontSize || 9}px`,
+                  }}
                 >
                   {role}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-y-2 gap-x-4">
                 <div>
-                  <p className="text-slate-400 uppercase font-semibold" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                  <p
+                    className="text-slate-400 uppercase font-semibold"
+                    style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                  >
                     Date of Birth
                   </p>
-                  <p className="font-semibold text-slate-700" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>{dob}</p>
+                  <p
+                    className="font-semibold text-slate-700"
+                    style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                  >
+                    {dob}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-slate-400 uppercase font-semibold" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                  <p
+                    className="text-slate-400 uppercase font-semibold"
+                    style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                  >
                     Gender
                   </p>
-                  <p className="font-semibold text-slate-700" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>
+                  <p
+                    className="font-semibold text-slate-700"
+                    style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                  >
                     {gender}
                   </p>
                 </div>
               </div>
               <div className="mt-2 pt-2 border-t border-slate-100">
-                <p className="text-slate-400 uppercase font-semibold mb-0.5" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                <p
+                  className="text-slate-400 uppercase font-semibold mb-0.5"
+                  style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                >
                   ID Number
                 </p>
                 <p
                   className="font-mono font-bold tracking-widest"
-                  style={{ color: gc.start, fontSize: `${cs.valueFontSize || 14}px` }}
+                  style={{
+                    color: gc.start,
+                    fontSize: `${cs.valueFontSize || 14}px`,
+                  }}
                 >
                   {id_number}
                 </p>

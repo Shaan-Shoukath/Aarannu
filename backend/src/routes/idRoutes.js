@@ -11,7 +11,11 @@ const { Router } = require("express");
 const verifyToken = require("../middleware/verifyToken");
 const checkApproval = require("../middleware/checkApproval");
 const { apiLimiter } = require("../middleware/rateLimiter");
-const { generateIds, getMyIds, deleteId } = require("../controllers/idController");
+const {
+  generateIds,
+  getMyIds,
+  deleteId,
+} = require("../controllers/idController");
 
 const router = Router();
 

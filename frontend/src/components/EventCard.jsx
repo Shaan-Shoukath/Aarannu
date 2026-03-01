@@ -180,21 +180,33 @@ const EventCard = forwardRef(function EventCard(
               <div>
                 <h3
                   className="font-bold"
-                  style={{ color: cs.fontColor, fontSize: `${cs.nameFontSize || 20}px` }}
+                  style={{
+                    color: cs.fontColor,
+                    fontSize: `${cs.nameFontSize || 20}px`,
+                  }}
                 >
                   {name}
                 </h3>
                 {dob && (
-                  <p className="text-indigo-300 font-medium mt-0.5" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                  <p
+                    className="text-indigo-300 font-medium mt-0.5"
+                    style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                  >
                     DOB: {dob}
                   </p>
                 )}
               </div>
               <div className="mt-2 pt-2 border-t border-indigo-500/30">
-                <p className="text-indigo-400 uppercase font-semibold mb-0.5" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                <p
+                  className="text-indigo-400 uppercase font-semibold mb-0.5"
+                  style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                >
                   Pass ID
                 </p>
-                <p className="font-mono font-bold text-amber-300 tracking-widest" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>
+                <p
+                  className="font-mono font-bold text-amber-300 tracking-widest"
+                  style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                >
                   {id_number}
                 </p>
               </div>

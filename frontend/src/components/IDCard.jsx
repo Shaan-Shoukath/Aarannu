@@ -88,7 +88,9 @@ const IDCard = forwardRef(function IDCard(
             {(() => {
               // Dynamic gradient size: base 36 (w-36=144px) scaled with photo
               const scale = (cs.photoScale || 100) / 100;
-              const triSize = Math.round(Math.max(20, 36 * (1 - (scale - 1) * 0.6)));
+              const triSize = Math.round(
+                Math.max(20, 36 * (1 - (scale - 1) * 0.6)),
+              );
               return (
                 <>
                   {/* Top-right gradient blob */}
@@ -101,7 +103,10 @@ const IDCard = forwardRef(function IDCard(
                   {/* Top-right triangle */}
                   <div
                     className="absolute top-0 right-0"
-                    style={{ width: `${triSize * 4}px`, height: `${triSize * 4}px` }}
+                    style={{
+                      width: `${triSize * 4}px`,
+                      height: `${triSize * 4}px`,
+                    }}
                   >
                     <svg
                       viewBox="0 0 100 100"
@@ -138,7 +143,10 @@ const IDCard = forwardRef(function IDCard(
                   {/* Bottom-left triangle */}
                   <div
                     className="absolute bottom-0 left-0 rotate-180"
-                    style={{ width: `${triSize * 4}px`, height: `${triSize * 4}px` }}
+                    style={{
+                      width: `${triSize * 4}px`,
+                      height: `${triSize * 4}px`,
+                    }}
                   >
                     <svg
                       viewBox="0 0 100 100"
@@ -264,7 +272,9 @@ const IDCard = forwardRef(function IDCard(
                     return (
                       <div
                         className="shrink-0 rounded-lg p-0.5 shadow-md"
-                        style={{ background: `linear-gradient(135deg, ${gc.start}40, ${gc.end}40)` }}
+                        style={{
+                          background: `linear-gradient(135deg, ${gc.start}40, ${gc.end}40)`,
+                        }}
                       >
                         <div
                           className="relative overflow-hidden rounded-[5px]"
@@ -279,7 +289,11 @@ const IDCard = forwardRef(function IDCard(
                             />
                           ) : (
                             <div className="w-full h-full bg-slate-50 flex items-center justify-center">
-                              <svg className="w-10 h-10 text-slate-300" fill="currentColor" viewBox="0 0 24 24">
+                              <svg
+                                className="w-10 h-10 text-slate-300"
+                                fill="currentColor"
+                                viewBox="0 0 24 24"
+                              >
                                 <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                               </svg>
                             </div>
@@ -294,31 +308,49 @@ const IDCard = forwardRef(function IDCard(
                     <div>
                       <h3
                         className="font-bold leading-snug"
-                        style={{ color: cs.fontColor, fontSize: `${cs.nameFontSize || 20}px` }}
+                        style={{
+                          color: cs.fontColor,
+                          fontSize: `${cs.nameFontSize || 20}px`,
+                        }}
                       >
                         {name}
                       </h3>
                       <p
                         className="font-semibold uppercase tracking-widest mt-0.5"
-                        style={{ color: cs.accentColor, fontSize: `${(cs.labelFontSize || 9) + 1}px` }}
+                        style={{
+                          color: cs.accentColor,
+                          fontSize: `${(cs.labelFontSize || 9) + 1}px`,
+                        }}
                       >
                         {role}
                       </p>
                     </div>
                     <div className="grid grid-cols-2 gap-y-1.5 gap-x-4 text-left">
                       <div>
-                        <p className="text-slate-400 uppercase font-semibold" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                        <p
+                          className="text-slate-400 uppercase font-semibold"
+                          style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                        >
                           Date of Birth
                         </p>
-                        <p className="font-semibold text-slate-700" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>
+                        <p
+                          className="font-semibold text-slate-700"
+                          style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                        >
                           {dob}
                         </p>
                       </div>
                       <div>
-                        <p className="text-slate-400 uppercase font-semibold" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                        <p
+                          className="text-slate-400 uppercase font-semibold"
+                          style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                        >
                           Gender
                         </p>
-                        <p className="font-semibold text-slate-700" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>
+                        <p
+                          className="font-semibold text-slate-700"
+                          style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                        >
                           {gender}
                         </p>
                       </div>
@@ -327,10 +359,18 @@ const IDCard = forwardRef(function IDCard(
                       <div className="grid grid-cols-2 gap-y-1 gap-x-4 text-left">
                         {frontFields.map((f) => (
                           <div key={f.label}>
-                            <p className="text-slate-400 uppercase font-semibold" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                            <p
+                              className="text-slate-400 uppercase font-semibold"
+                              style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                            >
                               {f.label}
                             </p>
-                            <p className="font-semibold text-slate-700" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>
+                            <p
+                              className="font-semibold text-slate-700"
+                              style={{
+                                fontSize: `${cs.valueFontSize || 14}px`,
+                              }}
+                            >
                               {customValues[f.label] || "—"}
                             </p>
                           </div>
@@ -342,12 +382,18 @@ const IDCard = forwardRef(function IDCard(
 
                 {/* ── FOOTER (vertical): Membership ID ── */}
                 <div className="text-center py-3 mx-5">
-                  <p className="text-slate-400 uppercase font-bold tracking-widest mb-0.5" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                  <p
+                    className="text-slate-400 uppercase font-bold tracking-widest mb-0.5"
+                    style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                  >
                     Membership ID
                   </p>
                   <p
                     className="font-mono font-bold tracking-widest"
-                    style={{ color: gc.start, fontSize: `${(cs.valueFontSize || 14) + 2}px` }}
+                    style={{
+                      color: gc.start,
+                      fontSize: `${(cs.valueFontSize || 14) + 2}px`,
+                    }}
                   >
                     {id_number}
                   </p>
@@ -365,7 +411,9 @@ const IDCard = forwardRef(function IDCard(
                     return (
                       <div
                         className="shrink-0 rounded-lg p-0.5 shadow-md"
-                        style={{ background: `linear-gradient(135deg, ${gc.start}40, ${gc.end}40)` }}
+                        style={{
+                          background: `linear-gradient(135deg, ${gc.start}40, ${gc.end}40)`,
+                        }}
                       >
                         <div
                           className="relative overflow-hidden rounded-[5px]"
@@ -380,7 +428,11 @@ const IDCard = forwardRef(function IDCard(
                             />
                           ) : (
                             <div className="w-full h-full bg-slate-50 flex items-center justify-center">
-                              <svg className="w-10 h-10 text-slate-300" fill="currentColor" viewBox="0 0 24 24">
+                              <svg
+                                className="w-10 h-10 text-slate-300"
+                                fill="currentColor"
+                                viewBox="0 0 24 24"
+                              >
                                 <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                               </svg>
                             </div>
@@ -395,13 +447,19 @@ const IDCard = forwardRef(function IDCard(
                     <div>
                       <h3
                         className="font-bold leading-snug"
-                        style={{ color: cs.fontColor, fontSize: `${cs.nameFontSize || 20}px` }}
+                        style={{
+                          color: cs.fontColor,
+                          fontSize: `${cs.nameFontSize || 20}px`,
+                        }}
                       >
                         {name}
                       </h3>
                       <p
                         className="font-semibold uppercase tracking-widest mt-0.5"
-                        style={{ color: cs.accentColor, fontSize: `${(cs.labelFontSize || 9) + 1}px` }}
+                        style={{
+                          color: cs.accentColor,
+                          fontSize: `${(cs.labelFontSize || 9) + 1}px`,
+                        }}
                       >
                         {role}
                       </p>
@@ -409,18 +467,30 @@ const IDCard = forwardRef(function IDCard(
 
                     <div className="grid grid-cols-2 gap-y-1.5 gap-x-6">
                       <div>
-                        <p className="text-slate-400 uppercase font-semibold" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                        <p
+                          className="text-slate-400 uppercase font-semibold"
+                          style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                        >
                           Date of Birth
                         </p>
-                        <p className="font-semibold text-slate-700" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>
+                        <p
+                          className="font-semibold text-slate-700"
+                          style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                        >
                           {dob}
                         </p>
                       </div>
                       <div>
-                        <p className="text-slate-400 uppercase font-semibold" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                        <p
+                          className="text-slate-400 uppercase font-semibold"
+                          style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                        >
                           Gender
                         </p>
-                        <p className="font-semibold text-slate-700" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>
+                        <p
+                          className="font-semibold text-slate-700"
+                          style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                        >
                           {gender}
                         </p>
                       </div>
@@ -430,10 +500,18 @@ const IDCard = forwardRef(function IDCard(
                       <div className="grid grid-cols-2 gap-y-1 gap-x-6">
                         {frontFields.map((f) => (
                           <div key={f.label}>
-                            <p className="text-slate-400 uppercase font-semibold" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                            <p
+                              className="text-slate-400 uppercase font-semibold"
+                              style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                            >
                               {f.label}
                             </p>
-                            <p className="font-semibold text-slate-700 truncate" style={{ fontSize: `${cs.valueFontSize || 14}px` }}>
+                            <p
+                              className="font-semibold text-slate-700 truncate"
+                              style={{
+                                fontSize: `${cs.valueFontSize || 14}px`,
+                              }}
+                            >
                               {customValues[f.label] || "—"}
                             </p>
                           </div>
@@ -445,12 +523,18 @@ const IDCard = forwardRef(function IDCard(
 
                 {/* ── FOOTER (horizontal): Membership ID ── */}
                 <div className="text-center py-3 mx-6">
-                  <p className="text-slate-400 uppercase font-bold tracking-widest mb-0.5" style={{ fontSize: `${cs.labelFontSize || 9}px` }}>
+                  <p
+                    className="text-slate-400 uppercase font-bold tracking-widest mb-0.5"
+                    style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                  >
                     Membership ID
                   </p>
                   <p
                     className="font-mono font-bold tracking-widest"
-                    style={{ color: gc.start, fontSize: `${(cs.valueFontSize || 14) + 2}px` }}
+                    style={{
+                      color: gc.start,
+                      fontSize: `${(cs.valueFontSize || 14) + 2}px`,
+                    }}
                   >
                     {id_number}
                   </p>

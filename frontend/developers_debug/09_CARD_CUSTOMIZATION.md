@@ -200,6 +200,7 @@ The horizontal layout uses a **two-row flex-col** approach:
 **Why Photo LEFT instead of RIGHT?**
 
 The decorative SVG triangles occupy the corners:
+
 - **Top-right triangle**: `w-28 h-28` (112×112px) — gradient accent
 - **Bottom-left triangle**: `w-20 h-20` (80×80px) — smaller accent
 
@@ -556,6 +557,7 @@ if (uploadToCloud) {
 ```
 
 When upload is OFF:
+
 - **Local PDF/ZIP** still works normally (always generated first)
 - **Email delivery** still works (uses local PDF blob)
 - **Dashboard** won't show the card (no `generated_ids` row)
@@ -571,7 +573,9 @@ An iOS-style toggle switch with cloud upload icon in the Generation Settings sec
   onClick={() => setUploadToCloud((v) => !v)}
   className={`... rounded-full ${uploadToCloud ? "bg-indigo-500" : "bg-slate-300"}`}
 >
-  <span className={`... rounded-full bg-white ${uploadToCloud ? "translate-x-5" : "translate-x-0"}`} />
+  <span
+    className={`... rounded-full bg-white ${uploadToCloud ? "translate-x-5" : "translate-x-0"}`}
+  />
 </button>
 ```
 
@@ -595,10 +599,11 @@ NAV-2603-00001
 ```javascript
 // Generate.jsx — generateMemberId(rowNum)
 const generateMemberId = (rowNum) => {
-  const prefix = (orgName || "ORG")
-    .replace(/[^A-Za-z]/g, "")
-    .slice(0, 3)
-    .toUpperCase() || "ORG";
+  const prefix =
+    (orgName || "ORG")
+      .replace(/[^A-Za-z]/g, "")
+      .slice(0, 3)
+      .toUpperCase() || "ORG";
   const now = new Date();
   const yy = String(now.getFullYear()).slice(-2);
   const mm = String(now.getMonth() + 1).padStart(2, "0");
@@ -619,15 +624,15 @@ in the queue (1-based).
 
 html2canvas v1.4.1 has limited CSS support. These features cause **visual mismatches** between the live preview and captured/downloaded images:
 
-| CSS Feature         | Issue                                                  | Solution Used                                         |
-| ------------------- | ------------------------------------------------------ | ----------------------------------------------------- |
-| `blur()` filter     | Ignores `backdrop-filter` and `filter: blur()` entirely | Replace with `radial-gradient()` for soft glow effects |
-| `mix-blend-mode`    | Not supported — element becomes invisible               | Remove; use direct opacity instead                     |
-| `backdrop-blur`     | Ignored — backdrop effects not rendered                  | Remove; use `bg-opacity` with solid color              |
-| `oklch()` / `oklab()`| Not recognized — defaults to black                     | `fixOklabColors()` utility converts to rgba at capture |
-| `color-mix()`       | Not recognized by html2canvas color parser               | Same `fixOklabColors()` utility handles this           |
-| `background-clip: text` | Not supported — text disappears                     | Replace with solid color on text                       |
-| SVG gradient ID collisions | Multiple cards share same `<linearGradient id>`, only first renders | Use `useId()` hook for unique IDs per instance |
+| CSS Feature                | Issue                                                               | Solution Used                                          |
+| -------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------ |
+| `blur()` filter            | Ignores `backdrop-filter` and `filter: blur()` entirely             | Replace with `radial-gradient()` for soft glow effects |
+| `mix-blend-mode`           | Not supported — element becomes invisible                           | Remove; use direct opacity instead                     |
+| `backdrop-blur`            | Ignored — backdrop effects not rendered                             | Remove; use `bg-opacity` with solid color              |
+| `oklch()` / `oklab()`      | Not recognized — defaults to black                                  | `fixOklabColors()` utility converts to rgba at capture |
+| `color-mix()`              | Not recognized by html2canvas color parser                          | Same `fixOklabColors()` utility handles this           |
+| `background-clip: text`    | Not supported — text disappears                                     | Replace with solid color on text                       |
+| SVG gradient ID collisions | Multiple cards share same `<linearGradient id>`, only first renders | Use `useId()` hook for unique IDs per instance         |
 
 ### fixOklabColors Utility
 
@@ -693,8 +698,9 @@ Generates a `.csv` file with columns: `Name, ID Number, Status, Email Status`
 ```javascript
 const csv = [
   "Name,ID Number,Status,Email Status",
-  ...results.map(r =>
-    `"${r.name}","${r.id_number || "—"}",${r.success ? "OK" : "FAIL"},"${r.cloudWarning || "—"}"`
+  ...results.map(
+    (r) =>
+      `"${r.name}","${r.id_number || "—"}",${r.success ? "OK" : "FAIL"},"${r.cloudWarning || "—"}"`,
   ),
 ].join("\n");
 ```
@@ -705,7 +711,10 @@ Copies tab-separated data to clipboard for direct Ctrl+V paste into Google Sheet
 
 ```javascript
 const tsv = results
-  .map(r => `${r.name}\t${r.id_number || "—"}\t${r.success ? "OK" : "FAIL"}\t${r.cloudWarning || "—"}`)
+  .map(
+    (r) =>
+      `${r.name}\t${r.id_number || "—"}\t${r.success ? "OK" : "FAIL"}\t${r.cloudWarning || "—"}`,
+  )
   .join("\n");
 navigator.clipboard.writeText(tsv);
 ```
@@ -716,10 +725,10 @@ navigator.clipboard.writeText(tsv);
 
 The IDCard template uses SVG triangles as corner accents:
 
-| Triangle       | Size      | Position             | Opacity | Purpose                     |
-| -------------- | --------- | -------------------- | ------- | --------------------------- |
-| Top-right      | `w-28 h-28` (112px) | `top-0 right-0`    | 0.9     | Primary gradient accent     |
-| Bottom-left    | `w-20 h-20` (80px)  | `bottom-0 left-0` | 0.8     | Secondary gradient accent   |
+| Triangle    | Size                | Position          | Opacity | Purpose                   |
+| ----------- | ------------------- | ----------------- | ------- | ------------------------- |
+| Top-right   | `w-28 h-28` (112px) | `top-0 right-0`   | 0.9     | Primary gradient accent   |
+| Bottom-left | `w-20 h-20` (80px)  | `bottom-0 left-0` | 0.8     | Secondary gradient accent |
 
 **Sizing rationale**: Triangles are sized to be decorative corner accents without
 overlapping the content area. The content is inset `left-10 right-10 top-14 bottom-3`
@@ -727,7 +736,9 @@ overlapping the content area. The content is inset `left-10 right-10 top-14 bott
 the safe zone between the triangles.
 
 Both triangles use the same SVG path with unique gradient IDs per card instance:
+
 ```svg
 <path d="M0 0H100V100L50 50L0 0Z" fill={url(#unique-id)} fillOpacity="0.9" />
 ```
+
 The bottom-left triangle is rotated 180° to mirror the shape into the opposite corner.

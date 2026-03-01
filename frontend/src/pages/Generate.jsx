@@ -128,10 +128,10 @@ export default function Generate() {
     fontFamily: "'Public Sans', sans-serif",
     accentColor: templateId === "event" ? "#818cf8" : "#64748b",
     borderRadius: 12,
-    nameFontSize: 20,   // px – name / heading
-    valueFontSize: 14,  // px – detail values (dob, gender, id)
-    labelFontSize: 9,   // px – field labels (uppercase tiny)
-    photoScale: 100,    // % – photo size scale (50-150)
+    nameFontSize: 20, // px – name / heading
+    valueFontSize: 14, // px – detail values (dob, gender, id)
+    labelFontSize: 9, // px – field labels (uppercase tiny)
+    photoScale: 100, // % – photo size scale (50-150)
   });
   const handleStyleChange = (key, value) =>
     setCardStyles((prev) => ({ ...prev, [key]: value }));
@@ -2084,16 +2084,12 @@ export default function Generate() {
                         type="button"
                         onClick={() => setUploadToCloud((v) => !v)}
                         className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                          uploadToCloud
-                            ? "bg-indigo-500"
-                            : "bg-slate-300"
+                          uploadToCloud ? "bg-indigo-500" : "bg-slate-300"
                         }`}
                       >
                         <span
                           className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform duration-200 ease-in-out ${
-                            uploadToCloud
-                              ? "translate-x-5"
-                              : "translate-x-0"
+                            uploadToCloud ? "translate-x-5" : "translate-x-0"
                           }`}
                         />
                       </button>

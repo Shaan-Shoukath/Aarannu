@@ -126,9 +126,12 @@ const deleteId = async (req, res, next) => {
     const { error } = await deleteGeneratedId(id, userId);
 
     if (error) {
-      const status = error.message === "Unauthorized" ? 403
-        : error.message === "Record not found" ? 404
-        : 500;
+      const status =
+        error.message === "Unauthorized"
+          ? 403
+          : error.message === "Record not found"
+            ? 404
+            : 500;
       return res.status(status).json({ error: error.message });
     }
 
