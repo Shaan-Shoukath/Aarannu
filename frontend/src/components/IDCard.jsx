@@ -263,8 +263,8 @@ const IDCard = forwardRef(function IDCard(
             {isVertical ? (
               <>
                 {/* ── BODY (vertical) ── */}
-                <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6">
-                  {/* Photo */}
+                <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6">
+                  {/* Photo – centered */}
                   {(() => {
                     const scale = (cs.photoScale || 100) / 100;
                     const pw = Math.round(100 * scale);
@@ -303,29 +303,31 @@ const IDCard = forwardRef(function IDCard(
                     );
                   })()}
 
-                  {/* Details */}
-                  <div className="w-full space-y-2 text-center">
-                    <div>
-                      <h3
-                        className="font-bold leading-snug"
-                        style={{
-                          color: cs.fontColor,
-                          fontSize: `${cs.nameFontSize || 20}px`,
-                        }}
-                      >
-                        {name}
-                      </h3>
-                      <p
-                        className="font-semibold uppercase tracking-widest mt-0.5"
-                        style={{
-                          color: cs.accentColor,
-                          fontSize: `${(cs.labelFontSize || 9) + 1}px`,
-                        }}
-                      >
-                        {role}
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-y-1.5 gap-x-4 text-left">
+                  {/* Name & Role – centered */}
+                  <div className="text-center">
+                    <h3
+                      className="font-bold leading-snug"
+                      style={{
+                        color: cs.fontColor,
+                        fontSize: `${cs.nameFontSize || 20}px`,
+                      }}
+                    >
+                      {name}
+                    </h3>
+                    <p
+                      className="font-semibold uppercase tracking-widest mt-0.5"
+                      style={{
+                        color: cs.accentColor,
+                        fontSize: `${(cs.labelFontSize || 9) + 1}px`,
+                      }}
+                    >
+                      {role}
+                    </p>
+                  </div>
+
+                  {/* Details – centered 2-col grid */}
+                  <div className="w-full max-w-[240px] space-y-2">
+                    <div className="grid grid-cols-2 gap-y-1.5 gap-x-4 text-center">
                       <div>
                         <p
                           className="text-slate-400 uppercase font-semibold"
@@ -356,7 +358,7 @@ const IDCard = forwardRef(function IDCard(
                       </div>
                     </div>
                     {frontFields.length > 0 && (
-                      <div className="grid grid-cols-2 gap-y-1 gap-x-4 text-left">
+                      <div className="grid grid-cols-2 gap-y-1 gap-x-4 text-center">
                         {frontFields.map((f) => (
                           <div key={f.label}>
                             <p
@@ -380,8 +382,8 @@ const IDCard = forwardRef(function IDCard(
                   </div>
                 </div>
 
-                {/* ── FOOTER (vertical): Membership ID ── */}
-                <div className="text-center py-3 mx-5">
+                {/* ── FOOTER (vertical): Membership ID – pinned bottom center ── */}
+                <div className="text-center py-3 mx-5 mt-auto">
                   <p
                     className="text-slate-400 uppercase font-bold tracking-widest mb-0.5"
                     style={{ fontSize: `${cs.labelFontSize || 9}px` }}
@@ -403,7 +405,7 @@ const IDCard = forwardRef(function IDCard(
               <>
                 {/* ── BODY (horizontal) ── */}
                 <div className="flex-1 flex items-center justify-center px-8 gap-6">
-                  {/* Photo */}
+                  {/* Photo – centered */}
                   {(() => {
                     const scale = (cs.photoScale || 100) / 100;
                     const pw = Math.round(105 * scale);
@@ -442,8 +444,8 @@ const IDCard = forwardRef(function IDCard(
                     );
                   })()}
 
-                  {/* Details */}
-                  <div className="flex-1 flex flex-col justify-center space-y-2.5 min-w-0">
+                  {/* Details – centered */}
+                  <div className="flex-1 flex flex-col justify-center items-center space-y-2.5 min-w-0 text-center">
                     <div>
                       <h3
                         className="font-bold leading-snug"
@@ -465,7 +467,7 @@ const IDCard = forwardRef(function IDCard(
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-y-1.5 gap-x-6">
+                    <div className="grid grid-cols-2 gap-y-1.5 gap-x-6 text-center">
                       <div>
                         <p
                           className="text-slate-400 uppercase font-semibold"
@@ -497,7 +499,7 @@ const IDCard = forwardRef(function IDCard(
                     </div>
 
                     {frontFields.length > 0 && (
-                      <div className="grid grid-cols-2 gap-y-1 gap-x-6">
+                      <div className="grid grid-cols-2 gap-y-1 gap-x-6 text-center">
                         {frontFields.map((f) => (
                           <div key={f.label}>
                             <p
@@ -521,8 +523,8 @@ const IDCard = forwardRef(function IDCard(
                   </div>
                 </div>
 
-                {/* ── FOOTER (horizontal): Membership ID ── */}
-                <div className="text-center py-3 mx-6">
+                {/* ── FOOTER (horizontal): Membership ID – pinned bottom center ── */}
+                <div className="text-center py-3 mx-6 mt-auto">
                   <p
                     className="text-slate-400 uppercase font-bold tracking-widest mb-0.5"
                     style={{ fontSize: `${cs.labelFontSize || 9}px` }}

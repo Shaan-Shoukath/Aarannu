@@ -190,10 +190,11 @@ const CorporateCard = forwardRef(function CorporateCard(
 
           {/* Content */}
           <div
-            className={`absolute ${isVertical ? "top-14 left-4 right-4 bottom-4" : "top-16 left-6 right-6 bottom-4"} flex ${isVertical ? "flex-col items-center gap-3" : "gap-6"} z-10`}
+            className={`absolute ${isVertical ? "top-14 left-4 right-4 bottom-4" : "top-16 left-6 right-6 bottom-4"} flex flex-col items-center z-10`}
           >
+            {/* Photo – centered */}
             <div
-              className={`${isVertical ? "w-28 h-32 mt-1" : "w-32 h-36 mt-2"} shrink-0 relative`}
+              className={`${isVertical ? "w-28 h-32 mt-1" : "w-24 h-28 mt-1"} shrink-0 relative`}
             >
               {photo_url ? (
                 <img
@@ -214,88 +215,94 @@ const CorporateCard = forwardRef(function CorporateCard(
                 </div>
               )}
             </div>
-            <div className="flex-1 flex flex-col justify-center space-y-3">
+
+            {/* Name & Role – centered */}
+            <div className="text-center mt-2">
+              <h3
+                className="font-bold"
+                style={{
+                  color: cs.fontColor,
+                  fontSize: `${cs.nameFontSize || 20}px`,
+                }}
+              >
+                {name}
+              </h3>
+              <p
+                className="font-medium uppercase tracking-wide mt-0.5"
+                style={{
+                  color: cs.accentColor,
+                  fontSize: `${cs.labelFontSize || 9}px`,
+                }}
+              >
+                {role}
+              </p>
+            </div>
+
+            {/* DOB & Gender – centered grid */}
+            <div className="grid grid-cols-2 gap-y-2 gap-x-6 text-center mt-2">
               <div>
-                <h3
-                  className="font-bold"
-                  style={{
-                    color: cs.fontColor,
-                    fontSize: `${cs.nameFontSize || 20}px`,
-                  }}
-                >
-                  {name}
-                </h3>
                 <p
-                  className="font-medium uppercase tracking-wide mt-0.5"
-                  style={{
-                    color: cs.accentColor,
-                    fontSize: `${cs.labelFontSize || 9}px`,
-                  }}
-                >
-                  {role}
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-y-2 gap-x-4">
-                <div>
-                  <p
-                    className="text-slate-400 uppercase font-semibold"
-                    style={{ fontSize: `${cs.labelFontSize || 9}px` }}
-                  >
-                    Date of Birth
-                  </p>
-                  <p
-                    className="font-semibold text-slate-700"
-                    style={{ fontSize: `${cs.valueFontSize || 14}px` }}
-                  >
-                    {dob}
-                  </p>
-                </div>
-                <div>
-                  <p
-                    className="text-slate-400 uppercase font-semibold"
-                    style={{ fontSize: `${cs.labelFontSize || 9}px` }}
-                  >
-                    Gender
-                  </p>
-                  <p
-                    className="font-semibold text-slate-700"
-                    style={{ fontSize: `${cs.valueFontSize || 14}px` }}
-                  >
-                    {gender}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-2 pt-2 border-t border-slate-100">
-                <p
-                  className="text-slate-400 uppercase font-semibold mb-0.5"
+                  className="text-slate-400 uppercase font-semibold"
                   style={{ fontSize: `${cs.labelFontSize || 9}px` }}
                 >
-                  ID Number
+                  Date of Birth
                 </p>
                 <p
-                  className="font-mono font-bold tracking-widest"
-                  style={{
-                    color: gc.start,
-                    fontSize: `${cs.valueFontSize || 14}px`,
-                  }}
+                  className="font-semibold text-slate-700"
+                  style={{ fontSize: `${cs.valueFontSize || 14}px` }}
                 >
-                  {id_number}
+                  {dob}
                 </p>
               </div>
-              {frontFields.length > 0 && (
-                <div className="grid grid-cols-2 gap-y-1 gap-x-4 mt-1">
-                  {frontFields.map((f) => (
-                    <div key={f.label}>
-                      <p className="text-[8px] text-slate-400 uppercase font-semibold">
-                        {f.label}
-                      </p>
-                      <p className="text-[11px] font-semibold text-slate-700">
-                        {customValues[f.label] || "—"}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div>
+                <p
+                  className="text-slate-400 uppercase font-semibold"
+                  style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                >
+                  Gender
+                </p>
+                <p
+                  className="font-semibold text-slate-700"
+                  style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                >
+                  {gender}
+                </p>
+              </div>
+            </div>
+
+            {/* Custom front fields – centered */}
+            {frontFields.length > 0 && (
+              <div className="grid grid-cols-2 gap-y-1 gap-x-4 mt-2 text-center">
+                {frontFields.map((f) => (
+                  <div key={f.label}>
+                    <p className="text-[8px] text-slate-400 uppercase font-semibold">
+                      {f.label}
+                    </p>
+                    <p className="text-[11px] font-semibold text-slate-700">
+                      {customValues[f.label] || "—"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Membership ID – pinned bottom center */}
+            <div className="text-center mt-auto pb-1">
+              <p
+                className="text-slate-400 uppercase font-semibold mb-0.5"
+                style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+              >
+                Membership ID
+              </p>
+              <p
+                className="font-mono font-bold tracking-widest"
+                style={{
+                  color: gc.start,
+                  fontSize: `${cs.valueFontSize || 14}px`,
+                }}
+              >
+                {id_number}
+              </p>
             </div>
           </div>
         </div>
