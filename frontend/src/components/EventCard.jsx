@@ -25,6 +25,13 @@ const EventCard = forwardRef(function EventCard(
     },
     orientation = "horizontal",
     validityText = "Valid for event duration only",
+    fieldVisibility = {
+      dob: true,
+      gender: true,
+      blood_group: true,
+      role: true,
+      address: true,
+    },
   },
   ref,
 ) {
@@ -47,6 +54,7 @@ const EventCard = forwardRef(function EventCard(
   const gc = gradientColors;
   const isVertical = orientation === "vertical";
   const cs = cardStyles;
+  const fv = fieldVisibility;
 
   return (
     <div ref={ref} className="flex flex-col items-center gap-8">
@@ -152,34 +160,41 @@ const EventCard = forwardRef(function EventCard(
 
           {/* Content */}
           <div
-            className={`absolute ${isVertical ? "top-14 left-4 right-4 bottom-4" : "top-16 left-6 right-6 bottom-4"} flex ${isVertical ? "flex-col items-center gap-3" : "gap-6"} z-10`}
+            className={`absolute ${isVertical ? "top-14 left-4 right-4 bottom-4" : "top-16 left-6 right-6 bottom-4"} flex flex-col z-10`}
           >
+            {/* Top row: Photo LEFT + Details RIGHT */}
             <div
-              className={`${isVertical ? "w-28 h-32 mt-1" : "w-32 h-36 mt-2"} shrink-0 relative`}
+              className={`flex-1 flex ${isVertical ? "flex-col items-center gap-3" : "flex-row gap-5 items-start"}`}
             >
-              {photo_url ? (
-                <img
-                  src={photoSrc}
-                  alt={name}
-                  className="w-full h-full object-cover rounded-md shadow-lg border-2 border-amber-400/30 ring-1 ring-amber-300/20"
-                  crossOrigin="anonymous"
-                />
-              ) : (
-                <div className="w-full h-full rounded-md shadow-lg border-2 border-amber-400/30 bg-indigo-900/50 flex items-center justify-center">
-                  <svg
-                    className="w-12 h-12 text-indigo-400/50"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                  </svg>
-                </div>
-              )}
-            </div>
-            <div className="flex-1 flex flex-col justify-center space-y-3">
-              <div>
+              <div
+                className={`${isVertical ? "w-28 h-32 mt-1" : "w-28 h-32 mt-2"} shrink-0 relative`}
+              >
+                {photo_url ? (
+                  <img
+                    src={photoSrc}
+                    alt={name}
+                    className="w-full h-full object-cover rounded-md shadow-lg border-2 border-amber-400/30 ring-1 ring-amber-300/20"
+                    crossOrigin="anonymous"
+                  />
+                ) : (
+                  <div className="w-full h-full rounded-md shadow-lg border-2 border-amber-400/30 bg-indigo-900/50 flex items-center justify-center">
+                    <svg
+                      className="w-12 h-12 text-indigo-400/50"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+
+              {/* Details – stacked vertically */}
+              <div
+                className={`flex-1 flex flex-col justify-center ${isVertical ? "items-center text-center" : ""} space-y-1.5 min-w-0`}
+              >
                 <h3
-                  className="font-bold"
+                  className="font-bold leading-snug"
                   style={{
                     color: cs.fontColor,
                     fontSize: `${cs.nameFontSize || 20}px`,
@@ -187,43 +202,55 @@ const EventCard = forwardRef(function EventCard(
                 >
                   {name}
                 </h3>
-                {dob && (
+                {fv.dob && dob && (
                   <p
-                    className="text-indigo-300 font-medium mt-0.5"
-                    style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                    style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                    className="text-indigo-100"
                   >
-                    DOB: {dob}
+                    <span
+                      className="text-indigo-400 uppercase font-semibold"
+                      style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                    >
+                      Date of Birth:{" "}
+                    </span>
+                    <span className="font-semibold">{dob}</span>
                   </p>
                 )}
-              </div>
-              <div className="mt-2 pt-2 border-t border-indigo-500/30">
-                <p
-                  className="text-indigo-400 uppercase font-semibold mb-0.5"
-                  style={{ fontSize: `${cs.labelFontSize || 9}px` }}
-                >
-                  Pass ID
-                </p>
-                <p
-                  className="font-mono font-bold text-amber-300 tracking-widest"
-                  style={{ fontSize: `${cs.valueFontSize || 14}px` }}
-                >
-                  {id_number}
-                </p>
-              </div>
-              {frontFields.length > 0 && (
-                <div className="grid grid-cols-2 gap-y-1 gap-x-4 mt-1">
-                  {frontFields.map((f) => (
-                    <div key={f.label}>
-                      <p className="text-[8px] text-indigo-400 uppercase font-semibold">
-                        {f.label}
-                      </p>
-                      <p className="text-[11px] font-semibold text-indigo-100">
+                {frontFields.length > 0 &&
+                  frontFields.map((f) => (
+                    <p
+                      key={f.label}
+                      style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                      className="text-indigo-100"
+                    >
+                      <span
+                        className="text-indigo-400 uppercase font-semibold"
+                        style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                      >
+                        {f.label}:{" "}
+                      </span>
+                      <span className="font-semibold">
                         {customValues[f.label] || "—"}
-                      </p>
-                    </div>
+                      </span>
+                    </p>
                   ))}
-                </div>
-              )}
+              </div>
+            </div>
+
+            {/* Membership ID – large, bottom center */}
+            <div className="text-center mt-auto pt-2">
+              <p
+                className="text-indigo-400 uppercase font-semibold mb-0.5"
+                style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+              >
+                Membership ID
+              </p>
+              <p
+                className="font-mono font-bold text-amber-300 tracking-widest"
+                style={{ fontSize: `${(cs.valueFontSize || 14) + 6}px` }}
+              >
+                {id_number}
+              </p>
             </div>
           </div>
         </div>

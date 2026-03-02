@@ -159,43 +159,61 @@ className={`${isVertical ? 'w-80' : 'w-125'}`}  // narrower width for portrait
 When orientation switches to vertical, the card's internal layout changes:
 
 ```
-HORIZONTAL (landscape):                    VERTICAL (portrait):
-┌──────────────────────┐                   ┌──────────┐
-│ [Header]             │                   │ [Header] │
-│ ┌──────┐   Name      │                   │          │
-│ │Photo │   Role      │                   │ ┌──────┐ │
-│ │      │ DOB | Gender│                   │ │Photo │ │
-│ └──────┘             │                   │ └──────┘ │
-│ ────── ID Number ──── │                   │  Name    │
-└──────────────────────┘                   │  Role    │
-                                           │  DOB     │
-                                           │  ID No.  │
+HORIZONTAL (landscape – Aadhaar-style):    VERTICAL (portrait):
+┌──────────────────────────┐               ┌──────────┐
+│ [Header]                 │               │ [Header] │
+│ ┌──────┐  Name           │               │          │
+│ │Photo │  DOB: 11/20/1988│               │ ┌──────┐ │
+│ │      │  Gender: MALE   │               │ │Photo │ │
+│ └──────┘                 │               │ └──────┘ │
+│                          │               │  Name    │
+│     MEMBERSHIP ID        │               │  Role    │
+│   NAV-2603-00001         │               │  DOB     │
+└──────────────────────────┘               │  ID No.  │
                                            └──────────┘
 ```
 
-**Horizontal layout structure (IDCard):**
+**Horizontal layout structure (Aadhaar-style — all 4 card components):**
 
-The horizontal layout uses a **two-row flex-col** approach:
+The horizontal layout uses a **two-section flex-col** approach:
 
-1. **Top row** (`flex-1`): Photo LEFT + Details RIGHT, flex items-center
-2. **Bottom row**: ID Number bordered at top, full-width centered
+1. **Top section** (`flex-1 flex-row`): Photo LEFT + Details RIGHT (stacked vertically)
+   - Name (bold, large)
+   - DOB with inline label (`DATE OF BIRTH: value`)
+   - Gender with inline label (`GENDER: VALUE`)
+   - Custom fields with inline labels
+2. **Bottom section** (`mt-auto`): Membership ID label + large mono ID number, centered
 
 ```jsx
 // Content container for horizontal mode
-<div className="absolute top-14 left-10 right-10 bottom-3 flex flex-col z-10">
+<div className="absolute top-16 left-6 right-6 bottom-4 flex flex-col z-10">
   {/* Row: Photo LEFT + Details RIGHT */}
-  <div className="flex-1 flex gap-5 items-center">
-    <div className="w-24 h-32 shrink-0 relative ml-1">  {/* Photo */}
-    <div className="flex-1 flex flex-col justify-center items-center space-y-2">
-      {/* Name, Role (text-center), DOB/Gender grid, custom fields */}
+  <div className="flex-1 flex flex-row gap-5 items-start">
+    <div className="w-28 h-32 shrink-0 relative">  {/* Photo */}
+    <div className="flex-1 flex flex-col justify-center space-y-1.5 min-w-0">
+      <h3>{name}</h3>
+      <p><span>DATE OF BIRTH: </span><span>{dob}</span></p>
+      <p><span>GENDER: </span><span>{gender}</span></p>
+      {/* Custom fields rendered inline the same way */}
     </div>
   </div>
-  {/* ID Number – centered full-width at bottom */}
-  <div className="border-t border-slate-100 pt-1.5 text-center">
-    <p className="text-base font-mono font-bold tracking-widest">{id_number}</p>
+  {/* Membership ID – large, centered at bottom */}
+  <div className="text-center mt-auto pt-2">
+    <p>Membership ID</p>
+    <p className="font-mono font-bold tracking-widest">{id_number}</p>
   </div>
 </div>
 ```
+
+**Why inline labels (Aadhaar-style)?**
+
+Instead of stacked DOB/Gender in a 2-column grid, the fields now use inline
+`LABEL: VALUE` format on each line, similar to an Aadhaar card. This:
+
+- Uses horizontal space more efficiently on landscape cards
+- Is more readable at small card sizes
+- Looks more professional and standardized
+- Provides a familiar ID card format users recognize
 
 **Why Photo LEFT instead of RIGHT?**
 
@@ -206,28 +224,35 @@ The decorative SVG triangles occupy the corners:
 
 Placing the photo LEFT avoids the larger top-right triangle entirely. The smaller
 bottom-left triangle is at the very corner and doesn't reach the photo (which is
-vertically centered with `left-10` = 40px inset).
+vertically centered with `left-6` = 24px inset).
 
-**Content padding** (`left-10 right-10 top-14 bottom-3`) keeps all elements
+**Content padding** (`left-6 right-6 top-16 bottom-4`) keeps all elements
 well-inset from the decorative corner gradients.
+
+**Membership ID footer** uses `mt-auto` to stick to the bottom of the card,
+with the font size increased by 6px over the base value font for prominence.
 
 **Implementation in each card component:**
 
 ```jsx
-// Outer content — horizontal uses flex-col (two rows), vertical uses flex-col with gap
+// Outer content — horizontal uses flex-col (two sections), vertical uses flex-col with gap
 <div className={`absolute ${
   isVertical
-    ? "top-14 left-4 right-4 bottom-4 flex flex-col items-center gap-3"
-    : "top-14 left-10 right-10 bottom-3 flex flex-col"
-} z-10`}>
+    ? "top-14 left-4 right-4 bottom-4"
+    : "top-16 left-6 right-6 bottom-4"
+} flex flex-col z-10`}>
 
-// Photo — smaller in horizontal mode (LEFT side) vs vertical mode (centered)
-// Horizontal: w-24 h-32 (96×128px) with ml-1 offset
-// Vertical:   w-36 h-40 (144×160px) centered
+// Photo — same size in both modes, LEFT-aligned in horizontal
+// w-28 h-32 (112×128px) with rounded border and shadow
 
-// Text — center-aligned in both modes
-// Horizontal: text-lg name, text-center alignment within details column
-// Vertical:   text-base name, text-center
+// Text — inline label format in horizontal mode (Aadhaar-style)
+// Labels: text-slate-400 uppercase font-semibold (or theme-specific color)
+// Values: font-semibold, inline with label on same line
+
+// Membership ID — mt-auto pins it to bottom center
+// Label: "Membership ID" in small uppercase
+// Value: font-mono font-bold tracking-widest, color from gradientColors.start
+// Font size: (cs.valueFontSize || 14) + 6 px
 
 // Back content — same flex-direction switch
 <div className={`flex-1 flex ${isVertical ? 'flex-col gap-4' : 'gap-6'}`}>
@@ -250,6 +275,49 @@ well-inset from the decorative corner gradients.
 
 ---
 
+## StudentCard – College ID Format
+
+The StudentCard was redesigned to match a real academic institution ID card (reference: Cochin University style).
+
+### Front Layout (Vertical)
+
+```
+┌──────────────┐
+│   [Logo]     │
+│  ORG NAME    │
+│              │
+│  ┌────────┐  │
+│  │ Photo  │  │
+│  └────────┘  │
+│  STUDENT NAME│
+│  ID: 23031995│
+│  B-Tech EEE  │
+│  Blood: A+   │
+│  Dept: SOE   │
+└──────────────┘
+```
+
+### Front Layout (Horizontal – Aadhaar-style)
+
+Same as other cards: Photo LEFT, details RIGHT (with Blood Group), Membership ID at bottom center.
+
+### Back Layout (Both Orientations)
+
+- "PERSONAL DETAILS" heading centered at top
+- Address, DOB, custom back fields stacked with inline `LABEL: value` format
+- Validity text
+- QR Code encoding `id_number` (admission number) with "Admission No." label
+- Footer: org name left, "Signature of the Student" line right
+
+### Blood Group Field
+
+Added as a core data field (not a custom field). Available as a dropdown in `Generate.jsx`:
+`A+`, `A-`, `B+`, `B-`, `AB+`, `AB-`, `O+`, `O-`
+
+Also added to `MAPPABLE_FIELDS` and `GUESS_RULES` for Google Sheets auto-mapping (aliases: "blood group", "blood_group", "blood type", "bloodgroup").
+
+---
+
 ## Card Component Props Interface
 
 All 4 card components now accept this unified prop interface:
@@ -263,6 +331,7 @@ interface CardProps {
     id_number: string;
     dob: string;
     gender: string;
+    blood_group: string; // NEW: Blood group (A+, B-, etc.)
     photo_url: string;
     address: string;
     customValues: Record<string, string>;
@@ -296,17 +365,28 @@ interface CardProps {
     accentColor: string; // Labels / subtle text color
     borderRadius: number; // Corner radius in px
   };
-  orientation?: "horizontal" | "vertical"; // NEW: Card orientation
+  orientation?: "horizontal" | "vertical"; // Card orientation
+  fieldVisibility?: {
+    // NEW: Toggle which fields appear on cards
+    dob: boolean; //   Show/hide Date of Birth
+    gender: boolean; //   Show/hide Gender
+    blood_group: boolean; //   Show/hide Blood Group
+    role: boolean; //   Show/hide Role / Program
+    address: boolean; //   Show/hide Address
+  };
+  signatureUrl?: string; // NEW: Registrar/Management signature (base64 data URL)
 }
 ```
 
 ### Props Added in This Update
 
-| Prop            | Type                           | Default            | Purpose                                        |
-| --------------- | ------------------------------ | ------------------ | ---------------------------------------------- |
-| `cardStyles`    | Object                         | Template-dependent | Controls bg, text color, font, accent, radius  |
-| `orientation`   | `"horizontal"` \| `"vertical"` | `"horizontal"`     | Switches layout between landscape and portrait |
-| `uploadToCloud` | `boolean`                      | `true`             | Skip Supabase Storage upload when false        |
+| Prop              | Type                           | Default            | Purpose                                        |
+| ----------------- | ------------------------------ | ------------------ | ---------------------------------------------- |
+| `cardStyles`      | Object                         | Template-dependent | Controls bg, text color, font, accent, radius  |
+| `orientation`     | `"horizontal"` \| `"vertical"` | `"horizontal"`     | Switches layout between landscape and portrait |
+| `uploadToCloud`   | `boolean`                      | `true`             | Skip Supabase Storage upload when false        |
+| `fieldVisibility` | Object                         | All `true`         | Toggle DOB, Gender, Blood Group, Role, Address |
+| `signatureUrl`    | `string`                       | `""`               | Registrar signature image (local file upload)  |
 
 ---
 

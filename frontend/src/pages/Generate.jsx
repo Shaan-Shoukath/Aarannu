@@ -75,7 +75,7 @@ export default function Generate() {
   const [rangeEnd, setRangeEnd] = useState(""); // "" means all
 
   // Per-person generation cap (max cards per unique person name across sessions)
-  const [perPersonCap, setPerPersonCap] = useState(""); // "" means no cap
+  const [perPersonCap, setPerPersonCap] = useState(1); // default: 1 card per person
 
   // Derived: whether any member has email sending enabled
   const emailAfterGenerate = members.some((m) => m.sendEmail);
@@ -93,6 +93,7 @@ export default function Generate() {
     id_number: "",
     dob: "",
     gender: "Male",
+    blood_group: "",
     photo_url: "",
     address: "",
     customValues: {},
@@ -142,6 +143,24 @@ export default function Generate() {
   // Whether to upload generated cards to Supabase cloud storage
   const [uploadToCloud, setUploadToCloud] = useState(true);
 
+  // Local file uploads for logos/signatures (base64 data URLs)
+  const [localLogoUrl, setLocalLogoUrl] = useState("");
+  const [signatureUrl, setSignatureUrl] = useState("");
+
+  // Effective logo: local upload overrides the URL from Templates page
+  const effectiveLogoUrl = localLogoUrl || logoUrl;
+
+  // Field visibility toggles — which fields appear on the card
+  const [fieldVisibility, setFieldVisibility] = useState({
+    dob: true,
+    gender: true,
+    blood_group: true,
+    role: true,
+    address: true,
+  });
+  const toggleFieldVisibility = (key) =>
+    setFieldVisibility((prev) => ({ ...prev, [key]: !prev[key] }));
+
   // Validity text shown on the back of the card
   const [validityText, setValidityText] = useState(
     templateId === "event"
@@ -178,6 +197,7 @@ export default function Generate() {
     { key: "id_number", label: "ID Number" },
     { key: "dob", label: "Date of Birth" },
     { key: "gender", label: "Gender" },
+    { key: "blood_group", label: "Blood Group" },
     { key: "photo_url", label: "Photo URL" },
     { key: "address", label: "Address" },
   ];
@@ -266,6 +286,7 @@ export default function Generate() {
       id_number: "",
       dob: "",
       gender: "Male",
+      blood_group: "",
       photo_url: "",
       address: "",
       customValues: {},
@@ -511,6 +532,7 @@ export default function Generate() {
         id_number: ["id", "id_number", "id number", "member id", "memberid"],
         dob: ["dob", "date of birth", "birthday", "birth date"],
         gender: ["gender", "sex"],
+        blood_group: ["blood group", "blood_group", "blood type", "bloodgroup"],
         photo_url: ["photo", "photo_url", "photo url", "image", "image_url"],
         address: ["address", "addr", "location"],
       };
@@ -584,6 +606,7 @@ export default function Generate() {
           generateMemberId(members.length + imported.length + 1),
         dob: getVal("dob"),
         gender: getVal("gender") || "N/A",
+        blood_group: getVal("blood_group"),
         photo_url: getVal("photo_url"),
         address: getVal("address"),
         sendEmail: false,
@@ -685,7 +708,7 @@ export default function Generate() {
       data,
       showBack: back,
       orgName,
-      logoUrl,
+      logoUrl: effectiveLogoUrl,
       ref,
       customFields: customFieldDefs,
       watermark,
@@ -694,6 +717,8 @@ export default function Generate() {
       cardStyles,
       orientation,
       validityText,
+      fieldVisibility,
+      signatureUrl,
     };
     switch (templateId) {
       case "corporate":
@@ -998,6 +1023,29 @@ export default function Generate() {
                   </select>
                 </div>
 
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    Blood Group
+                  </label>
+                  <select
+                    value={form.blood_group}
+                    onChange={(e) =>
+                      handleFormChange("blood_group", e.target.value)
+                    }
+                    className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-3 outline-none"
+                  >
+                    <option value="">— Select —</option>
+                    <option>A+</option>
+                    <option>A-</option>
+                    <option>B+</option>
+                    <option>B-</option>
+                    <option>AB+</option>
+                    <option>AB-</option>
+                    <option>O+</option>
+                    <option>O-</option>
+                  </select>
+                </div>
+
                 <div className="col-span-2">
                   <label className="block text-xs font-medium text-slate-700 mb-1">
                     Role / Designation
@@ -1041,7 +1089,7 @@ export default function Generate() {
 
             <hr className="border-slate-200" />
 
-            {/* Section 2: Photo URL */}
+            {/* Section 2: Photo URL & Media Uploads */}
             <div className="space-y-4">
               <h2 className="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-4">
                 Media Assets
@@ -1061,6 +1109,125 @@ export default function Generate() {
                 />
                 <p className="text-[10px] text-slate-400 mt-1">
                   Direct link to an image (JPG/PNG)
+                </p>
+              </div>
+
+              {/* Organization Logo Upload */}
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Organization Logo (local upload)
+                </label>
+                <div className="flex items-center gap-2">
+                  <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
+                    <svg
+                      className="w-4 h-4 text-slate-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span className="text-xs text-slate-500">
+                      {localLogoUrl ? "Logo selected ✓" : "Choose file..."}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) =>
+                          setLocalLogoUrl(ev.target.result);
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </label>
+                  {localLogoUrl && (
+                    <button
+                      onClick={() => setLocalLogoUrl("")}
+                      className="text-red-400 hover:text-red-600 text-xs"
+                      title="Remove logo"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                {localLogoUrl && (
+                  <img
+                    src={localLogoUrl}
+                    alt="Logo preview"
+                    className="w-12 h-12 object-contain rounded mt-1.5 border border-slate-200"
+                  />
+                )}
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Overrides the logo from Templates page. Accepts JPG/PNG/SVG.
+                </p>
+              </div>
+
+              {/* Registrar Signature Upload */}
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Registrar / Management Signature
+                </label>
+                <div className="flex items-center gap-2">
+                  <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
+                    <svg
+                      className="w-4 h-4 text-slate-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                      />
+                    </svg>
+                    <span className="text-xs text-slate-500">
+                      {signatureUrl ? "Signature selected ✓" : "Choose file..."}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) =>
+                          setSignatureUrl(ev.target.result);
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </label>
+                  {signatureUrl && (
+                    <button
+                      onClick={() => setSignatureUrl("")}
+                      className="text-red-400 hover:text-red-600 text-xs"
+                      title="Remove signature"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                {signatureUrl && (
+                  <img
+                    src={signatureUrl}
+                    alt="Signature preview"
+                    className="h-8 object-contain mt-1.5 border border-slate-200 rounded px-2 py-0.5 bg-white"
+                  />
+                )}
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Shown on the back of the card (e.g. Registrar
+                  stamp/signature).
                 </p>
               </div>
             </div>
@@ -1500,7 +1667,63 @@ export default function Generate() {
 
             <hr className="border-slate-200" />
 
-            {/* Section 4: Custom Fields */}
+            {/* Section: Field Visibility Toggles */}
+            <div className="space-y-3">
+              <h2 className="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-2 flex items-center gap-2">
+                <svg
+                  className="w-4 h-4 text-cyan-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                  />
+                </svg>
+                Card Fields
+              </h2>
+              <p className="text-[10px] text-slate-400 leading-relaxed">
+                Choose which fields appear on the card. Unchecked fields will be
+                hidden from all card layouts.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { key: "dob", label: "Date of Birth" },
+                  { key: "gender", label: "Gender" },
+                  { key: "blood_group", label: "Blood Group" },
+                  { key: "role", label: "Role / Program" },
+                  { key: "address", label: "Address" },
+                ].map((f) => (
+                  <label
+                    key={f.key}
+                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border cursor-pointer transition-colors text-xs ${
+                      fieldVisibility[f.key]
+                        ? "border-cyan-300 bg-cyan-50 text-cyan-800"
+                        : "border-slate-200 bg-slate-50 text-slate-400"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={fieldVisibility[f.key]}
+                      onChange={() => toggleFieldVisibility(f.key)}
+                      className="rounded border-slate-300 text-cyan-500 focus:ring-cyan-400 w-3.5 h-3.5"
+                    />
+                    {f.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <hr className="border-slate-200" />
             <div className="space-y-4">
               <h2 className="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-2 flex items-center gap-2">
                 <svg
@@ -1628,9 +1851,9 @@ export default function Generate() {
             {/* Org Info Badge */}
             {orgName && (
               <div className="bg-indigo-50 p-3 rounded-lg border border-indigo-100 flex items-center gap-2">
-                {logoUrl && (
+                {effectiveLogoUrl && (
                   <img
-                    src={logoUrl}
+                    src={effectiveLogoUrl}
                     alt=""
                     className="w-8 h-8 object-contain rounded"
                   />

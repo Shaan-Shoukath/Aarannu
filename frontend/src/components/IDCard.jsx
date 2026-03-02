@@ -39,6 +39,13 @@ const IDCard = forwardRef(function IDCard(
     },
     orientation = "horizontal",
     validityText = "Valid for 15 days from issue",
+    fieldVisibility = {
+      dob: true,
+      gender: true,
+      blood_group: true,
+      role: true,
+      address: true,
+    },
   },
   ref,
 ) {
@@ -62,6 +69,7 @@ const IDCard = forwardRef(function IDCard(
   const gc = gradientColors;
   const isVertical = orientation === "vertical";
   const cs = cardStyles;
+  const fv = fieldVisibility;
 
   // Unique suffix for SVG gradient IDs – prevents collisions when
   // multiple card instances exist in the DOM simultaneously
@@ -328,34 +336,38 @@ const IDCard = forwardRef(function IDCard(
                   {/* Details – centered 2-col grid */}
                   <div className="w-full max-w-[240px] space-y-2">
                     <div className="grid grid-cols-2 gap-y-1.5 gap-x-4 text-center">
-                      <div>
-                        <p
-                          className="text-slate-400 uppercase font-semibold"
-                          style={{ fontSize: `${cs.labelFontSize || 9}px` }}
-                        >
-                          Date of Birth
-                        </p>
-                        <p
-                          className="font-semibold text-slate-700"
-                          style={{ fontSize: `${cs.valueFontSize || 14}px` }}
-                        >
-                          {dob}
-                        </p>
-                      </div>
-                      <div>
-                        <p
-                          className="text-slate-400 uppercase font-semibold"
-                          style={{ fontSize: `${cs.labelFontSize || 9}px` }}
-                        >
-                          Gender
-                        </p>
-                        <p
-                          className="font-semibold text-slate-700"
-                          style={{ fontSize: `${cs.valueFontSize || 14}px` }}
-                        >
-                          {gender}
-                        </p>
-                      </div>
+                      {fv.dob && (
+                        <div>
+                          <p
+                            className="text-slate-400 uppercase font-semibold"
+                            style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                          >
+                            Date of Birth
+                          </p>
+                          <p
+                            className="font-semibold text-slate-700"
+                            style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                          >
+                            {dob}
+                          </p>
+                        </div>
+                      )}
+                      {fv.gender && (
+                        <div>
+                          <p
+                            className="text-slate-400 uppercase font-semibold"
+                            style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                          >
+                            Gender
+                          </p>
+                          <p
+                            className="font-semibold text-slate-700"
+                            style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                          >
+                            {gender}
+                          </p>
+                        </div>
+                      )}
                     </div>
                     {frontFields.length > 0 && (
                       <div className="grid grid-cols-2 gap-y-1 gap-x-4 text-center">
@@ -403,9 +415,9 @@ const IDCard = forwardRef(function IDCard(
               </>
             ) : (
               <>
-                {/* ── BODY (horizontal) ── */}
-                <div className="flex-1 flex items-center justify-center px-8 gap-6">
-                  {/* Photo – centered */}
+                {/* ── BODY (horizontal – Aadhaar-style) ── */}
+                <div className="flex-1 flex flex-row gap-5 items-start px-8">
+                  {/* Photo – left side */}
                   {(() => {
                     const scale = (cs.photoScale || 100) / 100;
                     const pw = Math.round(105 * scale);
@@ -444,87 +456,70 @@ const IDCard = forwardRef(function IDCard(
                     );
                   })()}
 
-                  {/* Details – centered */}
-                  <div className="flex-1 flex flex-col justify-center items-center space-y-2.5 min-w-0 text-center">
-                    <div>
-                      <h3
-                        className="font-bold leading-snug"
-                        style={{
-                          color: cs.fontColor,
-                          fontSize: `${cs.nameFontSize || 20}px`,
-                        }}
-                      >
-                        {name}
-                      </h3>
+                  {/* Details – stacked vertically on the right */}
+                  <div className="flex-1 flex flex-col justify-center space-y-1.5 min-w-0">
+                    <h3
+                      className="font-bold leading-snug"
+                      style={{
+                        color: cs.fontColor,
+                        fontSize: `${cs.nameFontSize || 20}px`,
+                      }}
+                    >
+                      {name}
+                    </h3>
+                    {fv.dob && (
                       <p
-                        className="font-semibold uppercase tracking-widest mt-0.5"
-                        style={{
-                          color: cs.accentColor,
-                          fontSize: `${(cs.labelFontSize || 9) + 1}px`,
-                        }}
+                        className="text-slate-700"
+                        style={{ fontSize: `${cs.valueFontSize || 14}px` }}
                       >
-                        {role}
+                        <span
+                          className="text-slate-400 uppercase font-semibold"
+                          style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                        >
+                          Date of Birth:{" "}
+                        </span>
+                        <span className="font-semibold">{dob}</span>
                       </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-y-1.5 gap-x-6 text-center">
-                      <div>
-                        <p
-                          className="text-slate-400 uppercase font-semibold"
-                          style={{ fontSize: `${cs.labelFontSize || 9}px` }}
-                        >
-                          Date of Birth
-                        </p>
-                        <p
-                          className="font-semibold text-slate-700"
-                          style={{ fontSize: `${cs.valueFontSize || 14}px` }}
-                        >
-                          {dob}
-                        </p>
-                      </div>
-                      <div>
-                        <p
-                          className="text-slate-400 uppercase font-semibold"
-                          style={{ fontSize: `${cs.labelFontSize || 9}px` }}
-                        >
-                          Gender
-                        </p>
-                        <p
-                          className="font-semibold text-slate-700"
-                          style={{ fontSize: `${cs.valueFontSize || 14}px` }}
-                        >
-                          {gender}
-                        </p>
-                      </div>
-                    </div>
-
-                    {frontFields.length > 0 && (
-                      <div className="grid grid-cols-2 gap-y-1 gap-x-6 text-center">
-                        {frontFields.map((f) => (
-                          <div key={f.label}>
-                            <p
-                              className="text-slate-400 uppercase font-semibold"
-                              style={{ fontSize: `${cs.labelFontSize || 9}px` }}
-                            >
-                              {f.label}
-                            </p>
-                            <p
-                              className="font-semibold text-slate-700 truncate"
-                              style={{
-                                fontSize: `${cs.valueFontSize || 14}px`,
-                              }}
-                            >
-                              {customValues[f.label] || "—"}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
                     )}
+                    {fv.gender && (
+                      <p
+                        className="text-slate-700"
+                        style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                      >
+                        <span
+                          className="text-slate-400 uppercase font-semibold"
+                          style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                        >
+                          Gender:{" "}
+                        </span>
+                        <span className="font-semibold uppercase">
+                          {gender}
+                        </span>
+                      </p>
+                    )}
+                    {frontFields.length > 0 &&
+                      frontFields.map((f) => (
+                        <p
+                          key={f.label}
+                          className="text-slate-700"
+                          style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                        >
+                          <span
+                            className="text-slate-400 uppercase font-semibold"
+                            style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                          >
+                            {f.label}:{" "}
+                          </span>
+                          <span className="font-semibold">
+                            {customValues[f.label] || "—"}
+                          </span>
+                        </p>
+                      ))}
                   </div>
                 </div>
 
-                {/* ── FOOTER (horizontal): Membership ID – pinned bottom center ── */}
-                <div className="text-center py-3 mx-6 mt-auto">
+                {/* ── FOOTER (horizontal): Membership ID – bottom center ── */}
+                <div className="text-center mt-auto py-3 mx-6">
                   <p
                     className="text-slate-400 uppercase font-bold tracking-widest mb-0.5"
                     style={{ fontSize: `${cs.labelFontSize || 9}px` }}
@@ -535,7 +530,7 @@ const IDCard = forwardRef(function IDCard(
                     className="font-mono font-bold tracking-widest"
                     style={{
                       color: gc.start,
-                      fontSize: `${(cs.valueFontSize || 14) + 2}px`,
+                      fontSize: `${(cs.valueFontSize || 14) + 6}px`,
                     }}
                   >
                     {id_number}
@@ -602,14 +597,16 @@ const IDCard = forwardRef(function IDCard(
             >
               {/* Address block */}
               <div className={`${isVertical ? "" : "flex-1"} space-y-4`}>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-800 mb-1 uppercase tracking-wide border-b border-[#1152d4]/20 pb-1 inline-block">
-                    Address
-                  </h4>
-                  <p className="text-[11px] leading-relaxed text-slate-600 font-medium">
-                    {address || "Address not provided"}
-                  </p>
-                </div>
+                {fv.address && (
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-800 mb-1 uppercase tracking-wide border-b border-[#1152d4]/20 pb-1 inline-block">
+                      Address
+                    </h4>
+                    <p className="text-[11px] leading-relaxed text-slate-600 font-medium">
+                      {address || "Address not provided"}
+                    </p>
+                  </div>
+                )}
                 <div className="pt-2">
                   <h4 className="text-xs font-bold text-slate-800 mb-1 uppercase tracking-wide border-b border-[#1152d4]/20 pb-1 inline-block">
                     Issuing Authority

@@ -25,6 +25,13 @@ const CorporateCard = forwardRef(function CorporateCard(
     },
     orientation = "horizontal",
     validityText = "Valid for 15 days from issue",
+    fieldVisibility = {
+      dob: true,
+      gender: true,
+      blood_group: true,
+      role: true,
+      address: true,
+    },
   },
   ref,
 ) {
@@ -48,6 +55,7 @@ const CorporateCard = forwardRef(function CorporateCard(
   const gc = gradientColors;
   const isVertical = orientation === "vertical";
   const cs = cardStyles;
+  const fv = fieldVisibility;
 
   const uid = useId().replace(/:/g, "");
 
@@ -190,104 +198,100 @@ const CorporateCard = forwardRef(function CorporateCard(
 
           {/* Content */}
           <div
-            className={`absolute ${isVertical ? "top-14 left-4 right-4 bottom-4" : "top-16 left-6 right-6 bottom-4"} flex flex-col items-center z-10`}
+            className={`absolute ${isVertical ? "top-14 left-4 right-4 bottom-4" : "top-16 left-6 right-6 bottom-4"} flex flex-col z-10`}
           >
-            {/* Photo – centered */}
+            {/* Top row: Photo LEFT + Details RIGHT (Aadhaar-style) */}
             <div
-              className={`${isVertical ? "w-28 h-32 mt-1" : "w-24 h-28 mt-1"} shrink-0 relative`}
+              className={`flex-1 flex ${isVertical ? "flex-col items-center gap-3" : "flex-row gap-5 items-start"}`}
             >
-              {photo_url ? (
-                <img
-                  src={photoSrc}
-                  alt={name}
-                  className="w-full h-full object-cover rounded-md shadow-md border-2 border-white ring-1 ring-[#1152d4]/20"
-                  crossOrigin="anonymous"
-                />
-              ) : (
-                <div className="w-full h-full rounded-md shadow-md border-2 border-white ring-1 ring-[#1152d4]/20 bg-slate-100 flex items-center justify-center">
-                  <svg
-                    className="w-12 h-12 text-slate-300"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                  </svg>
-                </div>
-              )}
-            </div>
-
-            {/* Name & Role – centered */}
-            <div className="text-center mt-2">
-              <h3
-                className="font-bold"
-                style={{
-                  color: cs.fontColor,
-                  fontSize: `${cs.nameFontSize || 20}px`,
-                }}
+              {/* Photo */}
+              <div
+                className={`${isVertical ? "w-28 h-32 mt-1" : "w-28 h-32 mt-1"} shrink-0 relative`}
               >
-                {name}
-              </h3>
-              <p
-                className="font-medium uppercase tracking-wide mt-0.5"
-                style={{
-                  color: cs.accentColor,
-                  fontSize: `${cs.labelFontSize || 9}px`,
-                }}
-              >
-                {role}
-              </p>
-            </div>
-
-            {/* DOB & Gender – centered grid */}
-            <div className="grid grid-cols-2 gap-y-2 gap-x-6 text-center mt-2">
-              <div>
-                <p
-                  className="text-slate-400 uppercase font-semibold"
-                  style={{ fontSize: `${cs.labelFontSize || 9}px` }}
-                >
-                  Date of Birth
-                </p>
-                <p
-                  className="font-semibold text-slate-700"
-                  style={{ fontSize: `${cs.valueFontSize || 14}px` }}
-                >
-                  {dob}
-                </p>
-              </div>
-              <div>
-                <p
-                  className="text-slate-400 uppercase font-semibold"
-                  style={{ fontSize: `${cs.labelFontSize || 9}px` }}
-                >
-                  Gender
-                </p>
-                <p
-                  className="font-semibold text-slate-700"
-                  style={{ fontSize: `${cs.valueFontSize || 14}px` }}
-                >
-                  {gender}
-                </p>
-              </div>
-            </div>
-
-            {/* Custom front fields – centered */}
-            {frontFields.length > 0 && (
-              <div className="grid grid-cols-2 gap-y-1 gap-x-4 mt-2 text-center">
-                {frontFields.map((f) => (
-                  <div key={f.label}>
-                    <p className="text-[8px] text-slate-400 uppercase font-semibold">
-                      {f.label}
-                    </p>
-                    <p className="text-[11px] font-semibold text-slate-700">
-                      {customValues[f.label] || "—"}
-                    </p>
+                {photo_url ? (
+                  <img
+                    src={photoSrc}
+                    alt={name}
+                    className="w-full h-full object-cover rounded-md shadow-md border-2 border-white ring-1 ring-[#1152d4]/20"
+                    crossOrigin="anonymous"
+                  />
+                ) : (
+                  <div className="w-full h-full rounded-md shadow-md border-2 border-white ring-1 ring-[#1152d4]/20 bg-slate-100 flex items-center justify-center">
+                    <svg
+                      className="w-12 h-12 text-slate-300"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                    </svg>
                   </div>
-                ))}
+                )}
               </div>
-            )}
 
-            {/* Membership ID – pinned bottom center */}
-            <div className="text-center mt-auto pb-1">
+              {/* Details – stacked vertically, left-aligned */}
+              <div
+                className={`flex-1 flex flex-col justify-center ${isVertical ? "items-center text-center" : ""} space-y-1.5 min-w-0`}
+              >
+                <h3
+                  className="font-bold leading-snug"
+                  style={{
+                    color: cs.fontColor,
+                    fontSize: `${cs.nameFontSize || 20}px`,
+                  }}
+                >
+                  {name}
+                </h3>
+                {fv.dob && (
+                  <p
+                    className="text-slate-700"
+                    style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                  >
+                    <span
+                      className="text-slate-400 uppercase font-semibold"
+                      style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                    >
+                      Date of Birth:{" "}
+                    </span>
+                    <span className="font-semibold">{dob}</span>
+                  </p>
+                )}
+                {fv.gender && (
+                  <p
+                    className="text-slate-700"
+                    style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                  >
+                    <span
+                      className="text-slate-400 uppercase font-semibold"
+                      style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                    >
+                      Gender:{" "}
+                    </span>
+                    <span className="font-semibold uppercase">{gender}</span>
+                  </p>
+                )}
+                {frontFields.length > 0 &&
+                  frontFields.map((f) => (
+                    <p
+                      key={f.label}
+                      className="text-slate-700"
+                      style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                    >
+                      <span
+                        className="text-slate-400 uppercase font-semibold"
+                        style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                      >
+                        {f.label}:{" "}
+                      </span>
+                      <span className="font-semibold">
+                        {customValues[f.label] || "—"}
+                      </span>
+                    </p>
+                  ))}
+              </div>
+            </div>
+
+            {/* Membership ID – large, bottom center */}
+            <div className="text-center mt-auto pt-2">
               <p
                 className="text-slate-400 uppercase font-semibold mb-0.5"
                 style={{ fontSize: `${cs.labelFontSize || 9}px` }}
@@ -298,7 +302,7 @@ const CorporateCard = forwardRef(function CorporateCard(
                 className="font-mono font-bold tracking-widest"
                 style={{
                   color: gc.start,
-                  fontSize: `${cs.valueFontSize || 14}px`,
+                  fontSize: `${(cs.valueFontSize || 14) + 6}px`,
                 }}
               >
                 {id_number}
