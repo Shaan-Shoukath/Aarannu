@@ -17,30 +17,36 @@ This folder contains **advanced internal documentation** for the Aarannu Communi
 | [09_CARD_CUSTOMIZATION.md](./09_CARD_CUSTOMIZATION.md)     | Card styling (bg, font, accent, radius), orientation (H/V), data flow |
 | [10_TOKEN_SYSTEM.md](./10_TOKEN_SYSTEM.md)                 | Token/credit system: balance, purchase, analytics, 402 handling       |
 | [11_CUSTOM_FORM_SYSTEM.md](./11_CUSTOM_FORM_SYSTEM.md)     | Custom registration forms, project dashboards, approval flow          |
+| [12_FORM_BUILDER_AND_IMPORTS.md](./12_FORM_BUILDER_AND_IMPORTS.md) | Dynamic form builder, file uploads, Google Sheets import      |
 
 ## Key Concepts
 
-| Concept                | Where documented                   |
-| ---------------------- | ---------------------------------- |
-| Template system        | 01_ARCHITECTURE (Frontend Arch)    |
-| Custom fields          | 01_ARCHITECTURE (Design Decisions) |
-| Card styling/colors    | 09_CARD_CUSTOMIZATION              |
-| Card orientation (H/V) | 09_CARD_CUSTOMIZATION              |
-| Google Drive proxy     | 01_ARCHITECTURE + 05_STORAGE_FLOW  |
-| PDF generation (jsPDF) | 05_STORAGE_FLOW + 07_LIBRARIES     |
-| ZIP bundling (JSZip)   | 05_STORAGE_FLOW + 07_LIBRARIES     |
-| Watermarks             | 01_ARCHITECTURE (Design Decisions) |
-| QR codes               | 07_LIBRARIES (qrcode.react)        |
-| Token / credit system  | 10_TOKEN_SYSTEM                    |
-| Token purchase flow    | 10_TOKEN_SYSTEM (TokenPurchase)    |
-| 402 insufficient funds | 10_TOKEN_SYSTEM (Error Handling)   |
-| Custom form system     | 11_CUSTOM_FORM_SYSTEM              |
-| Registration form      | 11_CUSTOM_FORM_SYSTEM              |
-| form_schema builder    | 11_CUSTOM_FORM_SYSTEM              |
-| Project dashboards     | 11_CUSTOM_FORM_SYSTEM              |
-| CSV export             | 11_CUSTOM_FORM_SYSTEM              |
-| Renewal (continue/reset) | 11_CUSTOM_FORM_SYSTEM            |
-| Email on approval      | 11_CUSTOM_FORM_SYSTEM              |
+| Concept                  | Where documented                   |
+| ------------------------ | ---------------------------------- |
+| Template system          | 01_ARCHITECTURE (Frontend Arch)    |
+| Custom fields            | 01_ARCHITECTURE (Design Decisions) |
+| Card styling/colors      | 09_CARD_CUSTOMIZATION              |
+| Card orientation (H/V)   | 09_CARD_CUSTOMIZATION              |
+| Google Drive proxy       | 01_ARCHITECTURE + 05_STORAGE_FLOW  |
+| PDF generation (jsPDF)   | 05_STORAGE_FLOW + 07_LIBRARIES     |
+| ZIP bundling (JSZip)     | 05_STORAGE_FLOW + 07_LIBRARIES     |
+| Watermarks               | 01_ARCHITECTURE (Design Decisions) |
+| QR codes                 | 07_LIBRARIES (qrcode.react)        |
+| Token / credit system    | 10_TOKEN_SYSTEM                    |
+| Token purchase flow      | 10_TOKEN_SYSTEM (TokenPurchase)    |
+| 402 insufficient funds   | 10_TOKEN_SYSTEM (Error Handling)   |
+| Custom form system       | 11_CUSTOM_FORM_SYSTEM              |
+| Registration form        | 11_CUSTOM_FORM_SYSTEM              |
+| form_schema builder      | 11_CUSTOM_FORM_SYSTEM              |
+| Project dashboards       | 11_CUSTOM_FORM_SYSTEM              |
+| CSV export               | 11_CUSTOM_FORM_SYSTEM              |
+| Renewal (continue/reset) | 11_CUSTOM_FORM_SYSTEM              |
+| Email on approval        | 11_CUSTOM_FORM_SYSTEM              |
+| Dynamic form builder     | 12_FORM_BUILDER_AND_IMPORTS        |
+| 11 field types           | 12_FORM_BUILDER_AND_IMPORTS        |
+| File/photo uploads       | 12_FORM_BUILDER_AND_IMPORTS        |
+| Google Sheets import     | 12_FORM_BUILDER_AND_IMPORTS        |
+| Bulk member import       | 12_FORM_BUILDER_AND_IMPORTS        |
 
 ## Why This Exists
 

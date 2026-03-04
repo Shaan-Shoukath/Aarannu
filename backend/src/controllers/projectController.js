@@ -7,6 +7,7 @@
 const projectService = require("../services/projectService");
 const memberService = require("../services/projectMemberService");
 const orgService = require("../services/orgService");
+const formFieldService = require("../services/formFieldService");
 
 const createProject = async (req, res, next) => {
   try {
@@ -42,6 +43,15 @@ const createProject = async (req, res, next) => {
     });
 
     if (error) return res.status(500).json({ error: error.message });
+
+    // Seed system form fields (name, email, photo) for the new project
+    await formFieldService.seedSystemFields(data.id, 1);
+
+    // If formSchema was provided with custom fields, save them to form_fields table
+    if (formSchema && Array.isArray(formSchema) && formSchema.length > 0) {
+      await formFieldService.saveCustomFields(data.id, formSchema, false);
+    }
+
     res.status(201).json({ project: data });
   } catch (err) {
     next(err);
@@ -141,6 +151,27 @@ const getPublicProjectInfo = async (req, res, next) => {
       spotsRemaining = Math.max(0, project.member_limit - activeCount);
     }
 
+    // Fetch form fields from the dedicated table (falls back to form_schema JSONB)
+    let formFields = [];
+    const { fields: ffData } = await formFieldService.getPublicFormFields(req.params.projectId);
+    if (ffData && ffData.length > 0) {
+      formFields = ffData;
+    } else {
+      // Fallback to legacy form_schema
+      formFields = (project.form_schema || []).map((f, i) => ({
+        field_key: f.field_key || f.label?.toLowerCase().replace(/[^a-z0-9]+/g, "_") || `field_${i}`,
+        label: f.label,
+        type: f.type || "text",
+        required: f.required || false,
+        placeholder: f.placeholder || "",
+        description: f.description || "",
+        options: f.options || [],
+        default_value: f.default_value || "",
+        is_system: false,
+        validation_rules: f.validation_rules || {},
+      }));
+    }
+
     res.json({
       project: {
         id: project.id,
@@ -148,6 +179,7 @@ const getPublicProjectInfo = async (req, res, next) => {
         type: project.type,
         template: project.template,
         form_schema: project.form_schema || [],
+        form_fields: formFields,
         card_config: project.card_config || {},
         member_limit: project.member_limit,
         spots_remaining: spotsRemaining,
@@ -197,7 +229,14 @@ const exportMembersCsv = async (req, res, next) => {
     const sortedCustomKeys = [...customKeys].sort();
 
     // Build CSV header
-    const baseHeaders = ["id", "name", "email", "photo_url", "status", "created_at"];
+    const baseHeaders = [
+      "id",
+      "name",
+      "email",
+      "photo_url",
+      "status",
+      "created_at",
+    ];
     const allHeaders = [...baseHeaders, ...sortedCustomKeys];
     const csvRows = [allHeaders.join(",")];
 

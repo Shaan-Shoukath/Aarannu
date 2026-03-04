@@ -1928,13 +1928,16 @@ export default function Generate() {
 
           {/* Canvas area */}
           <div
-            className="flex-1 overflow-auto p-12 flex flex-col items-center justify-start gap-8"
+            className="flex-1 overflow-auto p-6"
             style={{
               backgroundImage:
                 "radial-gradient(rgba(0,0,0,0.05) 1px, transparent 1px)",
               backgroundSize: "20px 20px",
             }}
           >
+            <div className="flex gap-6 items-start">
+            {/* ── Sticky Card Preview Column ── */}
+            <div className="sticky top-0 shrink-0 self-start pt-6 flex flex-col items-center" style={{ minWidth: orientation === 'vertical' ? '260px' : '380px' }}>
             {/* Live Preview */}
             {previewData && (
               <div className="space-y-4">
@@ -2038,7 +2041,7 @@ export default function Generate() {
               </div>
             )}
 
-            {!previewData && members.length === 0 && (
+            {!previewData && (
               <div className="text-center py-20">
                 <svg
                   className="w-16 h-16 text-slate-300 mx-auto mb-4"
@@ -2051,12 +2054,14 @@ export default function Generate() {
                   No cards yet
                 </h3>
                 <p className="text-sm text-slate-400">
-                  Fill in the form on the left, import from Google Sheets, or
-                  click &quot;Preview&quot;
+                  Add members and click &quot;Preview&quot;
                 </p>
               </div>
             )}
+            </div>
 
+            {/* ── Scrollable Queue + Settings Column ── */}
+            <div className="flex-1 min-w-0 space-y-6 pb-6">
             {/* Queue + Bulk Generator */}
             {members.length > 0 && (
               <div
@@ -2372,6 +2377,14 @@ export default function Generate() {
                 />
               </div>
             )}
+
+            {members.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-sm text-slate-400">Add members from the left panel to see queue here</p>
+              </div>
+            )}
+            </div>
+            </div>
           </div>
         </div>
       </main>

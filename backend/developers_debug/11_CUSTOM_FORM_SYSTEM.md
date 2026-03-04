@@ -88,16 +88,16 @@ Each element defines one custom form field:
 
 ### Supported field types
 
-| Type       | HTML element             | Notes                              |
-| ---------- | ------------------------ | ---------------------------------- |
-| `text`     | `<input type="text">`    | Default                            |
-| `email`    | `<input type="email">`   | Browser email validation           |
-| `number`   | `<input type="number">`  |                                    |
-| `tel`      | `<input type="tel">`     | Phone input                        |
-| `url`      | `<input type="url">`     |                                    |
-| `date`     | `<input type="date">`    | Native date picker                 |
-| `select`   | `<select>`               | Requires `options` array           |
-| `textarea` | `<textarea>`             | Multi-line text                    |
+| Type       | HTML element            | Notes                    |
+| ---------- | ----------------------- | ------------------------ |
+| `text`     | `<input type="text">`   | Default                  |
+| `email`    | `<input type="email">`  | Browser email validation |
+| `number`   | `<input type="number">` |                          |
+| `tel`      | `<input type="tel">`    | Phone input              |
+| `url`      | `<input type="url">`    |                          |
+| `date`     | `<input type="date">`   | Native date picker       |
+| `select`   | `<select>`              | Requires `options` array |
+| `textarea` | `<textarea>`            | Multi-line text          |
 
 ### Built-in fields (always present, not in form_schema)
 
@@ -113,27 +113,27 @@ Custom fields map to `project_members.custom_fields` JSONB, keyed by `field.name
 
 ### Public (no auth)
 
-| Method | Path                              | Handler                   | Description                         |
-| ------ | --------------------------------- | ------------------------- | ----------------------------------- |
-| GET    | `/api/projects/:projectId/public` | `getPublicProjectInfo`    | Project info + form_schema + org branding |
-| POST   | `/api/members/register/:projectId`| `registerMember`          | Submit registration form            |
+| Method | Path                               | Handler                | Description                               |
+| ------ | ---------------------------------- | ---------------------- | ----------------------------------------- |
+| GET    | `/api/projects/:projectId/public`  | `getPublicProjectInfo` | Project info + form_schema + org branding |
+| POST   | `/api/members/register/:projectId` | `registerMember`       | Submit registration form                  |
 
 ### Authenticated
 
-| Method | Path                                  | Handler            | Description                          |
-| ------ | ------------------------------------- | ------------------ | ------------------------------------ |
-| POST   | `/api/projects`                       | `createProject`    | Create project (admin checkOrgRole)  |
-| GET    | `/api/projects/org/:id`               | `listProjects`     | List org projects (member role+)     |
-| GET    | `/api/projects/:projectId`            | `getProject`       | Get single project                   |
-| PUT    | `/api/projects/:projectId`            | `updateProject`    | Update project                       |
-| GET    | `/api/projects/:projectId/stats`      | `getProjectStats`  | Pending/approved/rejected/card counts|
-| GET    | `/api/projects/:projectId/export-csv` | `exportMembersCsv` | CSV download (org member required)   |
-| POST   | `/api/projects/:projectId/renew`      | _(inline handler)_ | Renew: continue or reset             |
-| GET    | `/api/members/:projectId`             | `listMembers`      | List members with ?status= filter    |
-| PATCH  | `/api/members/:id/approve`            | `approve`          | Approve + send email                 |
-| PATCH  | `/api/members/:id/reject`             | `reject`           | Reject member                        |
-| POST   | `/api/members/bulk-approve`           | `bulkApprove`      | Bulk approve + send emails           |
-| DELETE | `/api/members/:id`                    | `removeMember`     | Delete member permanently            |
+| Method | Path                                  | Handler            | Description                           |
+| ------ | ------------------------------------- | ------------------ | ------------------------------------- |
+| POST   | `/api/projects`                       | `createProject`    | Create project (admin checkOrgRole)   |
+| GET    | `/api/projects/org/:id`               | `listProjects`     | List org projects (member role+)      |
+| GET    | `/api/projects/:projectId`            | `getProject`       | Get single project                    |
+| PUT    | `/api/projects/:projectId`            | `updateProject`    | Update project                        |
+| GET    | `/api/projects/:projectId/stats`      | `getProjectStats`  | Pending/approved/rejected/card counts |
+| GET    | `/api/projects/:projectId/export-csv` | `exportMembersCsv` | CSV download (org member required)    |
+| POST   | `/api/projects/:projectId/renew`      | _(inline handler)_ | Renew: continue or reset              |
+| GET    | `/api/members/:projectId`             | `listMembers`      | List members with ?status= filter     |
+| PATCH  | `/api/members/:id/approve`            | `approve`          | Approve + send email                  |
+| PATCH  | `/api/members/:id/reject`             | `reject`           | Reject member                         |
+| POST   | `/api/members/bulk-approve`           | `bulkApprove`      | Bulk approve + send emails            |
+| DELETE | `/api/members/:id`                    | `removeMember`     | Delete member permanently             |
 
 ---
 
@@ -166,10 +166,10 @@ When `project.member_limit` is set:
 
 Requires admin/owner org role.
 
-| Mode       | Behavior                                         |
-| ---------- | ------------------------------------------------ |
-| `continue` | Re-activates the project. Keeps all members.     |
-| `reset`    | Deletes ALL project_members, then re-activates.  |
+| Mode       | Behavior                                        |
+| ---------- | ----------------------------------------------- |
+| `continue` | Re-activates the project. Keeps all members.    |
+| `reset`    | Deletes ALL project_members, then re-activates. |
 
 The form link (`/register/:projectId`) stays the same in both modes.
 Admins should export CSV before reset.
@@ -204,12 +204,12 @@ When a member is approved (single or bulk):
 
 ## File Index
 
-| File                                          | What changed / was added                       |
-| --------------------------------------------- | ---------------------------------------------- |
-| `controllers/projectController.js`            | + `getPublicProjectInfo`, `exportMembersCsv`   |
-| `controllers/projectMemberController.js`      | + `sendApprovalEmail`, email calls in approve   |
-| `routes/projectRoutes.js`                     | + public route, CSV route, renewal route        |
-| `routes/projectMemberRoutes.js`               | Public `POST /register/:projectId` route        |
-| `services/projectService.js`                  | Unchanged — CRUD used by new endpoints          |
-| `services/projectMemberService.js`            | Unchanged — register, approve, bulk used        |
-| `services/orgService.js`                      | Unchanged — getOrgById used for branding        |
+| File                                     | What changed / was added                      |
+| ---------------------------------------- | --------------------------------------------- |
+| `controllers/projectController.js`       | + `getPublicProjectInfo`, `exportMembersCsv`  |
+| `controllers/projectMemberController.js` | + `sendApprovalEmail`, email calls in approve |
+| `routes/projectRoutes.js`                | + public route, CSV route, renewal route      |
+| `routes/projectMemberRoutes.js`          | Public `POST /register/:projectId` route      |
+| `services/projectService.js`             | Unchanged — CRUD used by new endpoints        |
+| `services/projectMemberService.js`       | Unchanged — register, approve, bulk used      |
+| `services/orgService.js`                 | Unchanged — getOrgById used for branding      |

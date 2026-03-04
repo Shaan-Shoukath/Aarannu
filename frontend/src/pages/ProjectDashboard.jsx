@@ -35,8 +35,13 @@ export default function ProjectDashboard() {
 
   // ── Auth header helper ────────────────────────────────────
   const getAuth = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { navigate("/login"); return null; }
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/login");
+      return null;
+    }
     return { Authorization: `Bearer ${session.access_token}` };
   }, [navigate]);
 
@@ -49,7 +54,10 @@ export default function ProjectDashboard() {
       const [projRes, statsRes, membersRes] = await Promise.all([
         fetch(`${BACKEND}/api/projects/${projectId}`, { headers }),
         fetch(`${BACKEND}/api/projects/${projectId}/stats`, { headers }),
-        fetch(`${BACKEND}/api/members/${projectId}${filter !== "all" ? `?status=${filter}` : ""}`, { headers }),
+        fetch(
+          `${BACKEND}/api/members/${projectId}${filter !== "all" ? `?status=${filter}` : ""}`,
+          { headers },
+        ),
       ]);
 
       const projJson = await projRes.json();
@@ -66,14 +74,17 @@ export default function ProjectDashboard() {
     }
   }, [projectId, filter, getAuth]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // ── Actions ───────────────────────────────────────────────
   const approveMember = async (id) => {
     const headers = await getAuth();
     if (!headers) return;
     const res = await fetch(`${BACKEND}/api/members/${id}/approve`, {
-      method: "PATCH", headers,
+      method: "PATCH",
+      headers,
     });
     if (res.ok) {
       setSuccess("Member approved — email notification sent.");
@@ -84,7 +95,10 @@ export default function ProjectDashboard() {
   const rejectMember = async (id) => {
     const headers = await getAuth();
     if (!headers) return;
-    await fetch(`${BACKEND}/api/members/${id}/reject`, { method: "PATCH", headers });
+    await fetch(`${BACKEND}/api/members/${id}/reject`, {
+      method: "PATCH",
+      headers,
+    });
     loadData();
   };
 
@@ -117,8 +131,13 @@ export default function ProjectDashboard() {
   const handleExportCsv = async () => {
     const headers = await getAuth();
     if (!headers) return;
-    const res = await fetch(`${BACKEND}/api/projects/${projectId}/export-csv`, { headers });
-    if (!res.ok) { setError("CSV export failed."); return; }
+    const res = await fetch(`${BACKEND}/api/projects/${projectId}/export-csv`, {
+      headers,
+    });
+    if (!res.ok) {
+      setError("CSV export failed.");
+      return;
+    }
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -200,10 +219,16 @@ export default function ProjectDashboard() {
             {project?.name || "Project"}
           </h1>
           <div className="flex gap-2">
-            <button onClick={copyFormLink} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-medium transition cursor-pointer">
+            <button
+              onClick={copyFormLink}
+              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-medium transition cursor-pointer"
+            >
               🔗 Copy Form Link
             </button>
-            <button onClick={handleExportCsv} className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-medium transition cursor-pointer">
+            <button
+              onClick={handleExportCsv}
+              className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-medium transition cursor-pointer"
+            >
               📥 CSV
             </button>
           </div>
@@ -215,26 +240,55 @@ export default function ProjectDashboard() {
         {error && (
           <div className="px-4 py-3 rounded-lg bg-red-500/20 border border-red-400/30 text-red-300 text-sm">
             {error}
-            <button onClick={() => setError("")} className="float-right text-red-400 hover:text-red-200 cursor-pointer">✕</button>
+            <button
+              onClick={() => setError("")}
+              className="float-right text-red-400 hover:text-red-200 cursor-pointer"
+            >
+              ✕
+            </button>
           </div>
         )}
         {success && (
           <div className="px-4 py-3 rounded-lg bg-green-500/20 border border-green-400/30 text-green-300 text-sm">
             {success}
-            <button onClick={() => setSuccess("")} className="float-right text-green-400 hover:text-green-200 cursor-pointer">✕</button>
+            <button
+              onClick={() => setSuccess("")}
+              className="float-right text-green-400 hover:text-green-200 cursor-pointer"
+            >
+              ✕
+            </button>
           </div>
         )}
 
         {/* ── Stats cards ──────────────────────────────────── */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
-            { label: "Total", value: stats?.totalMembers || 0, color: "text-white" },
+            {
+              label: "Total",
+              value: stats?.totalMembers || 0,
+              color: "text-white",
+            },
             { label: "Pending", value: pendingCount, color: "text-amber-400" },
-            { label: "Approved", value: stats?.approved || 0, color: "text-emerald-400" },
-            { label: "Rejected", value: stats?.rejected || 0, color: "text-red-400" },
-            { label: "Cards", value: stats?.cardsGenerated || 0, color: "text-indigo-400" },
+            {
+              label: "Approved",
+              value: stats?.approved || 0,
+              color: "text-emerald-400",
+            },
+            {
+              label: "Rejected",
+              value: stats?.rejected || 0,
+              color: "text-red-400",
+            },
+            {
+              label: "Cards",
+              value: stats?.cardsGenerated || 0,
+              color: "text-indigo-400",
+            },
           ].map((s) => (
-            <div key={s.label} className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 text-center">
+            <div
+              key={s.label}
+              className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 text-center"
+            >
               <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
               <p className="text-xs text-slate-500 mt-1">{s.label}</p>
             </div>
@@ -245,12 +299,17 @@ export default function ProjectDashboard() {
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
           <div className="flex items-center justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-slate-400 mb-1">Public Registration Link</p>
+              <p className="text-xs text-slate-400 mb-1">
+                Public Registration Link
+              </p>
               <code className="block text-sm text-indigo-300 truncate">
                 {window.location.origin}/register/{projectId}
               </code>
             </div>
-            <button onClick={copyFormLink} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition cursor-pointer shrink-0">
+            <button
+              onClick={copyFormLink}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition cursor-pointer shrink-0"
+            >
               Copy
             </button>
           </div>
@@ -263,9 +322,14 @@ export default function ProjectDashboard() {
             {["all", "pending", "approved", "rejected"].map((f) => (
               <button
                 key={f}
-                onClick={() => { setFilter(f); setSelected(new Set()); }}
+                onClick={() => {
+                  setFilter(f);
+                  setSelected(new Set());
+                }}
                 className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${
-                  filter === f ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"
+                  filter === f
+                    ? "bg-indigo-600 text-white"
+                    : "text-slate-400 hover:text-white"
                 }`}
               >
                 {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -281,7 +345,10 @@ export default function ProjectDashboard() {
               onClick={bulkApproveAll}
               className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-medium transition cursor-pointer"
             >
-              ✓ Approve {selected.size > 0 ? `(${selected.size})` : `All (${pendingCount})`}
+              ✓ Approve{" "}
+              {selected.size > 0
+                ? `(${selected.size})`
+                : `All (${pendingCount})`}
             </button>
           )}
 
@@ -299,7 +366,9 @@ export default function ProjectDashboard() {
           <div className="text-center py-16 text-slate-500">
             <div className="text-5xl mb-3">📋</div>
             <p className="font-medium">No members yet</p>
-            <p className="text-sm mt-1">Share the registration link to start receiving submissions.</p>
+            <p className="text-sm mt-1">
+              Share the registration link to start receiving submissions.
+            </p>
           </div>
         ) : (
           <div className="bg-slate-800/40 border border-slate-700/30 rounded-xl overflow-hidden">
@@ -312,12 +381,22 @@ export default function ProjectDashboard() {
                         type="checkbox"
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setSelected(new Set(members.filter(m => m.status === "pending").map(m => m.id)));
+                            setSelected(
+                              new Set(
+                                members
+                                  .filter((m) => m.status === "pending")
+                                  .map((m) => m.id),
+                              ),
+                            );
                           } else {
                             setSelected(new Set());
                           }
                         }}
-                        checked={selected.size > 0 && selected.size === members.filter(m => m.status === "pending").length}
+                        checked={
+                          selected.size > 0 &&
+                          selected.size ===
+                            members.filter((m) => m.status === "pending").length
+                        }
                         className="accent-indigo-500"
                       />
                     </th>
@@ -331,7 +410,10 @@ export default function ProjectDashboard() {
                 </thead>
                 <tbody>
                   {members.map((m) => (
-                    <tr key={m.id} className="border-b border-slate-700/20 hover:bg-white/[0.02] transition">
+                    <tr
+                      key={m.id}
+                      className="border-b border-slate-700/20 hover:bg-white/[0.02] transition"
+                    >
                       <td className="px-4 py-3">
                         {m.status === "pending" && (
                           <input
@@ -342,10 +424,16 @@ export default function ProjectDashboard() {
                           />
                         )}
                       </td>
-                      <td className="px-4 py-3 font-medium text-white">{m.name}</td>
-                      <td className="px-4 py-3 text-slate-400">{m.email || "—"}</td>
+                      <td className="px-4 py-3 font-medium text-white">
+                        {m.name}
+                      </td>
+                      <td className="px-4 py-3 text-slate-400">
+                        {m.email || "—"}
+                      </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium border ${statusColors[m.status] || "text-slate-400"}`}>
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium border ${statusColors[m.status] || "text-slate-400"}`}
+                        >
                           {m.status}
                         </span>
                       </td>
@@ -353,23 +441,35 @@ export default function ProjectDashboard() {
                         {new Date(m.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3 text-slate-500 text-xs max-w-[200px] truncate">
-                        {m.custom_fields && Object.keys(m.custom_fields).length > 0
-                          ? Object.entries(m.custom_fields).map(([k, v]) => `${k}: ${v}`).join(", ")
+                        {m.custom_fields &&
+                        Object.keys(m.custom_fields).length > 0
+                          ? Object.entries(m.custom_fields)
+                              .map(([k, v]) => `${k}: ${v}`)
+                              .join(", ")
                           : "—"}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex justify-end gap-1.5">
                           {m.status === "pending" && (
                             <>
-                              <button onClick={() => approveMember(m.id)} className="px-2.5 py-1 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/40 rounded text-xs transition cursor-pointer">
+                              <button
+                                onClick={() => approveMember(m.id)}
+                                className="px-2.5 py-1 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/40 rounded text-xs transition cursor-pointer"
+                              >
                                 Approve
                               </button>
-                              <button onClick={() => rejectMember(m.id)} className="px-2.5 py-1 bg-red-600/20 text-red-400 hover:bg-red-600/40 rounded text-xs transition cursor-pointer">
+                              <button
+                                onClick={() => rejectMember(m.id)}
+                                className="px-2.5 py-1 bg-red-600/20 text-red-400 hover:bg-red-600/40 rounded text-xs transition cursor-pointer"
+                              >
                                 Reject
                               </button>
                             </>
                           )}
-                          <button onClick={() => deleteMember(m.id)} className="px-2.5 py-1 bg-white/5 text-slate-500 hover:bg-red-500/20 hover:text-red-400 rounded text-xs transition cursor-pointer">
+                          <button
+                            onClick={() => deleteMember(m.id)}
+                            className="px-2.5 py-1 bg-white/5 text-slate-500 hover:bg-red-500/20 hover:text-red-400 rounded text-xs transition cursor-pointer"
+                          >
                             Delete
                           </button>
                         </div>
@@ -410,7 +510,9 @@ export default function ProjectDashboard() {
                   className="accent-indigo-500 mt-0.5"
                 />
                 <div>
-                  <p className="text-sm font-medium text-white">Continue from last point</p>
+                  <p className="text-sm font-medium text-white">
+                    Continue from last point
+                  </p>
                   <p className="text-xs text-slate-400 mt-0.5">
                     Keep all existing members. New registrations will be added
                     alongside previous ones. The form link stays the same.
@@ -434,7 +536,9 @@ export default function ProjectDashboard() {
                   className="accent-red-500 mt-0.5"
                 />
                 <div>
-                  <p className="text-sm font-medium text-white">Fresh start (reset all)</p>
+                  <p className="text-sm font-medium text-white">
+                    Fresh start (reset all)
+                  </p>
                   <p className="text-xs text-slate-400 mt-0.5">
                     All existing members will be removed. The project starts
                     clean with no data. Download CSV first if you need the data!
@@ -446,8 +550,9 @@ export default function ProjectDashboard() {
             {renewMode === "reset" && (
               <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
                 <p className="text-xs text-red-400">
-                  ⚠ This will permanently delete all member data for this project.
-                  Make sure you&apos;ve exported the CSV before proceeding.
+                  ⚠ This will permanently delete all member data for this
+                  project. Make sure you&apos;ve exported the CSV before
+                  proceeding.
                 </p>
               </div>
             )}
@@ -462,7 +567,11 @@ export default function ProjectDashboard() {
                     : "bg-indigo-600 hover:bg-indigo-500 text-white"
                 } disabled:opacity-50`}
               >
-                {renewing ? "Processing..." : renewMode === "continue" ? "Renew & Continue" : "Reset & Renew"}
+                {renewing
+                  ? "Processing..."
+                  : renewMode === "continue"
+                    ? "Renew & Continue"
+                    : "Reset & Renew"}
               </button>
               <button
                 onClick={() => setShowRenewModal(false)}

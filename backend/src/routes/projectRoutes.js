@@ -50,15 +50,31 @@ router.put("/:projectId", verifyToken, updateProject);
 router.get("/:projectId/stats", verifyToken, getProjectStats);
 
 // Export members as CSV (auth + org membership check)
-router.get("/:projectId/export-csv", verifyToken, async (req, res, next) => {
-  try {
-    const { data: project } = await projectService.getProjectById(req.params.projectId);
-    if (!project) return res.status(404).json({ error: "Project not found." });
-    const { role } = await orgService.getUserOrgRole(project.org_id, req.user.id);
-    if (!role) return res.status(403).json({ error: "Not a member of this organization." });
-    next();
-  } catch (err) { next(err); }
-}, exportMembersCsv);
+router.get(
+  "/:projectId/export-csv",
+  verifyToken,
+  async (req, res, next) => {
+    try {
+      const { data: project } = await projectService.getProjectById(
+        req.params.projectId,
+      );
+      if (!project)
+        return res.status(404).json({ error: "Project not found." });
+      const { role } = await orgService.getUserOrgRole(
+        project.org_id,
+        req.user.id,
+      );
+      if (!role)
+        return res
+          .status(403)
+          .json({ error: "Not a member of this organization." });
+      next();
+    } catch (err) {
+      next(err);
+    }
+  },
+  exportMembersCsv,
+);
 
 // ── Renewal: continue or reset project members ─────────────
 // POST /api/projects/:projectId/renew
@@ -69,14 +85,21 @@ router.post("/:projectId/renew", verifyToken, async (req, res, next) => {
     const { mode } = req.body; // "continue" or "reset"
 
     if (!["continue", "reset"].includes(mode)) {
-      return res.status(400).json({ error: 'mode must be "continue" or "reset".' });
+      return res
+        .status(400)
+        .json({ error: 'mode must be "continue" or "reset".' });
     }
 
-    const { data: project, error: pErr } = await projectService.getProjectById(projectId);
-    if (pErr || !project) return res.status(404).json({ error: "Project not found." });
+    const { data: project, error: pErr } =
+      await projectService.getProjectById(projectId);
+    if (pErr || !project)
+      return res.status(404).json({ error: "Project not found." });
 
     // Verify the user belongs to this project's org
-    const { role } = await orgService.getUserOrgRole(project.org_id, req.user.id);
+    const { role } = await orgService.getUserOrgRole(
+      project.org_id,
+      req.user.id,
+    );
     if (!role || !["admin", "owner"].includes(role)) {
       return res.status(403).json({ error: "Admin or owner access required." });
     }

@@ -42,17 +42,18 @@ Organizations create projects with custom form schemas; members register via a p
 
 ### States
 
-| State     | Condition                        | UI                                   |
-| --------- | -------------------------------- | ------------------------------------ |
-| Loading   | Fetching project info            | Spinner                              |
-| Error     | API error or project not found   | "Form Unavailable" with error msg    |
-| Full      | `spots_remaining === 0`          | "Registrations Full" message         |
-| Form      | Project is active with capacity  | The registration form                |
-| Submitted | After successful POST            | Success confirmation + email notice  |
+| State     | Condition                       | UI                                  |
+| --------- | ------------------------------- | ----------------------------------- |
+| Loading   | Fetching project info           | Spinner                             |
+| Error     | API error or project not found  | "Form Unavailable" with error msg   |
+| Full      | `spots_remaining === 0`         | "Registrations Full" message        |
+| Form      | Project is active with capacity | The registration form               |
+| Submitted | After successful POST           | Success confirmation + email notice |
 
 ### Custom field rendering
 
 `renderField(field, index)` reads `field.type` and renders:
+
 - `select` → `<select>` with `field.options` array
 - `textarea` → `<textarea>` with 3 rows
 - All others → `<input type={field.type}>`
@@ -88,19 +89,20 @@ Custom field values are stored in `customFields` state object, keyed by `field.n
 ### Parallel data loading
 
 `loadData()` fetches in parallel:
+
 - `GET /api/projects/:projectId` — project details
 - `GET /api/projects/:projectId/stats` — aggregate counts
 - `GET /api/members/:projectId?status=<filter>` — member list
 
 ### Member management
 
-| Action          | API call                              | Notes                                |
-| --------------- | ------------------------------------- | ------------------------------------ |
-| Approve         | `PATCH /api/members/:id/approve`      | Shows email notification success     |
-| Reject          | `PATCH /api/members/:id/reject`       | Immediate, no confirmation           |
-| Delete          | `DELETE /api/members/:id`             | Confirmation dialog first            |
-| Bulk approve    | `POST /api/members/bulk-approve`      | Sends selected or all pending IDs    |
-| CSV export      | `GET .../export-csv` → blob download  | Creates `<a>` element for download   |
+| Action       | API call                             | Notes                              |
+| ------------ | ------------------------------------ | ---------------------------------- |
+| Approve      | `PATCH /api/members/:id/approve`     | Shows email notification success   |
+| Reject       | `PATCH /api/members/:id/reject`      | Immediate, no confirmation         |
+| Delete       | `DELETE /api/members/:id`            | Confirmation dialog first          |
+| Bulk approve | `POST /api/members/bulk-approve`     | Sends selected or all pending IDs  |
+| CSV export   | `GET .../export-csv` → blob download | Creates `<a>` element for download |
 
 ### Checkbox selection
 
@@ -111,6 +113,7 @@ Custom field values are stored in `customFields` state object, keyed by `field.n
 ### Renewal modal
 
 Two modes via radio buttons:
+
 - **Continue** — keeps members, re-activates project (indigo styling)
 - **Reset** — deletes all members, re-activates project (red styling + warning)
 
@@ -150,10 +153,16 @@ Calls `POST /api/projects/:projectId/renew` with `{ mode }`.
 ### Auth header helper
 
 Both `ProjectDashboard` and `OrgDashboard` use:
+
 ```js
 const getAuth = useCallback(async () => {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) { navigate("/login"); return null; }
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) {
+    navigate("/login");
+    return null;
+  }
   return { Authorization: `Bearer ${session.access_token}` };
 }, [navigate]);
 ```
@@ -172,11 +181,11 @@ Dismissible banners with green (success) or red (error) styling and ✕ close bu
 
 ## Environment Variables (Frontend)
 
-| Variable            | Default                  | Used by                          |
-| ------------------- | ------------------------ | -------------------------------- |
-| `VITE_BACKEND_URL`  | `http://localhost:5000`  | All API calls                    |
-| `VITE_SUPABASE_URL` | —                        | Supabase client (auth)           |
-| `VITE_SUPABASE_ANON_KEY` | —                   | Supabase client (auth)           |
+| Variable                 | Default                 | Used by                |
+| ------------------------ | ----------------------- | ---------------------- |
+| `VITE_BACKEND_URL`       | `http://localhost:5000` | All API calls          |
+| `VITE_SUPABASE_URL`      | —                       | Supabase client (auth) |
+| `VITE_SUPABASE_ANON_KEY` | —                       | Supabase client (auth) |
 
 ---
 

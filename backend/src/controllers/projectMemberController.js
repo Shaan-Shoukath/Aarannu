@@ -20,8 +20,10 @@ const sendApprovalEmail = async (member, project, orgName) => {
   try {
     if (!member.email || !process.env.BREVO_API_KEY) return;
 
-    const senderEmail = process.env.BREVO_SENDER_EMAIL || "noreply@communityid.app";
-    const senderName = process.env.BREVO_SENDER_NAME || orgName || "Community ID";
+    const senderEmail =
+      process.env.BREVO_SENDER_EMAIL || "noreply@communityid.app";
+    const senderName =
+      process.env.BREVO_SENDER_NAME || orgName || "Community ID";
     const safeName = member.name || "Member";
     const safeOrg = orgName || "Community ID";
     const projectName = project?.name || "the project";
@@ -142,7 +144,9 @@ const approve = async (req, res, next) => {
 
     // Fire-and-forget approval email
     if (data?.email && data?.project_id) {
-      const { data: project } = await projectService.getProjectById(data.project_id);
+      const { data: project } = await projectService.getProjectById(
+        data.project_id,
+      );
       let orgName = "";
       if (project?.org_id) {
         const { data: org } = await orgService.getOrgById(project.org_id);
@@ -186,7 +190,9 @@ const bulkApprove = async (req, res, next) => {
     if (data && data.length > 0) {
       const firstMember = data[0];
       if (firstMember.project_id) {
-        const { data: project } = await projectService.getProjectById(firstMember.project_id);
+        const { data: project } = await projectService.getProjectById(
+          firstMember.project_id,
+        );
         let orgName = "";
         if (project?.org_id) {
           const { data: org } = await orgService.getOrgById(project.org_id);

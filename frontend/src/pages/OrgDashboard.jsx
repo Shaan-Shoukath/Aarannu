@@ -29,8 +29,13 @@ export default function OrgDashboard() {
 
   // ── Auth header helper ────────────────────────────────────
   const getAuth = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { navigate("/login"); return null; }
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/login");
+      return null;
+    }
     return { Authorization: `Bearer ${session.access_token}` };
   }, [navigate]);
 
@@ -41,7 +46,9 @@ export default function OrgDashboard() {
       if (!headers) return;
 
       // Fetch org by slug
-      const orgRes = await fetch(`${BACKEND}/api/org/slug/${slug}`, { headers });
+      const orgRes = await fetch(`${BACKEND}/api/org/slug/${slug}`, {
+        headers,
+      });
       const orgJson = await orgRes.json();
       if (!orgRes.ok) {
         setError(orgJson.error || "Organization not found.");
@@ -69,7 +76,9 @@ export default function OrgDashboard() {
     }
   }, [slug, getAuth]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const copyFormLink = (projectId) => {
     const link = `${window.location.origin}/register/${projectId}`;
@@ -97,9 +106,14 @@ export default function OrgDashboard() {
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="text-5xl mb-4">🏢</div>
-          <h1 className="text-xl font-bold text-white mb-2">Organization Not Found</h1>
+          <h1 className="text-xl font-bold text-white mb-2">
+            Organization Not Found
+          </h1>
           <p className="text-slate-400 mb-4">{error}</p>
-          <button onClick={() => navigate("/org/new")} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm transition cursor-pointer">
+          <button
+            onClick={() => navigate("/org/new")}
+            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm transition cursor-pointer"
+          >
             Go to My Organizations
           </button>
         </div>
@@ -123,7 +137,11 @@ export default function OrgDashboard() {
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             {org?.logo_url ? (
-              <img src={org.logo_url} alt="" className="w-8 h-8 rounded-lg object-cover ring-1 ring-slate-600" />
+              <img
+                src={org.logo_url}
+                alt=""
+                className="w-8 h-8 rounded-lg object-cover ring-1 ring-slate-600"
+              />
             ) : (
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
                 {org?.name?.charAt(0)?.toUpperCase() || "O"}
@@ -131,14 +149,22 @@ export default function OrgDashboard() {
             )}
             <div>
               <h1 className="text-lg font-bold">{org?.name}</h1>
-              <p className="text-xs text-slate-500">/{org?.slug} · {userRole}</p>
+              <p className="text-xs text-slate-500">
+                /{org?.slug} · {userRole}
+              </p>
             </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => navigate("/org/new")} className="px-3 py-1.5 text-xs text-slate-400 hover:text-white transition cursor-pointer">
+            <button
+              onClick={() => navigate("/org/new")}
+              className="px-3 py-1.5 text-xs text-slate-400 hover:text-white transition cursor-pointer"
+            >
               Switch Org
             </button>
-            <button onClick={handleSignOut} className="px-3 py-1.5 text-xs text-slate-500 hover:text-red-400 transition cursor-pointer">
+            <button
+              onClick={handleSignOut}
+              className="px-3 py-1.5 text-xs text-slate-500 hover:text-red-400 transition cursor-pointer"
+            >
               Sign Out
             </button>
           </div>
@@ -156,13 +182,36 @@ export default function OrgDashboard() {
         {/* ── Stats cards ──────────────────────────────────── */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
-            { label: "Projects", value: orgStats?.totalProjects || 0, color: "text-indigo-400" },
-            { label: "Total Members", value: orgStats?.totalMembers || 0, color: "text-white" },
-            { label: "Pending", value: orgStats?.pendingMembers || 0, color: "text-amber-400" },
-            { label: "Total Cards", value: orgStats?.totalCards || 0, color: "text-purple-400" },
-            { label: "Active Cards", value: orgStats?.activeCards || 0, color: "text-emerald-400" },
+            {
+              label: "Projects",
+              value: orgStats?.totalProjects || 0,
+              color: "text-indigo-400",
+            },
+            {
+              label: "Total Members",
+              value: orgStats?.totalMembers || 0,
+              color: "text-white",
+            },
+            {
+              label: "Pending",
+              value: orgStats?.pendingMembers || 0,
+              color: "text-amber-400",
+            },
+            {
+              label: "Total Cards",
+              value: orgStats?.totalCards || 0,
+              color: "text-purple-400",
+            },
+            {
+              label: "Active Cards",
+              value: orgStats?.activeCards || 0,
+              color: "text-emerald-400",
+            },
           ].map((s) => (
-            <div key={s.label} className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 text-center">
+            <div
+              key={s.label}
+              className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 text-center"
+            >
               <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
               <p className="text-xs text-slate-500 mt-1">{s.label}</p>
             </div>
@@ -208,8 +257,12 @@ export default function OrgDashboard() {
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-white font-semibold truncate">{p.name}</h3>
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${statusBadge(p.status)}`}>
+                      <h3 className="text-white font-semibold truncate">
+                        {p.name}
+                      </h3>
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${statusBadge(p.status)}`}
+                      >
                         {p.status}
                       </span>
                       <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-700/50 text-slate-400">
@@ -220,13 +273,18 @@ export default function OrgDashboard() {
                       <span>Template: {p.template}</span>
                       {p.member_limit && <span>Limit: {p.member_limit}</span>}
                       <span>Expiry: {p.expiry_days}d</span>
-                      <span>Created: {new Date(p.created_at).toLocaleDateString()}</span>
+                      <span>
+                        Created: {new Date(p.created_at).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
 
                   <div className="flex gap-2 ml-4 shrink-0">
                     <button
-                      onClick={(e) => { e.stopPropagation(); copyFormLink(p.id); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        copyFormLink(p.id);
+                      }}
                       className="px-3 py-1.5 bg-white/5 hover:bg-indigo-500/20 text-slate-400 hover:text-indigo-300 rounded-lg text-xs transition cursor-pointer"
                       title="Copy form link"
                     >

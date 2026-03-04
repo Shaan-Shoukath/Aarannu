@@ -77,6 +77,9 @@ const generateRoutes = require("./routes/generateRoutes");
 const verifyRoutes = require("./routes/verifyRoutes");
 const bulkRoutes = require("./routes/bulkRoutes");
 const tokenRoutes = require("./routes/tokenRoutes");
+const formFieldRoutes = require("./routes/formFieldRoutes");
+const sheetImportRoutes = require("./routes/sheetImportRoutes");
+const uploadRoutes = require("./routes/uploadRoutes");
 
 // Health check (no auth required)
 app.get("/api/health", (_req, res) => {
@@ -101,6 +104,9 @@ app.use("/api/generate", generateRoutes);
 app.use("/api/verify", verifyRoutes);
 app.use("/api/bulk", bulkRoutes);
 app.use("/api/tokens", tokenRoutes);
+app.use("/api/form-fields", formFieldRoutes);
+app.use("/api/sheets", sheetImportRoutes);
+app.use("/api/uploads", uploadRoutes);
 
 // 404 catch-all for unknown routes
 app.use((_req, res) => {
