@@ -20,6 +20,7 @@ Internal documentation for the Aarannu Community ID Platform backend.
 | 08  | [08_PRODUCTION_DEPLOYMENT.md](08_PRODUCTION_DEPLOYMENT.md) | Deployment, HTTPS, logging, scaling                                               |
 | 09  | [09_CARD_CUSTOMIZATION.md](09_CARD_CUSTOMIZATION.md)       | Frontend card styling/orientation — backend impact analysis                       |
 | 10  | [10_TOKEN_SYSTEM.md](10_TOKEN_SYSTEM.md)                   | Token/credit system — wallets, transactions, middleware, auto-refund              |
+| 11  | [11_CUSTOM_FORM_SYSTEM.md](11_CUSTOM_FORM_SYSTEM.md)       | Custom registration forms, approval flow, CSV export, renewal                    |
 
 ---
 
@@ -28,10 +29,10 @@ Internal documentation for the Aarannu Community ID Platform backend.
 ```
 backend/src/
 ├── config/supabaseClient.js   ← service-role + anon clients
-├── middleware/                 ← verifyToken → checkApproval → checkTokens → rateLimiter → errorHandler
-├── services/                  ← DB queries + storage + tokenService.js
-├── controllers/               ← thin HTTP handlers + tokenController.js
-├── routes/                    ← Express Router wiring + tokenRoutes.js
+├── middleware/                 ← verifyToken → checkApproval → checkOrgRole → checkTokens → rateLimiter → errorHandler
+├── services/                  ← DB queries + storage + tokenService + orgService + projectService + projectMemberService
+├── controllers/               ← thin HTTP handlers + orgController + projectController + projectMemberController
+├── routes/                    ← Express Router wiring + orgRoutes + projectRoutes + projectMemberRoutes
 ├── utils/                     ← validators, expiry helpers
-└── server.js                  ← entry point
+└── server.js                  ← entry point (15+ route groups)
 ```

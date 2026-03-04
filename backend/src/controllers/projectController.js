@@ -5,6 +5,8 @@
  */
 
 const projectService = require("../services/projectService");
+const memberService = require("../services/projectMemberService");
+const orgService = require("../services/orgService");
 
 const createProject = async (req, res, next) => {
   try {
@@ -92,10 +94,157 @@ const getProjectStats = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /api/projects/:projectId/public — Public project info for registration forms
+ * Returns: project name, org name/logo, form_schema, status, member_limit
+ * NO AUTH REQUIRED
+ */
+const getPublicProjectInfo = async (req, res, next) => {
+  try {
+    const { data: project, error } = await projectService.getProjectById(
+      req.params.projectId,
+    );
+    if (error || !project) {
+      return res.status(404).json({ error: "Project not found." });
+    }
+
+    // Check project is active
+    if (project.status !== "active") {
+      return res.status(410).json({
+        error: "This project is no longer accepting registrations.",
+        status: project.status,
+      });
+    }
+
+    // Fetch org info for display
+    let orgName = "";
+    let orgLogo = "";
+    let orgSlug = "";
+    if (project.org_id) {
+      const { data: org } = await orgService.getOrgById(project.org_id);
+      if (org) {
+        orgName = org.name || "";
+        orgLogo = org.logo_url || "";
+        orgSlug = org.slug || "";
+      }
+    }
+
+    // Check capacity — only pending + approved count against the limit
+    let spotsRemaining = null;
+    if (project.member_limit) {
+      const { data: existing } = await memberService.getMembersByProject(
+        req.params.projectId,
+      );
+      const activeCount = (existing || []).filter(
+        (m) => m.status === "pending" || m.status === "approved",
+      ).length;
+      spotsRemaining = Math.max(0, project.member_limit - activeCount);
+    }
+
+    res.json({
+      project: {
+        id: project.id,
+        name: project.name,
+        type: project.type,
+        template: project.template,
+        form_schema: project.form_schema || [],
+        card_config: project.card_config || {},
+        member_limit: project.member_limit,
+        spots_remaining: spotsRemaining,
+        status: project.status,
+      },
+      organization: {
+        name: orgName,
+        logo_url: orgLogo,
+        slug: orgSlug,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/projects/:projectId/export-csv — Export project members as CSV
+ * Requires auth + org membership
+ */
+const exportMembersCsv = async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+    const { status: filterStatus } = req.query;
+
+    const { data: project, error: pErr } =
+      await projectService.getProjectById(projectId);
+    if (pErr || !project) {
+      return res.status(404).json({ error: "Project not found." });
+    }
+
+    const { data: members, error: mErr } =
+      await memberService.getMembersByProject(projectId, filterStatus || null);
+    if (mErr) return res.status(500).json({ error: mErr.message });
+
+    if (!members || members.length === 0) {
+      return res.status(200).send("No members found.");
+    }
+
+    // Collect all custom_fields keys across members
+    const customKeys = new Set();
+    members.forEach((m) => {
+      if (m.custom_fields && typeof m.custom_fields === "object") {
+        Object.keys(m.custom_fields).forEach((k) => customKeys.add(k));
+      }
+    });
+    const sortedCustomKeys = [...customKeys].sort();
+
+    // Build CSV header
+    const baseHeaders = ["id", "name", "email", "photo_url", "status", "created_at"];
+    const allHeaders = [...baseHeaders, ...sortedCustomKeys];
+    const csvRows = [allHeaders.join(",")];
+
+    // CSV-safe helper — wraps in quotes and escapes inner quotes
+    const csvSafe = (val) => {
+      const str = String(val ?? "");
+      if (str.includes('"') || str.includes(",") || str.includes("\n")) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    // Build CSV rows
+    members.forEach((m) => {
+      const row = [
+        csvSafe(m.id),
+        csvSafe(m.name),
+        csvSafe(m.email),
+        csvSafe(m.photo_url),
+        csvSafe(m.status),
+        csvSafe(m.created_at),
+      ];
+      sortedCustomKeys.forEach((key) => {
+        row.push(csvSafe(m.custom_fields?.[key]));
+      });
+      csvRows.push(row.join(","));
+    });
+
+    const csvContent = csvRows.join("\n");
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${project.name.replace(/[^a-zA-Z0-9]/g, "_")}_members.csv"`,
+    );
+    res.send(csvContent);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createProject,
   listProjects,
   getProject,
   updateProject,
   getProjectStats,
+  getPublicProjectInfo,
+  exportMembersCsv,
 };

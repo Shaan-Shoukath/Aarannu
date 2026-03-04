@@ -12,6 +12,7 @@
  */
 
 const { supabase } = require("../config/supabaseClient");
+const { isAdmin } = require("../utils/adminHelper");
 
 /* ================================================================
    WALLET OPERATIONS
@@ -89,6 +90,23 @@ const deductTokens = async (
   referenceId = null,
   orgId = null,
 ) => {
+  // Admin users have unlimited tokens — skip deduction entirely
+  if (isAdmin(userId)) {
+    console.log(
+      `[tokenService] Admin bypass: skipping ${amount} token deduction for ${userId}`,
+    );
+    return {
+      wallet: { balance: Infinity, lifetime_used: 0, lifetime_purchased: 0 },
+      transaction: {
+        id: "admin-bypass",
+        amount: 0,
+        type: "usage",
+        description: "Admin – no deduction",
+      },
+      error: null,
+    };
+  }
+
   if (!Number.isInteger(amount) || amount <= 0) {
     return {
       wallet: null,

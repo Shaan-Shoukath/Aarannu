@@ -20,6 +20,7 @@
  */
 
 const { getBalance } = require("../services/tokenService");
+const { isAdmin } = require("../utils/adminHelper");
 
 /**
  * Resolve a dot-path like "body.members.length" against an object.
@@ -59,6 +60,14 @@ function checkTokens(required = 1) {
       const userId = req.user?.id || req.user?.sub;
       if (!userId) {
         return res.status(401).json({ error: "Authentication required" });
+      }
+
+      // Admin users have unlimited tokens — skip all checks
+      if (isAdmin(userId)) {
+        req.tokenBalance = Infinity;
+        req.tokensRequired = needed;
+        req.isAdminBypass = true;
+        return next();
       }
 
       // Org-scoped wallet check (if orgId is available)

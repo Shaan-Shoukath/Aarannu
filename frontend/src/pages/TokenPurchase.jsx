@@ -19,6 +19,8 @@ export default function TokenPurchase() {
   const [balance, setBalance] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [setupRequired, setSetupRequired] = useState(false);
+  const [isUnlimited, setIsUnlimited] = useState(false);
 
   const getAuthHeaders = async () => {
     const {
@@ -36,7 +38,21 @@ export default function TokenPurchase() {
       try {
         // Packages are public — no auth needed
         const pkgRes = await fetch(`${API}/api/tokens/packages`);
-        if (!pkgRes.ok) throw new Error("Failed to load packages");
+        if (!pkgRes.ok) {
+          const body = await pkgRes.json().catch(() => null);
+          const msg = body?.error || "";
+          if (
+            msg.includes("schema cache") ||
+            msg.includes("does not exist") ||
+            msg.includes("token_packages")
+          ) {
+            setSetupRequired(true);
+            throw new Error(
+              "Token tables not found. Run migration 003_token_system.sql in Supabase SQL Editor.",
+            );
+          }
+          throw new Error("Failed to load packages");
+        }
         const pkgData = await pkgRes.json();
         setPackages(pkgData.packages || []);
 
@@ -46,6 +62,7 @@ export default function TokenPurchase() {
         if (balRes.ok) {
           const balData = await balRes.json();
           setBalance(balData.balance);
+          if (balData.is_unlimited) setIsUnlimited(true);
         }
       } catch (err) {
         setError(err.message);
@@ -124,8 +141,15 @@ export default function TokenPurchase() {
             <p className="mt-3 text-sm">
               Current balance:{" "}
               <span className="font-bold text-[#1152d4]">
-                {balance.toLocaleString()} tokens
+                {isUnlimited
+                  ? "∞ Unlimited"
+                  : `${balance.toLocaleString()} tokens`}
               </span>
+              {isUnlimited && (
+                <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
+                  Admin
+                </span>
+              )}
             </p>
           )}
         </div>
@@ -140,6 +164,22 @@ export default function TokenPurchase() {
         {success && (
           <div className="mb-6 p-4 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm">
             {success}
+          </div>
+        )}
+
+        {setupRequired && (
+          <div className="mb-6 p-5 rounded-xl bg-amber-50 border border-amber-200">
+            <h3 className="font-semibold text-amber-800 mb-2">
+              Setup Required
+            </h3>
+            <p className="text-sm text-amber-700 mb-3">
+              The token system tables have not been created yet. Run the
+              following migration in your{" "}
+              <strong>Supabase Dashboard → SQL Editor</strong>:
+            </p>
+            <code className="block bg-amber-100 rounded-lg px-4 py-2 text-xs text-amber-900 font-mono">
+              backend/migrations/003_token_system.sql
+            </code>
           </div>
         )}
 

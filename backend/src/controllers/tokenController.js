@@ -13,6 +13,7 @@
  */
 
 const tokenService = require("../services/tokenService");
+const { isAdmin } = require("../utils/adminHelper");
 
 /* ----------------------------------------------------------------
    GET /api/tokens/balance
@@ -21,6 +22,17 @@ const getBalance = async (req, res, next) => {
   try {
     const userId = req.user.id || req.user.sub;
     const orgId = req.query.orgId || null;
+
+    // Admin users get unlimited balance
+    if (isAdmin(userId)) {
+      return res.json({
+        balance: 999999999,
+        lifetime_purchased: 0,
+        lifetime_used: 0,
+        wallet_id: null,
+        is_unlimited: true,
+      });
+    }
 
     const { balance, wallet, error } = await tokenService.getBalance(
       userId,
@@ -33,6 +45,7 @@ const getBalance = async (req, res, next) => {
       lifetime_purchased: wallet?.lifetime_purchased || 0,
       lifetime_used: wallet?.lifetime_used || 0,
       wallet_id: wallet?.id,
+      is_unlimited: false,
     });
   } catch (err) {
     next(err);

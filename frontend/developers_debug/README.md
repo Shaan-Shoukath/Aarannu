@@ -16,6 +16,7 @@ This folder contains **advanced internal documentation** for the Aarannu Communi
 | [08_PRODUCTION_HARDENING.md](./08_PRODUCTION_HARDENING.md) | Security, deployment, hardening checklist                             |
 | [09_CARD_CUSTOMIZATION.md](./09_CARD_CUSTOMIZATION.md)     | Card styling (bg, font, accent, radius), orientation (H/V), data flow |
 | [10_TOKEN_SYSTEM.md](./10_TOKEN_SYSTEM.md)                 | Token/credit system: balance, purchase, analytics, 402 handling       |
+| [11_CUSTOM_FORM_SYSTEM.md](./11_CUSTOM_FORM_SYSTEM.md)     | Custom registration forms, project dashboards, approval flow          |
 
 ## Key Concepts
 
@@ -33,6 +34,13 @@ This folder contains **advanced internal documentation** for the Aarannu Communi
 | Token / credit system  | 10_TOKEN_SYSTEM                    |
 | Token purchase flow    | 10_TOKEN_SYSTEM (TokenPurchase)    |
 | 402 insufficient funds | 10_TOKEN_SYSTEM (Error Handling)   |
+| Custom form system     | 11_CUSTOM_FORM_SYSTEM              |
+| Registration form      | 11_CUSTOM_FORM_SYSTEM              |
+| form_schema builder    | 11_CUSTOM_FORM_SYSTEM              |
+| Project dashboards     | 11_CUSTOM_FORM_SYSTEM              |
+| CSV export             | 11_CUSTOM_FORM_SYSTEM              |
+| Renewal (continue/reset) | 11_CUSTOM_FORM_SYSTEM            |
+| Email on approval      | 11_CUSTOM_FORM_SYSTEM              |
 
 ## Why This Exists
 

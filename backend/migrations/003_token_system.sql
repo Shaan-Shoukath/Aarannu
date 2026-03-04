@@ -11,7 +11,7 @@
 CREATE TABLE IF NOT EXISTS token_wallets (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  org_id      UUID REFERENCES organizations(id) ON DELETE CASCADE,
+  org_id      UUID,  -- nullable; FK to organizations added by migration 002 if present
   balance     INTEGER NOT NULL DEFAULT 0 CHECK (balance >= 0),
   lifetime_purchased  INTEGER NOT NULL DEFAULT 0,
   lifetime_used       INTEGER NOT NULL DEFAULT 0,
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS token_transactions (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   wallet_id     UUID NOT NULL REFERENCES token_wallets(id) ON DELETE CASCADE,
   user_id       UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  org_id        UUID REFERENCES organizations(id) ON DELETE CASCADE,
+  org_id        UUID,  -- nullable; FK to organizations added by migration 002 if present
   amount        INTEGER NOT NULL,               -- positive = credit, negative = debit
   type          TEXT NOT NULL CHECK (type IN ('purchase','usage','refund','bonus','adjustment')),
   description   TEXT,
