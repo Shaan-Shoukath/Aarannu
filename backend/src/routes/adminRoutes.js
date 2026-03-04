@@ -14,6 +14,7 @@ const {
   getPending,
   approve,
   cleanup,
+  setExpiry,
 } = require("../controllers/adminController");
 
 const router = Router();
@@ -24,7 +25,10 @@ router.get("/pending", apiLimiter, verifyToken, getPending);
 // POST /api/admin/approve/:userId – Approve a specific member
 router.post("/approve/:userId", apiLimiter, verifyToken, approve);
 
-// POST /api/admin/cleanup         – Remove expired generated_ids rows
+// POST /api/admin/cleanup         – Remove expired generated_ids rows (admin-only)
 router.post("/cleanup", apiLimiter, verifyToken, cleanup);
+
+// PATCH /api/admin/expiry         – Update expiry for specific ID card records
+router.patch("/expiry", apiLimiter, verifyToken, setExpiry);
 
 module.exports = router;

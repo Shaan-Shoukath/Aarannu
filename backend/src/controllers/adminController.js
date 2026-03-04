@@ -18,8 +18,10 @@ const {
   approveMember,
   getMemberByUserId,
   cleanupExpiredIds,
+  updateExpiry,
 } = require("../services/supabaseService");
 const { isValidUUID } = require("../utils/validators");
+const { getExpiryDate } = require("../utils/expiryHelper");
 
 /**
  * Checks whether the authenticated user is an admin.
@@ -125,15 +127,17 @@ const approve = async (req, res, next) => {
 /**
  * POST /api/admin/cleanup
  * ───────────────────────
- * Deletes all expired `generated_ids` rows.
- * Optional maintenance endpoint.
+ * Deletes expired `generated_ids` rows.
+ * Accepts optional `beforeDate` in body to control the cutoff.
+ * Only runs when explicitly invoked by an admin.
  */
 const cleanup = async (req, res, next) => {
   try {
     const admin = await requireAdmin(req, res);
     if (!admin) return;
 
-    const { error, deletedFiles } = await cleanupExpiredIds();
+    const { beforeDate } = req.body || {};
+    const { error, deletedFiles } = await cleanupExpiredIds(beforeDate);
 
     if (error) {
       console.error("[adminController.cleanup] DB error:", error.message);
@@ -152,4 +156,73 @@ const cleanup = async (req, res, next) => {
   }
 };
 
-module.exports = { getPending, approve, cleanup };
+/**
+ * PATCH /api/admin/expiry
+ * ───────────────────────
+ * Update the expiry date for specific generated_ids.
+ *
+ * Body:
+ *   - ids: string[]  – array of generated_ids UUIDs to update
+ *   - expiryDays: number – new expiry (days from now)
+ *
+ * OR:
+ *   - ids: string[]
+ *   - expiresAt: string – explicit ISO-8601 date
+ */
+const setExpiry = async (req, res, next) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+
+    const { ids, expiryDays, expiresAt } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        error: "Validation Error",
+        message: "ids array is required.",
+      });
+    }
+
+    // Validate all UUIDs
+    for (const id of ids) {
+      if (!isValidUUID(id)) {
+        return res.status(400).json({
+          error: "Validation Error",
+          message: `Invalid UUID: ${id}`,
+        });
+      }
+    }
+
+    let newExpiry;
+    if (expiresAt) {
+      newExpiry = expiresAt;
+    } else if (expiryDays && Number.isFinite(expiryDays) && expiryDays > 0) {
+      newExpiry = getExpiryDate(expiryDays);
+    } else {
+      return res.status(400).json({
+        error: "Validation Error",
+        message: "Provide either expiryDays (number) or expiresAt (ISO date).",
+      });
+    }
+
+    const { data, error } = await updateExpiry(ids, newExpiry);
+
+    if (error) {
+      console.error("[adminController.setExpiry] DB error:", error.message);
+      return res.status(500).json({
+        error: "Database Error",
+        message: "Failed to update expiry.",
+      });
+    }
+
+    return res.status(200).json({
+      message: `Expiry updated for ${data?.length || 0} record(s).`,
+      updated: data || [],
+      newExpiry,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getPending, approve, cleanup, setExpiry };

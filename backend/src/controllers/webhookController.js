@@ -23,7 +23,7 @@ const {
 } = require("../services/webhookService");
 const { renderCard } = require("../services/cardRenderer");
 const { supabase } = require("../config/supabaseClient");
-const { getExpiryDate } = require("../utils/expiryHelper");
+const { getExpiryDate, DEFAULT_EXPIRY_DAYS } = require("../utils/expiryHelper");
 const { v4: uuidv4 } = require("uuid");
 const { deductTokens, refundTokens } = require("../services/tokenService");
 
@@ -77,9 +77,10 @@ const handleFormSubmission = async (req, res) => {
     if (tokenErr) {
       const status = tokenErr.code === "INSUFFICIENT_TOKENS" ? 402 : 500;
       return res.status(status).json({
-        error: tokenErr.code === "INSUFFICIENT_TOKENS"
-          ? "Insufficient Tokens"
-          : "Token Error",
+        error:
+          tokenErr.code === "INSUFFICIENT_TOKENS"
+            ? "Insufficient Tokens"
+            : "Token Error",
         message: tokenErr.message,
       });
     }
@@ -178,7 +179,12 @@ const handleFormSubmission = async (req, res) => {
     } catch (renderErr) {
       console.error("[webhook] Card render error:", renderErr.message);
       // Refund the token since rendering failed
-      await refundTokens(config.user_id, 1, `Refund – render failed: ${renderErr.message}`, `webhook_${webhookId}`);
+      await refundTokens(
+        config.user_id,
+        1,
+        `Refund – render failed: ${renderErr.message}`,
+        `webhook_${webhookId}`,
+      );
       return res.status(500).json({
         error: "Render Error",
         message: "Failed to render the ID card. Is the frontend running?",
@@ -202,7 +208,12 @@ const handleFormSubmission = async (req, res) => {
     if (uploadError) {
       console.error("[webhook] Storage upload error:", uploadError.message);
       // Refund the token since upload failed
-      await refundTokens(config.user_id, 1, `Refund – upload failed: ${uploadError.message}`, `webhook_${webhookId}`);
+      await refundTokens(
+        config.user_id,
+        1,
+        `Refund – upload failed: ${uploadError.message}`,
+        `webhook_${webhookId}`,
+      );
       return res.status(500).json({
         error: "Storage Error",
         message: "Failed to upload generated card image.",
@@ -210,11 +221,12 @@ const handleFormSubmission = async (req, res) => {
     }
 
     // ── 6. Insert generated_ids metadata row ────────────────
+    const expiryDays = config.expiry_days || DEFAULT_EXPIRY_DAYS;
     const { error: dbError } = await supabase.from("generated_ids").insert({
       id: rowId,
       user_id: config.user_id,
       file_url: filePath,
-      expires_at: getExpiryDate(),
+      expires_at: getExpiryDate(expiryDays),
     });
 
     if (dbError) {
@@ -222,7 +234,12 @@ const handleFormSubmission = async (req, res) => {
       // Try to clean up the uploaded file
       await supabase.storage.from(BUCKET).remove([filePath]);
       // Refund the token since DB insert failed
-      await refundTokens(config.user_id, 1, `Refund – DB insert failed: ${dbError.message}`, `webhook_${webhookId}`);
+      await refundTokens(
+        config.user_id,
+        1,
+        `Refund – DB insert failed: ${dbError.message}`,
+        `webhook_${webhookId}`,
+      );
       return res.status(500).json({
         error: "Database Error",
         message: "Failed to save card metadata.",

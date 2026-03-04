@@ -27,15 +27,15 @@ npm run dev          # http://localhost:5173
 
 ## Pages
 
-| Route        | Component     | Description                                                            |
-| ------------ | ------------- | ---------------------------------------------------------------------- |
-| `/login`     | Login.jsx     | Email/password + Email OTP authentication                              |
-| `/signup`    | Signup.jsx    | Registration with member profile fields                                |
-| `/templates` | Templates.jsx | Choose template, set org name/logo, watermark config                   |
-| `/generate`  | Generate.jsx  | Data entry, Sheets import, preview, PDF/JPEG download, bulk generation |
-| `/dashboard` | Dashboard.jsx | View active IDs, signed-URL downloads, expiry countdown                |
-| `/tokens`    | TokenDashboard.jsx | Token balance, 30-day usage sparkline, transaction history      |
-| `/tokens/purchase` | TokenPurchase.jsx | Browse token packages, purchase tokens                    |
+| Route              | Component          | Description                                                            |
+| ------------------ | ------------------ | ---------------------------------------------------------------------- |
+| `/login`           | Login.jsx          | Email/password + Email OTP authentication                              |
+| `/signup`          | Signup.jsx         | Registration with member profile fields                                |
+| `/templates`       | Templates.jsx      | Choose template, set org name/logo, watermark config                   |
+| `/generate`        | Generate.jsx       | Data entry, Sheets import, preview, PDF/JPEG download, bulk generation |
+| `/dashboard`       | Dashboard.jsx      | View active IDs, signed-URL downloads, expiry countdown                |
+| `/tokens`          | TokenDashboard.jsx | Token balance, 30-day usage sparkline, transaction history             |
+| `/tokens/purchase` | TokenPurchase.jsx  | Browse token packages, purchase tokens                                 |
 
 ---
 

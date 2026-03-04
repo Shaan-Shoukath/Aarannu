@@ -18,7 +18,7 @@ A production-grade web application for generating, managing, and distributing di
 - **Reliable downloads** — Signed URL with `download` disposition + blob fetch (no CORS issues)
 - **Auth** — Email/password + Email OTP login via Supabase Auth
 - **Approval gating** — Admin must approve members before they can generate cards
-- **15-day expiry** — Generated IDs expire automatically; auto-cleanup every 6 hours
+- **Admin-controlled expiry** — Card expiry based on subscription/project settings; deletion is admin-managed
 - **Token / credit system** — Usage-based billing; each card costs 1 token; purchase packages; auto-refund on failure
 - **Webhook automation** — Google Form → Webhook → Puppeteer render → Supabase Storage → Email delivery
 - **Configurable limits** — Daily cap (default 200), queue size (default 500), API batch (default 50)
@@ -135,17 +135,16 @@ cd ../frontend && npm run dev     # http://localhost:5173
 
 ## Configurable Limits
 
-| Limit                  | Default | Config Variable         | Layer    |
-| ---------------------- | ------- | ----------------------- | -------- |
-| Daily uploads per user | 200     | `VITE_BULK_DAILY_LIMIT` | Frontend |
-| Max queue size/session | 500     | `VITE_BULK_MAX_QUEUE`   | Frontend |
-| API batch size         | 50      | `BULK_BATCH_LIMIT`      | Backend  |
-| API rate limit         | 100/15m | Hardcoded               | Backend  |
-| Auth rate limit        | 20/15m  | Hardcoded               | Backend  |
-| ID card expiry         | 15 days | Hardcoded               | Backend  |
-| Signed URL TTL         | 1 hour  | Hardcoded               | Both     |
-| Image proxy size cap   | 10 MB   | Hardcoded               | Backend  |
-| Auto-cleanup interval  | 6 hours | Hardcoded               | Backend  |
+| Limit                  | Default      | Config Variable         | Layer    |
+| ---------------------- | ------------ | ----------------------- | -------- |
+| Daily uploads per user | 200          | `VITE_BULK_DAILY_LIMIT` | Frontend |
+| Max queue size/session | 500          | `VITE_BULK_MAX_QUEUE`   | Frontend |
+| API batch size         | 50           | `BULK_BATCH_LIMIT`      | Backend  |
+| API rate limit         | 100/15m      | Hardcoded               | Backend  |
+| Auth rate limit        | 20/15m       | Hardcoded               | Backend  |
+| ID card expiry         | Configurable | `expiryHelper.js`       | Backend  |
+| Signed URL TTL         | 1 hour       | Hardcoded               | Both     |
+| Image proxy size cap   | 10 MB        | Hardcoded               | Backend  |
 
 ---
 

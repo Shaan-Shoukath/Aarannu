@@ -2,7 +2,7 @@
 
 ## Overview
 
-Generated ID cards have a **15-day validity period**. After 15 days, the ID cards are hidden from the user's dashboard. The backend automatically deletes expired records and their storage files every 6 hours.
+Generated ID cards have **configurable expiry** based on the subscription plan or project settings. The default is **365 days** (1 year). Expiry and cleanup are **admin-controlled** — cards are never automatically deleted.
 
 ---
 
@@ -11,19 +11,32 @@ Generated ID cards have a **15-day validity period**. After 15 days, the ID card
 ### On generation:
 
 ```javascript
+// Backend — expiryHelper.js
+const DEFAULT_EXPIRY_DAYS = 365;
+
+const getExpiryDate = (days = DEFAULT_EXPIRY_DAYS) => {
+  const now = new Date();
+  now.setDate(now.getDate() + days);
+  return now.toISOString();
+};
+
+// Frontend (single card upload)
 const expiresAt = new Date();
-expiresAt.setDate(expiresAt.getDate() + 15);
+expiresAt.setDate(expiresAt.getDate() + 365);
 
 await supabase.from("generated_ids").insert({
   user_id: userId,
   file_url: filePath,
-  expires_at: expiresAt.toISOString(), // e.g., "2026-03-02T14:30:00.000Z"
+  expires_at: expiresAt.toISOString(),
 });
 ```
 
 - `expires_at` is an **absolute timestamp** — the exact moment the ID expires.
-- It's calculated as `current time + 15 days` at the moment of generation.
+- It's calculated as `current time + expiryDays` at the moment of generation.
 - Stored as `TIMESTAMPTZ` (timestamp with timezone) for unambiguous comparison.
+- **SaaS projects** use the project's `expiry_days` setting (default 365).
+- **Bulk uploads** default to 365 days (1 year).
+- **Webhooks** use the webhook config's `expiry_days` or the default.
 
 ### On dashboard load:
 
@@ -32,49 +45,31 @@ const { data } = await supabase
   .from("generated_ids")
   .select("*")
   .eq("user_id", user.id)
-  .gt("expires_at", new Date().toISOString()) // Only non-expired
   .order("created_at", { ascending: false });
 ```
 
-- The `.gt('expires_at', now)` filter excludes all expired records.
-- This is a simple, performant comparison handled by Postgres.
+- All cards are fetched (no expiry filter) — expired cards show with an "Expired" badge.
+- Admins can extend or shorten expiry at any time via `PATCH /api/admin/expiry`.
 
 ---
 
-## Why 15 Days?
+## Expiry Sources
 
-| Factor                 | Reasoning                                                  |
-| ---------------------- | ---------------------------------------------------------- |
-| **Security**           | Limits the window of exposure for personal information     |
-| **Storage management** | Encourages users to download IDs promptly                  |
-| **Freshness**          | Ensures ID cards reflect current data (name, role changes) |
-| **Compliance**         | Aligns with data minimization principles                   |
-
-The 15-day period is a balance between:
-
-- **Too short** (e.g., 1 day) — Users might not download in time.
-- **Too long** (e.g., 90 days) — Stale data, unnecessary storage usage.
-
-This value can be easily adjusted by changing the `15` in the generation code.
+| Context                | Default Expiry        | Source                                     |
+| ---------------------- | --------------------- | ------------------------------------------ |
+| Legacy single card     | 365 days              | `DEFAULT_EXPIRY_DAYS` in `expiryHelper.js` |
+| Legacy bulk upload     | 365 days              | Frontend `BulkGenerator.jsx`               |
+| SaaS project (Service) | `project.expiry_days` | `projects` table, default 365              |
+| SaaS project (Bulk)    | `project.expiry_days` | `projects` table, default 365              |
+| Webhook generation     | `config.expiry_days`  | `webhook_configs` table, default 365       |
 
 ---
 
-## How Expired Records Are Filtered
+## How Expired Records Are Displayed
 
-### Client-side filtering:
+### Dashboard behavior:
 
-The Dashboard page queries with:
-
-```sql
-SELECT * FROM generated_ids
-WHERE user_id = '{auth.uid()}'
-  AND expires_at > now()
-ORDER BY created_at DESC;
-```
-
-Expired records simply don't appear in the results.
-
-### Days remaining display:
+All cards are shown regardless of expiry status. An expiry badge indicates status:
 
 ```javascript
 const daysRemaining = (expiresAt) => {
@@ -83,81 +78,70 @@ const daysRemaining = (expiresAt) => {
 };
 ```
 
-This is shown as a badge in the Dashboard thumbnail grid:
-
 - **Green badge** — More than 7 days remaining.
 - **Amber badge** — 3 to 7 days remaining.
-- **Red badge** — 3 days or fewer remaining (urgency indicator).
+- **Red badge** — 3 days or fewer remaining.
+- **Grey "Expired" badge** — 0 days remaining (card has expired).
+
+Expired cards can still be viewed, downloaded, and deleted by the user.
+
+---
+
+## Admin Controls
+
+### Extend/shorten expiry:
+
+```
+PATCH /api/admin/expiry
+{
+  "ids": ["uuid-1", "uuid-2"],
+  "expiryDays": 90          // OR "expiresAt": "2027-01-01T00:00:00Z"
+}
+```
+
+Updates the `expires_at` for the specified cards.
+
+### Manual cleanup:
+
+```
+POST /api/admin/cleanup
+{
+  "beforeDate": "2026-01-01T00:00:00Z"  // optional cutoff
+}
+```
+
+Deletes expired `generated_ids` rows AND their storage files. Only runs when explicitly invoked by an admin — **no automatic deletion**.
 
 ---
 
 ## What Happens to Expired Records?
 
-### Current behavior:
-
-| Storage File | Database Record | After Auto-Cleanup          |
-| ------------ | --------------- | --------------------------- |
-| ✅ Exists    | ✅ Exists       | ❌ Both deleted every 6 hrs |
-
-The backend runs an **automated cleanup scheduler** (`setInterval` in `server.js`) that:
-
-1. Fetches all expired `generated_ids` rows
-2. Deletes their PNG files from the `id-cards` storage bucket
-3. Removes the expired DB rows
-
-This runs **on server boot** and then **every 6 hours** automatically.
-
-Additionally, admins can trigger cleanup manually via `POST /api/admin/cleanup`.
-
----
-
-## Automated Cleanup (Built-In)
-
-The backend's `server.js` includes an automatic cleanup that runs on boot and every 6 hours:
-
-```javascript
-// server.js
-const CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
-
-const runCleanup = async () => {
-  const { error, deletedFiles } = await cleanupExpiredIds();
-  console.log(
-    `[auto-cleanup] Purged expired rows & ${deletedFiles} storage file(s)`,
-  );
-};
-
-runCleanup(); // run once on boot
-setInterval(runCleanup, CLEANUP_INTERVAL_MS); // then every 6 hours
-```
-
-The `cleanupExpiredIds()` service function:
-
-1. **Fetches** all `generated_ids` rows where `expires_at < now()`
-2. **Deletes storage files** — loops through each row's `file_url` and calls `deleteFile()` (best-effort; errors logged, not thrown)
-3. **Deletes DB rows** — `supabase.from('generated_ids').delete().lt('expires_at', now)`
-
-### Manual cleanup
-
-Admins can also trigger cleanup via `POST /api/admin/cleanup` which calls the same function and returns `{ deletedFiles }` count.
+| Stage               | Storage File | Database Record | Notes                                                    |
+| ------------------- | ------------ | --------------- | -------------------------------------------------------- |
+| Active              | ✅ Exists    | ✅ Exists       | Card shown with green/amber/red badge                    |
+| Expired             | ✅ Exists    | ✅ Exists       | Card shown with grey "Expired" badge, still downloadable |
+| After admin cleanup | ❌ Deleted   | ❌ Deleted      | Admin manually triggers via API                          |
 
 ---
 
 ## Timeline Visualization
 
 ```
-Day 0          Day 15           ~Day 15.25 (next 6hr cycle)
-  │              │                │
-  ▼              ▼                ▼
-Generated   Hidden from UI   Hard-deleted (auto)
-  │              │                │
-  ├─── ACTIVE ───┤               │
-  │   (visible   │               │
-  │   in Dashboard│              │
-  │   with thumbs)│              │
-  │              ├── EXPIRED ────┤
-  │              │  (hidden, but │
-  │              │   still in DB) │
-  │              │               ├── DELETED
-  │              │               │   (DB rows + storage
-  │              │               │    files removed)
+Day 0          Expiry Day               Admin Cleanup
+  │              │                       │
+  ▼              ▼                       ▼
+Generated   Badge changes          Hard-deleted (manual)
+  │         to "Expired"                 │
+  ├── ACTIVE ──┤                         │
+  │  (green/   │                         │
+  │   amber/   │                         │
+  │   red      │                         │
+  │   badge)   │                         │
+  │            ├──── EXPIRED ────────────┤
+  │            │  (grey badge,           │
+  │            │   still viewable,       │
+  │            │   still downloadable)   │
+  │            │                         ├── DELETED
+  │            │                         │   (only when admin
+  │            │                         │    triggers cleanup)
 ```

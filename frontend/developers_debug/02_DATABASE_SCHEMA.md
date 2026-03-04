@@ -116,43 +116,43 @@ token_packages (standalone)
 
 ### `token_wallets`
 
-| Column              | Type        | Purpose                                          |
-| ------------------- | ----------- | ------------------------------------------------ |
-| `id`                | UUID (PK)   | Auto-generated primary key                       |
-| `user_id`           | UUID (FK)   | Links to auth.users.id                           |
-| `org_id`            | UUID        | Optional organization scope (nullable)           |
-| `balance`           | INTEGER     | Current token balance (CHECK >= 0)               |
-| `lifetime_purchased`| INTEGER     | Total tokens ever purchased                      |
-| `lifetime_used`     | INTEGER     | Total tokens ever consumed                       |
-| `created_at`        | TIMESTAMPTZ | Wallet creation timestamp                        |
-| `updated_at`        | TIMESTAMPTZ | Last modification (auto-updated via trigger)     |
+| Column               | Type        | Purpose                                      |
+| -------------------- | ----------- | -------------------------------------------- |
+| `id`                 | UUID (PK)   | Auto-generated primary key                   |
+| `user_id`            | UUID (FK)   | Links to auth.users.id                       |
+| `org_id`             | UUID        | Optional organization scope (nullable)       |
+| `balance`            | INTEGER     | Current token balance (CHECK >= 0)           |
+| `lifetime_purchased` | INTEGER     | Total tokens ever purchased                  |
+| `lifetime_used`      | INTEGER     | Total tokens ever consumed                   |
+| `created_at`         | TIMESTAMPTZ | Wallet creation timestamp                    |
+| `updated_at`         | TIMESTAMPTZ | Last modification (auto-updated via trigger) |
 
 Unique constraint: `(user_id, org_id)` — one wallet per user per org.
 
 ### `token_transactions`
 
-| Column        | Type        | Purpose                                           |
-| ------------- | ----------- | ------------------------------------------------- |
-| `id`          | UUID (PK)   | Auto-generated primary key                        |
-| `wallet_id`   | UUID (FK)   | References token_wallets.id (CASCADE)             |
-| `type`        | TEXT        | One of: purchase, usage, refund, bonus, adjustment|
-| `amount`      | INTEGER     | Positive = credit, negative = debit               |
-| `balance_after`| INTEGER    | Snapshot of wallet balance after this transaction  |
-| `description` | TEXT        | Human-readable context (e.g. "Generated 5 cards") |
-| `metadata`    | JSONB       | Extra data (package_id, project_id, etc.)         |
-| `created_at`  | TIMESTAMPTZ | Transaction timestamp                             |
+| Column          | Type        | Purpose                                            |
+| --------------- | ----------- | -------------------------------------------------- |
+| `id`            | UUID (PK)   | Auto-generated primary key                         |
+| `wallet_id`     | UUID (FK)   | References token_wallets.id (CASCADE)              |
+| `type`          | TEXT        | One of: purchase, usage, refund, bonus, adjustment |
+| `amount`        | INTEGER     | Positive = credit, negative = debit                |
+| `balance_after` | INTEGER     | Snapshot of wallet balance after this transaction  |
+| `description`   | TEXT        | Human-readable context (e.g. "Generated 5 cards")  |
+| `metadata`      | JSONB       | Extra data (package_id, project_id, etc.)          |
+| `created_at`    | TIMESTAMPTZ | Transaction timestamp                              |
 
 ### `token_packages`
 
-| Column         | Type        | Purpose                              |
-| -------------- | ----------- | ------------------------------------ |
-| `id`           | UUID (PK)   | Auto-generated primary key           |
-| `name`         | TEXT        | Display name (e.g. "Growth Pack")    |
-| `token_count`  | INTEGER     | Tokens included in package           |
-| `price_cents`  | INTEGER     | Price in cents (e.g. 1999 = $19.99)  |
-| `currency`     | TEXT        | Currency code (default: USD)         |
-| `is_active`    | BOOLEAN     | Whether package is available         |
-| `created_at`   | TIMESTAMPTZ | Package creation timestamp           |
+| Column        | Type        | Purpose                             |
+| ------------- | ----------- | ----------------------------------- |
+| `id`          | UUID (PK)   | Auto-generated primary key          |
+| `name`        | TEXT        | Display name (e.g. "Growth Pack")   |
+| `token_count` | INTEGER     | Tokens included in package          |
+| `price_cents` | INTEGER     | Price in cents (e.g. 1999 = $19.99) |
+| `currency`    | TEXT        | Currency code (default: USD)        |
+| `is_active`   | BOOLEAN     | Whether package is available        |
+| `created_at`  | TIMESTAMPTZ | Package creation timestamp          |
 
 ### Why 1:1 for `members`?
 

@@ -237,6 +237,7 @@ CREATE POLICY "Anyone can read active packages"
 ```
 
 **Key points:**
+
 - All write operations (INSERT/UPDATE on wallets and transactions) are performed server-side via the **service-role** client, bypassing RLS entirely.
 - Users cannot modify their own balance — only the backend can deduct/add tokens.
 - The packages table is publicly readable (no auth needed) for the purchase page.

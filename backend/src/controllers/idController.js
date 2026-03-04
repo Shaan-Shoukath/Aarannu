@@ -54,9 +54,10 @@ const generateIds = async (req, res, next) => {
     if (tokenErr) {
       const status = tokenErr.code === "INSUFFICIENT_TOKENS" ? 402 : 500;
       return res.status(status).json({
-        error: tokenErr.code === "INSUFFICIENT_TOKENS"
-          ? "Insufficient Tokens"
-          : "Token Error",
+        error:
+          tokenErr.code === "INSUFFICIENT_TOKENS"
+            ? "Insufficient Tokens"
+            : "Token Error",
         message: tokenErr.message,
       });
     }
@@ -67,10 +68,15 @@ const generateIds = async (req, res, next) => {
     if (error) {
       console.error("[idController.generateIds] Insert error:", error.message);
       // Auto-refund tokens on DB failure
-      await refundTokens(userId, tokenCount, `Refund – generation failed: ${error.message}`);
+      await refundTokens(
+        userId,
+        tokenCount,
+        `Refund – generation failed: ${error.message}`,
+      );
       return res.status(500).json({
         error: "Database Error",
-        message: "Failed to insert generated ID records. Tokens have been refunded.",
+        message:
+          "Failed to insert generated ID records. Tokens have been refunded.",
       });
     }
 

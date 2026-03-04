@@ -3,6 +3,7 @@
 ## Overview
 
 The frontend integrates with the backend token API to provide:
+
 1. **Token balance display** on the Dashboard (stat card + header badge)
 2. **TokenDashboard page** (`/tokens`) — balance, 30-day sparkline, transaction history
 3. **TokenPurchase page** (`/tokens/purchase`) — browse packages, purchase tokens
@@ -11,6 +12,7 @@ The frontend integrates with the backend token API to provide:
 ## Pages
 
 ### TokenDashboard (`/tokens`)
+
 - Fetches `/api/tokens/balance`, `/api/tokens/analytics`, `/api/tokens/transactions`
 - Displays 3 stat cards: Current Balance, Lifetime Purchased, Lifetime Used
 - 30-day usage sparkline chart (bar chart built with flexbox)
@@ -18,6 +20,7 @@ The frontend integrates with the backend token API to provide:
 - "Buy Tokens" button navigates to `/tokens/purchase`
 
 ### TokenPurchase (`/tokens/purchase`)
+
 - Fetches `/api/tokens/packages` (public endpoint, no auth needed)
 - Displays package cards in a grid (price, token count, price-per-token)
 - "Best Value" badge on the middle package
@@ -28,6 +31,7 @@ The frontend integrates with the backend token API to provide:
 ## Dashboard Integration
 
 The main Dashboard (`/dashboard`) includes:
+
 - **Token Balance stat card** — 4th card in the stats grid, links to `/tokens`
 - **"Tokens (N)" header button** — amber-colored, shows current balance in the button text
 - Balance is fetched during `loadDashboardData()` via `/api/tokens/balance`
@@ -42,19 +46,20 @@ The `BulkGenerator` component and other generation UIs don't directly handle tok
 3. **Show remaining balance** after generation completes
 
 Currently, token enforcement is 100% server-side:
+
 - Backend deducts tokens before card generation
 - Backend refunds automatically on failure
 - Frontend receives 402 status code if insufficient tokens
 
 ## API Calls
 
-| Endpoint | Method | Auth | Used In |
-|----------|--------|------|---------|
-| `/api/tokens/balance` | GET | JWT | Dashboard, TokenDashboard |
-| `/api/tokens/analytics` | GET | JWT | TokenDashboard |
-| `/api/tokens/transactions` | GET | JWT | TokenDashboard |
-| `/api/tokens/packages` | GET | None | TokenPurchase |
-| `/api/tokens/purchase` | POST | JWT | TokenPurchase |
+| Endpoint                   | Method | Auth | Used In                   |
+| -------------------------- | ------ | ---- | ------------------------- |
+| `/api/tokens/balance`      | GET    | JWT  | Dashboard, TokenDashboard |
+| `/api/tokens/analytics`    | GET    | JWT  | TokenDashboard            |
+| `/api/tokens/transactions` | GET    | JWT  | TokenDashboard            |
+| `/api/tokens/packages`     | GET    | None | TokenPurchase             |
+| `/api/tokens/purchase`     | POST   | JWT  | TokenPurchase             |
 
 ## Routes (App.jsx)
 
@@ -66,6 +71,7 @@ Currently, token enforcement is 100% server-side:
 ## Error Handling
 
 When a generation endpoint returns **402 Payment Required**:
+
 ```json
 {
   "error": "Insufficient tokens. Required: 10, Available: 3",

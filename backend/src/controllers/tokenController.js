@@ -22,7 +22,10 @@ const getBalance = async (req, res, next) => {
     const userId = req.user.id || req.user.sub;
     const orgId = req.query.orgId || null;
 
-    const { balance, wallet, error } = await tokenService.getBalance(userId, orgId);
+    const { balance, wallet, error } = await tokenService.getBalance(
+      userId,
+      orgId,
+    );
     if (error) return res.status(500).json({ error: error.message });
 
     res.json({
@@ -44,7 +47,10 @@ const getTransactions = async (req, res, next) => {
     const userId = req.user.id || req.user.sub;
     const orgId = req.query.orgId || null;
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const limit = Math.min(
+      100,
+      Math.max(1, parseInt(req.query.limit, 10) || 20),
+    );
     const type = req.query.type || null;
 
     const { transactions, total, error } = await tokenService.getTransactions(
@@ -148,7 +154,8 @@ const purchaseTokens = async (req, res, next) => {
         currency: pkg.currency,
       },
       // In production, return: payment_url, session_id, client_secret
-      _note: "Payment gateway integration pending – tokens credited directly for now",
+      _note:
+        "Payment gateway integration pending – tokens credited directly for now",
     });
   } catch (err) {
     next(err);
@@ -161,7 +168,13 @@ const purchaseTokens = async (req, res, next) => {
    ---------------------------------------------------------------- */
 const addTokensManual = async (req, res, next) => {
   try {
-    const { userId: targetUserId, amount, description, type = "bonus", orgId = null } = req.body;
+    const {
+      userId: targetUserId,
+      amount,
+      description,
+      type = "bonus",
+      orgId = null,
+    } = req.body;
 
     if (!targetUserId || !amount) {
       return res.status(400).json({ error: "userId and amount are required" });
@@ -169,7 +182,9 @@ const addTokensManual = async (req, res, next) => {
 
     const validTypes = ["bonus", "adjustment", "purchase"];
     if (!validTypes.includes(type)) {
-      return res.status(400).json({ error: `type must be one of: ${validTypes.join(", ")}` });
+      return res
+        .status(400)
+        .json({ error: `type must be one of: ${validTypes.join(", ")}` });
     }
 
     const { wallet, transaction, error } = await tokenService.addTokens(

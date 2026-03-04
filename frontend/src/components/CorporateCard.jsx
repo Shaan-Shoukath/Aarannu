@@ -24,7 +24,7 @@ const CorporateCard = forwardRef(function CorporateCard(
       borderRadius: 12,
     },
     orientation = "horizontal",
-    validityText = "Valid for 15 days from issue",
+    validityText = "Valid as per subscription plan",
     fieldVisibility = {
       dob: true,
       gender: true,
@@ -241,6 +241,17 @@ const CorporateCard = forwardRef(function CorporateCard(
                 >
                   {name}
                 </h3>
+                {fv.role && (
+                  <p
+                    className="uppercase font-semibold tracking-wide"
+                    style={{
+                      color: cs.accentColor || gc.start,
+                      fontSize: `${cs.labelFontSize || 9}px`,
+                    }}
+                  >
+                    {role}
+                  </p>
+                )}
                 {fv.dob && (
                   <p
                     className="text-slate-700"

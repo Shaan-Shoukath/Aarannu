@@ -368,6 +368,7 @@ The backend auto-cleans every 6 hours. To trigger immediately:
 The token/credit system adds usage-based billing. Run `backend/migrations/003_token_system.sql` in the **SQL Editor**:
 
 This creates:
+
 - **token_wallets** — one per user (balance, lifetime stats)
 - **token_transactions** — immutable ledger of all movements
 - **token_packages** — purchasable bundles (seeded with Starter/Growth/Enterprise)

@@ -228,8 +228,8 @@ export default function TokenPurchase() {
             Need a custom amount?
           </h3>
           <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
-            For enterprise volumes or custom pricing, reach out to our team.
-            We offer volume discounts for 5 000+ tokens.
+            For enterprise volumes or custom pricing, reach out to our team. We
+            offer volume discounts for 5 000+ tokens.
           </p>
           <button className="mt-4 px-6 py-2.5 border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors">
             Contact Sales

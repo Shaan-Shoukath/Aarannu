@@ -8,12 +8,12 @@ import { supabase } from "../lib/supabaseClient";
  * The main hub after login. Shows:
  *  1. User's approval status.
  *  2. Quick stats (total generated IDs, active IDs, expired).
- *  3. List of generated IDs (non-expired) with download links.
+ *  3. List of generated IDs with download links.
  *  4. Navigation to the Generate page (if approved).
  *
  * Expiry logic:
- *  We fetch from `generated_ids` WHERE expires_at > now().
- *  Expired records still exist in the DB but are hidden from the UI.
+ *  Cards have configurable expiry (subscription-based).
+ *  Deletion is admin-controlled — expired cards still show with a badge.
  */
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -51,12 +51,11 @@ export default function Dashboard() {
       }
       setMember(memberData);
 
-      // 3. Fetch non-expired generated IDs
+      // 3. Fetch all generated IDs (expiry is admin-controlled)
       const { data: idsData, error: idsError } = await supabase
         .from("generated_ids")
         .select("*")
         .eq("user_id", user.id)
-        .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false });
 
       if (idsError) {
@@ -67,7 +66,9 @@ export default function Dashboard() {
       // 4. Fetch token balance
       try {
         const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (session?.access_token) {
           const tokenRes = await fetch(`${API}/api/tokens/balance`, {
             headers: { Authorization: `Bearer ${session.access_token}` },
@@ -453,8 +454,8 @@ export default function Dashboard() {
                 </svg>
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-800">15</p>
-                <p className="text-xs text-slate-500">Days validity</p>
+                <p className="text-2xl font-bold text-slate-800">&#8734;</p>
+                <p className="text-xs text-slate-500">Admin-managed</p>
               </div>
             </div>
           </div>
@@ -468,7 +469,7 @@ export default function Dashboard() {
                 Your Generated IDs
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Stored for 15 days · {generatedIds.length} active card
+                Expiry managed by admin · {generatedIds.length} card
                 {generatedIds.length !== 1 ? "s" : ""}
               </p>
             </div>
@@ -506,8 +507,8 @@ export default function Dashboard() {
                 No ID cards generated yet
               </h3>
               <p className="text-sm text-slate-400 mb-4">
-                Generate ID cards to see them here. Each card is stored for 15
-                days.
+                Generate ID cards to see them here. Card expiry is managed by
+                your admin.
               </p>
               {member?.approved && (
                 <button
@@ -658,14 +659,16 @@ function DashboardCard({
           <span className="text-[11px] text-slate-400">{created}</span>
           <span
             className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-              daysLeft <= 3
-                ? "bg-red-100 text-red-700"
-                : daysLeft <= 7
-                  ? "bg-amber-100 text-amber-700"
-                  : "bg-green-100 text-green-700"
+              daysLeft <= 0
+                ? "bg-slate-200 text-slate-600"
+                : daysLeft <= 3
+                  ? "bg-red-100 text-red-700"
+                  : daysLeft <= 7
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-green-100 text-green-700"
             }`}
           >
-            {daysLeft}d left
+            {daysLeft <= 0 ? "Expired" : `${daysLeft}d left`}
           </span>
         </div>
 

@@ -167,7 +167,7 @@ export default function Generate() {
       ? "Valid for event duration only"
       : templateId === "student"
         ? "Valid for current academic session"
-        : "Valid for 15 days from issue",
+        : "Valid as per subscription plan",
   );
 
   // Refs for single-card download capture
@@ -334,7 +334,7 @@ export default function Generate() {
 
   /**
    * Upload front canvas PNG to Supabase Storage and insert a
-   * `generated_ids` row so the card appears on the Dashboard for 15 days.
+   * `generated_ids` row so the card appears on the Dashboard.
    */
   const uploadCardToSupabase = async (frontCanvas, memberName) => {
     if (!user?.id || !frontCanvas) return;
@@ -353,7 +353,7 @@ export default function Generate() {
       }
 
       const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 15);
+      expiresAt.setDate(expiresAt.getDate() + 365);
 
       await supabase.from("generated_ids").insert({
         user_id: user.id,
@@ -1886,8 +1886,8 @@ export default function Generate() {
                   <p className="text-xs text-slate-600 leading-relaxed">
                     Add members manually or import from Google Sheets. When
                     ready, click &quot;Generate All IDs&quot; to create and
-                    upload all cards to secure storage. Cards expire after 15
-                    days.
+                    upload all cards to secure storage. Cards are stored based
+                    on your subscription plan.
                   </p>
                 </div>
               </div>

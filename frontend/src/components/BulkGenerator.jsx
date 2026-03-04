@@ -59,7 +59,7 @@ export default function BulkGenerator({
     borderRadius: 12,
   },
   orientation = "horizontal",
-  validityText = "Valid for 15 days from issue",
+  validityText = "Valid as per subscription plan",
   rangeStart = 1,
   rangeEnd = 0, // 0 means "all"
   perPersonCap = 0, // 0 means "no limit"
@@ -315,7 +315,7 @@ export default function BulkGenerator({
                 );
               } else {
                 const expiresAt = new Date();
-                expiresAt.setDate(expiresAt.getDate() + 15);
+                expiresAt.setDate(expiresAt.getDate() + 365);
 
                 const { error: insertError } = await supabase
                   .from("generated_ids")
@@ -577,7 +577,8 @@ export default function BulkGenerator({
 
       {/* Info badge */}
       <div className="text-xs px-3 py-2 rounded-lg border bg-blue-50 border-blue-200 text-blue-700">
-        Each card is uploaded to cloud storage (15-day expiry, signed URLs)
+        Each card is uploaded to cloud storage (expiry per subscription, signed
+        URLs)
         <strong> and </strong> bundled as a 2-page PDF (front + back) in a ZIP
         that downloads automatically. Limited to {DAILY_LIMIT} cards/day, max{" "}
         {MAX_QUEUE_SIZE} per queue.

@@ -89,9 +89,9 @@ backend/
 │   │   ├── storageService.js    # Signed URL generation, file deletion
 │   │   └── tokenService.js      # Token wallet CRUD, deductions, refunds, analytics
 │   ├── utils/
-│   │   ├── expiryHelper.js      # 15-day expiry logic (getExpiryDate, getNow, isExpired)
+│   │   ├── expiryHelper.js      # Configurable expiry logic (getExpiryDate, getNow, isExpired)
 │   │   └── validators.js        # Input validation (members, bulk payload, UUID)
-│   └── server.js                # Entry point + auto-cleanup scheduler (runs every 6h)
+│   └── server.js                # Entry point (cleanup is admin-triggered)
 ├── developers_debug/            # 8 internal architecture documents
 ├── .env.example
 ├── package.json
@@ -126,16 +126,16 @@ Logs the count of purged records and files to stdout.
 
 ## Configurable Limits
 
-| Limit               | Default | Config             | Description                          |
-| ------------------- | ------- | ------------------ | ------------------------------------ |
-| API batch size      | 50      | `BULK_BATCH_LIMIT` | Max members per `/ids/generate` call |
-| General rate limit  | 100/15m | `rateLimiter.js`   | Per-IP request cap                   |
-| Auth rate limit     | 20/15m  | `rateLimiter.js`   | Per-IP auth endpoint cap             |
-| Image proxy cap     | 10 MB   | `proxyRoutes.js`   | Max proxied image size               |
-| Image proxy timeout | 15s     | `proxyRoutes.js`   | Upstream fetch timeout               |
-| ID card expiry      | 15 days | `expiryHelper.js`  | Lifetime of generated ID records     |
-| Cleanup interval    | 6 hours | `server.js`        | Auto-cleanup frequency               |
-| JSON body limit     | 1 MB    | `server.js`        | Max request body size                |
+| Limit               | Default      | Config             | Description                                 |
+| ------------------- | ------------ | ------------------ | ------------------------------------------- |
+| API batch size      | 50           | `BULK_BATCH_LIMIT` | Max members per `/ids/generate` call        |
+| General rate limit  | 100/15m      | `rateLimiter.js`   | Per-IP request cap                          |
+| Auth rate limit     | 20/15m       | `rateLimiter.js`   | Per-IP auth endpoint cap                    |
+| Image proxy cap     | 10 MB        | `proxyRoutes.js`   | Max proxied image size                      |
+| Image proxy timeout | 15s          | `proxyRoutes.js`   | Upstream fetch timeout                      |
+| ID card expiry      | Configurable | `expiryHelper.js`  | Per subscription/project (default 365 days) |
+| Cleanup             | Admin-only   | `adminController`  | Triggered via POST /api/admin/cleanup       |
+| JSON body limit     | 1 MB         | `server.js`        | Max request body size                       |
 
 ---
 

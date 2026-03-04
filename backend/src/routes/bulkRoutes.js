@@ -84,10 +84,16 @@ router.post("/generate/:projectId", verifyToken, async (req, res, next) => {
       .eq("status", "active");
 
     const existingSet = new Set((existingCards || []).map((c) => c.member_id));
-    const needsCount = (members || []).filter((m) => !existingSet.has(m.id)).length;
+    const needsCount = (members || []).filter(
+      (m) => !existingSet.has(m.id),
+    ).length;
 
     if (needsCount === 0) {
-      return res.json({ generated: 0, cards: [], message: "No new cards to generate." });
+      return res.json({
+        generated: 0,
+        cards: [],
+        message: "No new cards to generate.",
+      });
     }
 
     // ── Deduct tokens ───────────────────────────────────────
@@ -109,7 +115,12 @@ router.post("/generate/:projectId", verifyToken, async (req, res, next) => {
     );
 
     if (error) {
-      await refundTokens(userId, needsCount, `Refund – bulk generation failed: ${error.message}`, `bulk_${projectId}`);
+      await refundTokens(
+        userId,
+        needsCount,
+        `Refund – bulk generation failed: ${error.message}`,
+        `bulk_${projectId}`,
+      );
       return res.status(500).json({ error: error.message });
     }
 
@@ -117,7 +128,12 @@ router.post("/generate/:projectId", verifyToken, async (req, res, next) => {
     const actualGenerated = cards?.length || 0;
     if (actualGenerated < needsCount) {
       const diff = needsCount - actualGenerated;
-      await refundTokens(userId, diff, `Refund – only ${actualGenerated} of ${needsCount} cards generated`, `bulk_${projectId}`);
+      await refundTokens(
+        userId,
+        diff,
+        `Refund – only ${actualGenerated} of ${needsCount} cards generated`,
+        `bulk_${projectId}`,
+      );
     }
 
     res.json({ generated: actualGenerated, cards });

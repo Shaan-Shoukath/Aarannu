@@ -38,7 +38,7 @@ const IDCard = forwardRef(function IDCard(
       borderRadius: 12,
     },
     orientation = "horizontal",
-    validityText = "Valid for 15 days from issue",
+    validityText = "Valid as per subscription plan",
     fieldVisibility = {
       dob: true,
       gender: true,

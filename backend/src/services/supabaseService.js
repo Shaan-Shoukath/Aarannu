@@ -10,7 +10,11 @@
  */
 
 const { supabase } = require("../config/supabaseClient");
-const { getExpiryDate, getNow } = require("../utils/expiryHelper");
+const {
+  getExpiryDate,
+  getNow,
+  DEFAULT_EXPIRY_DAYS,
+} = require("../utils/expiryHelper");
 const { deleteFile } = require("./storageService");
 const { v4: uuidv4 } = require("uuid");
 
@@ -65,13 +69,15 @@ const approveMember = async (userId) => {
  *   - A UUID primary key
  *   - The authenticated user's `user_id`
  *   - A `file_url` path in Supabase Storage
- *   - An `expires_at` 15 days in the future
+ *   - An `expires_at` based on the subscription / project setting
  *
  * @param   {string}   userId
  * @param   {object[]} members  – array of { name, role, ... }
+ * @param   {number}   [expiryDays=DEFAULT_EXPIRY_DAYS] – days until card expiry
  * @returns {Promise<{data, error}>}
  */
-const insertGeneratedIds = async (userId, members) => {
+const insertGeneratedIds = async (userId, members, expiryDays) => {
+  const days = expiryDays || DEFAULT_EXPIRY_DAYS;
   const batchTimestamp = Date.now();
   const rows = members.map((m, index) => {
     const id = uuidv4();
@@ -83,7 +89,7 @@ const insertGeneratedIds = async (userId, members) => {
       id,
       user_id: userId,
       file_url: filePath,
-      expires_at: getExpiryDate(),
+      expires_at: getExpiryDate(days),
     };
   });
 
@@ -96,38 +102,45 @@ const insertGeneratedIds = async (userId, members) => {
 };
 
 /**
- * Fetch all non-expired `generated_ids` for a user.
- * Filters with `expires_at > now()` so expired cards are excluded.
+ * Fetch all `generated_ids` for a user.
+ * Returns ALL cards sorted newest-first.
+ * Expiry is tracked but deletion is admin-controlled.
  *
- * @param   {string} userId
+ * @param   {string}  userId
+ * @param   {boolean} [activeOnly=false] – if true, only return non-expired
  * @returns {Promise<{data, error}>}
  */
-const getActiveIds = async (userId) => {
-  return supabase
+const getActiveIds = async (userId, activeOnly = false) => {
+  let query = supabase
     .from("generated_ids")
     .select("*")
     .eq("user_id", userId)
-    .gt("expires_at", getNow())
     .order("created_at", { ascending: false });
+
+  if (activeOnly) {
+    query = query.gt("expires_at", getNow());
+  }
+
+  return query;
 };
 
 /**
- * Delete all expired rows from `generated_ids` AND their
- * associated PNG files from the `id-cards` storage bucket.
+ * Admin-controlled cleanup: delete expired rows from `generated_ids`
+ * AND their associated PNG files from the `id-cards` storage bucket.
  *
- * Flow:
- *   1. Fetch expired rows to get their `file_url` paths.
- *   2. Delete the storage files (best-effort — errors logged, not thrown).
- *   3. Delete the expired DB rows.
+ * Only runs when explicitly invoked by an admin — NO automatic deletion.
  *
+ * @param   {string} [beforeDate] – optional ISO date; only delete rows expired before this date
  * @returns {Promise<{data, error, deletedFiles: number}>}
  */
-const cleanupExpiredIds = async () => {
+const cleanupExpiredIds = async (beforeDate) => {
+  const cutoff = beforeDate || getNow();
+
   // Step 1 — Fetch expired rows
   const { data: expired, error: fetchError } = await supabase
     .from("generated_ids")
     .select("id, file_url")
-    .lt("expires_at", getNow());
+    .lt("expires_at", cutoff);
 
   if (fetchError) return { data: null, error: fetchError, deletedFiles: 0 };
   if (!expired || expired.length === 0)
@@ -153,9 +166,24 @@ const cleanupExpiredIds = async () => {
   const { data, error } = await supabase
     .from("generated_ids")
     .delete()
-    .lt("expires_at", getNow());
+    .lt("expires_at", cutoff);
 
   return { data, error, deletedFiles };
+};
+
+/**
+ * Admin: update the expiry date for specific generated_ids rows.
+ *
+ * @param   {string[]} ids       – array of generated_ids UUIDs
+ * @param   {string}   expiresAt – new ISO-8601 expiry timestamp
+ * @returns {Promise<{data, error}>}
+ */
+const updateExpiry = async (ids, expiresAt) => {
+  return supabase
+    .from("generated_ids")
+    .update({ expires_at: expiresAt })
+    .in("id", ids)
+    .select();
 };
 
 /**
@@ -207,5 +235,6 @@ module.exports = {
   insertGeneratedIds,
   getActiveIds,
   cleanupExpiredIds,
+  updateExpiry,
   deleteGeneratedId,
 };

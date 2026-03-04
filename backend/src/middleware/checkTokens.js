@@ -25,7 +25,9 @@ const { getBalance } = require("../services/tokenService");
  * Resolve a dot-path like "body.members.length" against an object.
  */
 function resolvePath(obj, path) {
-  return path.split(".").reduce((o, key) => (o != null ? o[key] : undefined), obj);
+  return path
+    .split(".")
+    .reduce((o, key) => (o != null ? o[key] : undefined), obj);
 }
 
 /**
@@ -66,7 +68,10 @@ function checkTokens(required = 1) {
 
       if (error) {
         // Fail open — don't block the user on a transient DB error
-        console.error("[checkTokens] Balance check failed, allowing through:", error);
+        console.error(
+          "[checkTokens] Balance check failed, allowing through:",
+          error,
+        );
         return next();
       }
 

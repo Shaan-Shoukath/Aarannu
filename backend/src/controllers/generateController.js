@@ -35,10 +35,16 @@ const generateCards = async (req, res, next) => {
       .eq("status", "active");
 
     const existingSet = new Set((existingCards || []).map((c) => c.member_id));
-    const needsCount = (members || []).filter((m) => !existingSet.has(m.id)).length;
+    const needsCount = (members || []).filter(
+      (m) => !existingSet.has(m.id),
+    ).length;
 
     if (needsCount === 0) {
-      return res.json({ generated: 0, cards: [], message: "No new cards to generate." });
+      return res.json({
+        generated: 0,
+        cards: [],
+        message: "No new cards to generate.",
+      });
     }
 
     // ── Deduct tokens ────────────────────────────────────────
@@ -61,7 +67,12 @@ const generateCards = async (req, res, next) => {
 
     if (error) {
       // Refund tokens on failure
-      await refundTokens(userId, needsCount, `Refund – generation failed: ${error.message}`, `project_${projectId}`);
+      await refundTokens(
+        userId,
+        needsCount,
+        `Refund – generation failed: ${error.message}`,
+        `project_${projectId}`,
+      );
       return res.status(500).json({ error: error.message });
     }
 
@@ -69,7 +80,12 @@ const generateCards = async (req, res, next) => {
     const actualGenerated = (cards || []).length;
     if (actualGenerated < needsCount) {
       const diff = needsCount - actualGenerated;
-      await refundTokens(userId, diff, `Refund – only ${actualGenerated} of ${needsCount} cards generated`, `project_${projectId}`);
+      await refundTokens(
+        userId,
+        diff,
+        `Refund – only ${actualGenerated} of ${needsCount} cards generated`,
+        `project_${projectId}`,
+      );
     }
 
     res.json({ generated: actualGenerated, cards });
@@ -114,13 +130,23 @@ const regenerateSingle = async (req, res, next) => {
     const card = cards?.find((c) => c.member_id === memberId);
 
     if (error) {
-      await refundTokens(userId, 1, `Refund – regen failed: ${error.message}`, `regen_${memberId}`);
+      await refundTokens(
+        userId,
+        1,
+        `Refund – regen failed: ${error.message}`,
+        `regen_${memberId}`,
+      );
       return res.status(500).json({ error: error.message });
     }
 
     if (!card) {
       // No card was generated for this member (maybe they already have one)
-      await refundTokens(userId, 1, `Refund – member ${memberId} did not need regeneration`, `regen_${memberId}`);
+      await refundTokens(
+        userId,
+        1,
+        `Refund – member ${memberId} did not need regeneration`,
+        `regen_${memberId}`,
+      );
     }
 
     res.json({ card: card || null });

@@ -28,10 +28,7 @@ const { supabase } = require("../config/supabaseClient");
  */
 const getOrCreateWallet = async (userId, orgId = null) => {
   // 1. Try to fetch existing wallet
-  let query = supabase
-    .from("token_wallets")
-    .select("*")
-    .eq("user_id", userId);
+  let query = supabase.from("token_wallets").select("*").eq("user_id", userId);
 
   if (orgId) {
     query = query.eq("org_id", orgId);
@@ -93,7 +90,11 @@ const deductTokens = async (
   orgId = null,
 ) => {
   if (!Number.isInteger(amount) || amount <= 0) {
-    return { wallet: null, transaction: null, error: { message: "Amount must be a positive integer" } };
+    return {
+      wallet: null,
+      transaction: null,
+      error: { message: "Amount must be a positive integer" },
+    };
   }
 
   const { wallet, error: walletErr } = await getOrCreateWallet(userId, orgId);
@@ -126,7 +127,14 @@ const deductTokens = async (
 
   if (updateErr) {
     // Retry once in case of race condition (another request changed balance)
-    return { wallet: null, transaction: null, error: { message: "Balance update failed – please retry", code: "RACE_CONDITION" } };
+    return {
+      wallet: null,
+      transaction: null,
+      error: {
+        message: "Balance update failed – please retry",
+        code: "RACE_CONDITION",
+      },
+    };
   }
 
   // Record transaction
@@ -146,7 +154,10 @@ const deductTokens = async (
     .single();
 
   if (txnErr) {
-    console.error("[tokenService] Transaction log failed after deduction:", txnErr);
+    console.error(
+      "[tokenService] Transaction log failed after deduction:",
+      txnErr,
+    );
     // Balance already deducted — log error but don't fail the operation
   }
 
@@ -173,7 +184,11 @@ const addTokens = async (
   orgId = null,
 ) => {
   if (!Number.isInteger(amount) || amount <= 0) {
-    return { wallet: null, transaction: null, error: { message: "Amount must be a positive integer" } };
+    return {
+      wallet: null,
+      transaction: null,
+      error: { message: "Amount must be a positive integer" },
+    };
   }
 
   const { wallet, error: walletErr } = await getOrCreateWallet(userId, orgId);
@@ -211,7 +226,10 @@ const addTokens = async (
     .single();
 
   if (txnErr) {
-    console.error("[tokenService] Transaction log failed after credit:", txnErr);
+    console.error(
+      "[tokenService] Transaction log failed after credit:",
+      txnErr,
+    );
   }
 
   return { wallet: updatedWallet, transaction: txn, error: null };
@@ -252,7 +270,10 @@ const refundTokens = async (
  * @param {string|null} opts.type   – filter by transaction type
  * @returns {Promise<{transactions: array, total: number, error}>}
  */
-const getTransactions = async (userId, { orgId = null, page = 1, limit = 20, type = null } = {}) => {
+const getTransactions = async (
+  userId,
+  { orgId = null, page = 1, limit = 20, type = null } = {},
+) => {
   let query = supabase
     .from("token_transactions")
     .select("*", { count: "exact" })
