@@ -4,29 +4,52 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Generate from "./pages/Generate";
 import Templates from "./pages/Templates";
+import Webhooks from "./pages/Webhooks";
+import RenderCard from "./pages/RenderCard";
+import TokenDashboard from "./pages/TokenDashboard";
+import TokenPurchase from "./pages/TokenPurchase";
 import ProtectedRoute from "./components/ProtectedRoute";
+
+// ── SaaS Platform Pages ──────────────────────────────────────
+import OrgOnboarding from "./pages/OrgOnboarding";
+import OrgDashboard from "./pages/OrgDashboard";
+import ProjectCreate from "./pages/ProjectCreate";
+import ProjectDashboard from "./pages/ProjectDashboard";
+import RegistrationForm from "./pages/RegistrationForm";
+import VerifyCard from "./pages/VerifyCard";
+import BulkDashboard from "./pages/BulkDashboard";
 
 /**
  * App – Root Component
  * --------------------------------------------------
  * Sets up client-side routing:
- *  /login     → public
- *  /signup    → public
- *  /dashboard → protected (requires auth)
- *  /templates → protected (pick a card template)
- *  /generate  → protected (requires auth + approval checked inside)
- *  /          → redirects to /dashboard
- *  *          → redirects to /dashboard
+ *
+ *  LEGACY (single-user):
+ *    /login, /signup, /dashboard, /templates, /generate, /webhooks
+ *
+ *  SAAS PLATFORM:
+ *    /org/new            → Create or select organization
+ *    /org/:slug/dashboard → Organization dashboard
+ *    /org/:slug/project/new → Create project
+ *    /org/:slug/project/:projectId → Project dashboard
+ *    /org/:slug/bulk/:projectId → Bulk dashboard
+ *
+ *  PUBLIC:
+ *    /register/:projectId → Member registration form
+ *    /verify/:cardId      → QR verification page
  */
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public routes */}
+        {/* ── Public routes ────────────────────── */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/register/:projectId" element={<RegistrationForm />} />
+        <Route path="/verify/:cardId" element={<VerifyCard />} />
+        <Route path="/render-card" element={<RenderCard />} />
 
-        {/* Protected routes */}
+        {/* ── Legacy protected routes ──────────── */}
         <Route
           path="/dashboard"
           element={
@@ -51,8 +74,74 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/webhooks"
+          element={
+            <ProtectedRoute>
+              <Webhooks />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tokens"
+          element={
+            <ProtectedRoute>
+              <TokenDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tokens/purchase"
+          element={
+            <ProtectedRoute>
+              <TokenPurchase />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Catch-all redirect */}
+        {/* ── SaaS Platform routes (protected) ─── */}
+        <Route
+          path="/org/new"
+          element={
+            <ProtectedRoute>
+              <OrgOnboarding />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/org/:slug/dashboard"
+          element={
+            <ProtectedRoute>
+              <OrgDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/org/:slug/project/new"
+          element={
+            <ProtectedRoute>
+              <ProjectCreate />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/org/:slug/project/:projectId"
+          element={
+            <ProtectedRoute>
+              <ProjectDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/org/:slug/bulk/:projectId"
+          element={
+            <ProtectedRoute>
+              <BulkDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ── Catch-all redirect ──────────────── */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

@@ -15,6 +15,7 @@ This folder contains **advanced internal documentation** for the Aarannu Communi
 | [07_LIBRARIES_USED.md](./07_LIBRARIES_USED.md)             | All dependencies: Supabase, jsPDF, JSZip, file-saver, qrcode.react    |
 | [08_PRODUCTION_HARDENING.md](./08_PRODUCTION_HARDENING.md) | Security, deployment, hardening checklist                             |
 | [09_CARD_CUSTOMIZATION.md](./09_CARD_CUSTOMIZATION.md)     | Card styling (bg, font, accent, radius), orientation (H/V), data flow |
+| [10_TOKEN_SYSTEM.md](./10_TOKEN_SYSTEM.md)                 | Token/credit system: balance, purchase, analytics, 402 handling       |
 
 ## Key Concepts
 
@@ -29,6 +30,9 @@ This folder contains **advanced internal documentation** for the Aarannu Communi
 | ZIP bundling (JSZip)   | 05_STORAGE_FLOW + 07_LIBRARIES     |
 | Watermarks             | 01_ARCHITECTURE (Design Decisions) |
 | QR codes               | 07_LIBRARIES (qrcode.react)        |
+| Token / credit system  | 10_TOKEN_SYSTEM                    |
+| Token purchase flow    | 10_TOKEN_SYSTEM (TokenPurchase)    |
+| 402 insufficient funds | 10_TOKEN_SYSTEM (Error Handling)   |
 
 ## Why This Exists
 

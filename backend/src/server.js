@@ -68,6 +68,15 @@ const idRoutes = require("./routes/idRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const proxyRoutes = require("./routes/proxyRoutes");
 const emailRoutes = require("./routes/emailRoutes");
+const webhookRoutes = require("./routes/webhookRoutes");
+const webhookConfigRoutes = require("./routes/webhookConfigRoutes");
+const orgRoutes = require("./routes/orgRoutes");
+const projectRoutes = require("./routes/projectRoutes");
+const projectMemberRoutes = require("./routes/projectMemberRoutes");
+const generateRoutes = require("./routes/generateRoutes");
+const verifyRoutes = require("./routes/verifyRoutes");
+const bulkRoutes = require("./routes/bulkRoutes");
+const tokenRoutes = require("./routes/tokenRoutes");
 
 // Health check (no auth required)
 app.get("/api/health", (_req, res) => {
@@ -83,6 +92,15 @@ app.use("/api/ids", idRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/proxy", proxyRoutes);
 app.use("/api/email", emailRoutes);
+app.use("/api/webhook", webhookRoutes);
+app.use("/api/webhook-config", webhookConfigRoutes);
+app.use("/api/org", orgRoutes);
+app.use("/api/projects", projectRoutes);
+app.use("/api/members", projectMemberRoutes);
+app.use("/api/generate", generateRoutes);
+app.use("/api/verify", verifyRoutes);
+app.use("/api/bulk", bulkRoutes);
+app.use("/api/tokens", tokenRoutes);
 
 // 404 catch-all for unknown routes
 app.use((_req, res) => {

@@ -334,7 +334,7 @@ const IDCard = forwardRef(function IDCard(
                   </div>
 
                   {/* Details – centered 2-col grid */}
-                  <div className="w-full max-w-[240px] space-y-2">
+                  <div className="w-full max-w-60 space-y-2">
                     <div className="grid grid-cols-2 gap-y-1.5 gap-x-4 text-center">
                       {fv.dob && (
                         <div>

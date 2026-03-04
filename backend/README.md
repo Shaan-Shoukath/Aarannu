@@ -51,6 +51,12 @@ npm start
 | GET    | `/api/admin/pending`         | ✅   | —        | ✅    | List unapproved members            |
 | POST   | `/api/admin/approve/:userId` | ✅   | —        | ✅    | Approve a member                   |
 | POST   | `/api/admin/cleanup`         | ✅   | —        | ✅    | Delete expired generated_ids rows  |
+| GET    | `/api/tokens/packages`       | —    | —        | —     | List purchasable token packages    |
+| GET    | `/api/tokens/balance`        | ✅   | —        | —     | Current token wallet balance       |
+| GET    | `/api/tokens/transactions`   | ✅   | —        | —     | Paginated transaction history      |
+| GET    | `/api/tokens/analytics`      | ✅   | —        | —     | 30-day usage analytics             |
+| POST   | `/api/tokens/purchase`       | ✅   | —        | —     | Purchase a token package           |
+| POST   | `/api/tokens/add`            | ✅   | —        | ✅    | Admin: manually add tokens         |
 
 ---
 
@@ -64,20 +70,24 @@ backend/
 │   ├── controllers/
 │   │   ├── authController.js    # GET /auth/me
 │   │   ├── idController.js      # POST /ids/generate, GET /ids/my-ids
-│   │   └── adminController.js   # GET /admin/pending, POST approve, POST cleanup
+│   │   ├── adminController.js   # GET /admin/pending, POST approve, POST cleanup
+│   │   └── tokenController.js   # Token balance, transactions, purchase, analytics
 │   ├── middleware/
 │   │   ├── verifyToken.js       # JWT verification via supabase.auth.getUser()
 │   │   ├── checkApproval.js     # Approval business rule gate
+│   │   ├── checkTokens.js       # Token balance pre-flight check (402 if insufficient)
 │   │   ├── rateLimiter.js       # Per-IP rate limiting (100/15m + 20/15m auth)
 │   │   └── errorHandler.js      # Centralized error formatter (hides stack in prod)
 │   ├── routes/
 │   │   ├── authRoutes.js
 │   │   ├── idRoutes.js
 │   │   ├── adminRoutes.js
-│   │   └── proxyRoutes.js       # Google Drive image proxy with URL normalization
+│   │   ├── proxyRoutes.js       # Google Drive image proxy with URL normalization
+│   │   └── tokenRoutes.js       # /api/tokens/* — balance, packages, purchase, history
 │   ├── services/
 │   │   ├── supabaseService.js   # DB operations: members, generated_ids, cleanup
-│   │   └── storageService.js    # Signed URL generation, file deletion
+│   │   ├── storageService.js    # Signed URL generation, file deletion
+│   │   └── tokenService.js      # Token wallet CRUD, deductions, refunds, analytics
 │   ├── utils/
 │   │   ├── expiryHelper.js      # 15-day expiry logic (getExpiryDate, getNow, isExpired)
 │   │   └── validators.js        # Input validation (members, bulk payload, UUID)
@@ -95,7 +105,7 @@ backend/
 Every request passes through this stack (in order):
 
 ```
-Request → helmet → cors → JSON parser → [rateLimiter] → [verifyToken] → [checkApproval] → Controller → Response
+Request → helmet → cors → JSON parser → [rateLimiter] → [verifyToken] → [checkApproval] → [checkTokens] → Controller → Response
                                                                                               ↓ (on error)
                                                                                          errorHandler
 ```
@@ -161,7 +171,7 @@ Logs the count of purged records and files to stdout.
 
 ## Developer Debug Docs
 
-See [`developers_debug/`](developers_debug/README.md) for 8 detailed documents covering architecture rationale, database schema, JWT verification, defense-in-depth security, signed URL strategy, expiry logic, library deep-dives, and production deployment.
+See [`developers_debug/`](developers_debug/README.md) for 10 detailed documents covering architecture rationale, database schema, JWT verification, defense-in-depth security, signed URL strategy, expiry logic, library deep-dives, production deployment, card customization, and the **token/credit system**.
 
 ---
 

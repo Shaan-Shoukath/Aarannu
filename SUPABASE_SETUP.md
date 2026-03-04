@@ -16,7 +16,8 @@ Complete setup guide for the Supabase backend services (Database, Auth, Storage,
 8. [Running the Project](#8-running-the-project)
 9. [Quick Checklist](#9-quick-checklist)
 10. [First Admin User](#10-first-admin-user)
-11. [Troubleshooting](#11-troubleshooting)
+11. [Token System Migration](#11-token-system-migration)
+12. [Troubleshooting](#12-troubleshooting)
 
 ---
 
@@ -359,6 +360,27 @@ The backend auto-cleans every 6 hours. To trigger immediately:
 
 - Restart the backend (cleanup runs on boot), or
 - Call `POST /api/admin/cleanup` (requires admin auth).
+
+---
+
+## 11. Token System Migration
+
+The token/credit system adds usage-based billing. Run `backend/migrations/003_token_system.sql` in the **SQL Editor**:
+
+This creates:
+- **token_wallets** — one per user (balance, lifetime stats)
+- **token_transactions** — immutable ledger of all movements
+- **token_packages** — purchasable bundles (seeded with Starter/Growth/Enterprise)
+- RLS policies (users see own wallets/transactions, packages are public-read)
+- Indexes for performance
+
+After running the migration, every card generation costs **1 token**. Users purchase tokens via the `/tokens/purchase` page. The system auto-refunds tokens if generation fails.
+
+---
+
+## 12. Troubleshooting
+
+> See also the full troubleshooting section below.
 
 ---
 

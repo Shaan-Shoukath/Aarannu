@@ -210,3 +210,34 @@ CREATE POLICY "Users can read own ID cards"
 | User accesses another user's files        | Storage policies restrict folder access by UID                              |
 | User self-approves                        | Addressed with restricted update policy (see note above)                    |
 | Unauthenticated access                    | RLS only allows access with valid JWT; anon key alone grants no data access |
+
+---
+
+## Token System RLS Policies
+
+The token tables use RLS to ensure users can only access their own wallet and transactions:
+
+```sql
+-- token_wallets: users can read their own wallet
+CREATE POLICY "Users can read own wallet"
+  ON public.token_wallets FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- token_transactions: users can read transactions for their wallets
+CREATE POLICY "Users can read own transactions"
+  ON public.token_transactions FOR SELECT
+  USING (
+    wallet_id IN (SELECT id FROM public.token_wallets WHERE user_id = auth.uid())
+  );
+
+-- token_packages: anyone can read active packages (public catalog)
+CREATE POLICY "Anyone can read active packages"
+  ON public.token_packages FOR SELECT
+  USING (is_active = true);
+```
+
+**Key points:**
+- All write operations (INSERT/UPDATE on wallets and transactions) are performed server-side via the **service-role** client, bypassing RLS entirely.
+- Users cannot modify their own balance — only the backend can deduct/add tokens.
+- The packages table is publicly readable (no auth needed) for the purchase page.
+- Transaction reads are scoped via a subquery on `wallet_id` ownership.

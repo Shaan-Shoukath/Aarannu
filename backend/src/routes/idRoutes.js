@@ -10,6 +10,7 @@
 const { Router } = require("express");
 const verifyToken = require("../middleware/verifyToken");
 const checkApproval = require("../middleware/checkApproval");
+const checkTokens = require("../middleware/checkTokens");
 const { apiLimiter } = require("../middleware/rateLimiter");
 const {
   generateIds,
@@ -19,8 +20,15 @@ const {
 
 const router = Router();
 
-// POST /api/ids/generate – Bulk-create ID metadata (requires approval)
-router.post("/generate", apiLimiter, verifyToken, checkApproval, generateIds);
+// POST /api/ids/generate – Bulk-create ID metadata (requires approval + tokens)
+router.post(
+  "/generate",
+  apiLimiter,
+  verifyToken,
+  checkApproval,
+  checkTokens((req) => (req.body.members || []).length),
+  generateIds,
+);
 
 // GET /api/ids/my-ids – Fetch user's active (non-expired) IDs with signed URLs
 router.get("/my-ids", apiLimiter, verifyToken, getMyIds);

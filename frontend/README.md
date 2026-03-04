@@ -34,6 +34,8 @@ npm run dev          # http://localhost:5173
 | `/templates` | Templates.jsx | Choose template, set org name/logo, watermark config                   |
 | `/generate`  | Generate.jsx  | Data entry, Sheets import, preview, PDF/JPEG download, bulk generation |
 | `/dashboard` | Dashboard.jsx | View active IDs, signed-URL downloads, expiry countdown                |
+| `/tokens`    | TokenDashboard.jsx | Token balance, 30-day usage sparkline, transaction history      |
+| `/tokens/purchase` | TokenPurchase.jsx | Browse token packages, purchase tokens                    |
 
 ---
 
@@ -127,7 +129,7 @@ These are checked **before** generation starts. If the daily limit is partially 
 
 ## Developer Debug Docs
 
-See [`developers_debug/`](developers_debug/README.md) for 8 detailed architecture documents covering system design, database schema, RLS policies, auth flow, storage/download flow, expiry logic, library deep-dives, and production hardening.
+See [`developers_debug/`](developers_debug/README.md) for 10+ detailed architecture documents covering system design, database schema, RLS policies, auth flow, storage/download flow, expiry logic, library deep-dives, and production hardening.
 
 ---
 

@@ -19,6 +19,8 @@ A production-grade web application for generating, managing, and distributing di
 - **Auth** — Email/password + Email OTP login via Supabase Auth
 - **Approval gating** — Admin must approve members before they can generate cards
 - **15-day expiry** — Generated IDs expire automatically; auto-cleanup every 6 hours
+- **Token / credit system** — Usage-based billing; each card costs 1 token; purchase packages; auto-refund on failure
+- **Webhook automation** — Google Form → Webhook → Puppeteer render → Supabase Storage → Email delivery
 - **Configurable limits** — Daily cap (default 200), queue size (default 500), API batch (default 50)
 
 ---
@@ -30,7 +32,7 @@ community-id/
 ├── frontend/              # React 19 + Vite 7 + Tailwind CSS v4
 │   ├── src/
 │   │   ├── components/    # IDCard, CorporateCard, EventCard, StudentCard, BulkGenerator, ProtectedRoute
-│   │   ├── pages/         # Login, Signup, Dashboard, Templates, Generate
+│   │   ├── pages/         # Login, Signup, Dashboard, Templates, Generate, TokenDashboard, TokenPurchase
 │   │   ├── lib/           # supabaseClient, proxyImage
 │   │   └── utils/         # downloadHelpers (PDF/ZIP/JPEG/PNG conversion)
 │   ├── public/
@@ -42,8 +44,8 @@ community-id/
 │   │   ├── config/        # supabaseClient (service-role + anon)
 │   │   ├── routes/        # auth, id, admin, proxy (Google Drive images)
 │   │   ├── controllers/   # authController, idController, adminController
-│   │   ├── services/      # supabaseService, storageService
-│   │   ├── middleware/     # verifyToken, checkApproval, rateLimiter, errorHandler
+│   │   ├── services/      # supabaseService, storageService, tokenService
+│   │   ├── middleware/     # verifyToken, checkApproval, checkTokens, rateLimiter, errorHandler
 │   │   ├── utils/         # validators, expiryHelper
 │   │   └── server.js      # Entry point + auto-cleanup scheduler
 │   ├── developers_debug/  # 8 architecture docs
@@ -180,6 +182,7 @@ This avoids all CORS issues since the blob is created client-side.
 - **Input validation** — client + server-side with size/format constraints
 - **Service-role isolation** — service key never exposed to frontend
 - **Image proxy guards** — content-type whitelist, 10 MB cap, 15s timeout
+- **Token balance gate** — 402 Payment Required if insufficient tokens before card generation
 - **Auto-cleanup** — expired records + storage files purged every 6 hours
 
 ---
@@ -187,8 +190,9 @@ This avoids all CORS issues since the blob is created client-side.
 ## Documentation
 
 - **Supabase setup**: [SUPABASE_SETUP.md](SUPABASE_SETUP.md) — complete guide for DB, RLS, Storage, Auth
-- **Frontend internals**: [frontend/developers_debug/](frontend/developers_debug/README.md) — 8 docs on architecture, schema, auth flow, storage, libraries
-- **Backend internals**: [backend/developers_debug/](backend/developers_debug/README.md) — 8 docs on architecture, security, signed URLs, expiry, deployment
+- **Webhook setup**: [WEBHOOK_SETUP.md](WEBHOOK_SETUP.md) — Google Form → Webhook automation guide
+- **Frontend internals**: [frontend/developers_debug/](frontend/developers_debug/README.md) — docs on architecture, schema, auth flow, storage, libraries
+- **Backend internals**: [backend/developers_debug/](backend/developers_debug/README.md) — docs on architecture, security, signed URLs, token system, deployment
 
 ---
 

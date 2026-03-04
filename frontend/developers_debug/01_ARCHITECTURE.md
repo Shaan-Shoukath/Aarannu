@@ -45,6 +45,10 @@
 |  |  Email   |  Brevo v3 REST API (transactional email w/ PDF attach) |
 |  | Routes   |                                                        |
 |  +----------+                                                        |
+|  +----------+                                                        |
+|  |  Token   |  Token wallet balance, transactions, analytics, pkgs   |
+|  | Routes   |                                                        |
+|  +----------+                                                        |
 +-----------------------------------------------------------------------+
 ```
 
@@ -231,6 +235,8 @@ src/
 |   +-- Dashboard.jsx        # Status, generated IDs, signed-URL downloads
 |   +-- Templates.jsx        # Template selection + org config + watermark
 |   +-- Generate.jsx         # Data entry + preview + PDF/JPEG download + bulk gen
+|   +-- TokenDashboard.jsx  # Token balance, 30-day sparkline, transaction history
+|   +-- TokenPurchase.jsx   # Browse token packages, purchase tokens
 +-- lib/
 |   +-- supabaseClient.js    # Single Supabase client instance
 |   +-- proxyImage.js        # Google Drive URL -> backend proxy rewriter
@@ -259,3 +265,80 @@ src/
 - **Column mapping for Sheets import** - 2-phase flow: Phase 1 fetches CSV and shows auto-guessed mapping UI; Phase 2 confirms mappings and imports. Unmapped columns become custom fields automatically.
 - **Image preloading before capture** - `captureRef()` waits for all `<img>` elements inside the card to finish loading before calling `html2canvas`, preventing blank photos.
 - **Dashboard thumbnail grid** - `DashboardCard` subcomponent loads signed-URL thumbnails with hover effects, expiry badges (green >7d, amber 3-7d, red ≤3d), and blob-based downloads.
+
+---
+
+## SaaS Platform Extension (Multi-Tenant)
+
+The system has been extended into a multi-tenant SaaS platform with two products:
+
+1. **Aarannu Service** — Subscription-based org workspace with member registration and card generation
+2. **Aarannu Bulk** — Pay-per-use event card generation with Google Sheets import
+
+### Extended Backend Architecture
+
+```
+Express Backend (Extended)
+├── routes/
+│   ├── authRoutes.js          # LEGACY
+│   ├── idRoutes.js            # LEGACY
+│   ├── adminRoutes.js         # LEGACY
+│   ├── proxyRoutes.js         # LEGACY
+│   ├── emailRoutes.js         # LEGACY
+│   ├── webhookRoutes.js       # LEGACY
+│   ├── webhookConfigRoutes.js # LEGACY
+│   ├── orgRoutes.js           # NEW — /api/org
+│   ├── projectRoutes.js       # NEW — /api/projects
+│   ├── projectMemberRoutes.js # NEW — /api/members
+│   ├── generateRoutes.js      # NEW — /api/generate
+│   ├── verifyRoutes.js        # NEW — /api/verify (public)
+│   └── bulkRoutes.js          # NEW — /api/bulk
+├── controllers/
+│   ├── orgController.js       # NEW
+│   ├── projectController.js   # NEW
+│   ├── projectMemberController.js # NEW
+│   ├── generateController.js  # NEW
+│   └── verifyController.js    # NEW
+├── services/
+│   ├── orgService.js          # NEW
+│   ├── projectService.js      # NEW
+│   ├── projectMemberService.js # NEW
+│   └── generateService.js     # NEW
+└── middleware/
+    ├── checkOrgRole.js        # NEW — org role enforcement
+    └── checkPlanLimits.js     # NEW — subscription limit enforcement
+```
+
+### Extended Frontend Architecture
+
+```
+src/pages/
+├── OrgOnboarding.jsx       # NEW — Create/select organization
+├── OrgDashboard.jsx        # NEW — Organization admin dashboard
+├── ProjectCreate.jsx       # NEW — Create service/bulk project
+├── ProjectDashboard.jsx    # NEW — Project member management
+├── RegistrationForm.jsx    # NEW — Public registration form (no auth)
+├── VerifyCard.jsx          # NEW — Public QR verification (no auth)
+└── BulkDashboard.jsx       # NEW — Bulk generation dashboard
+```
+
+### New Route Structure
+
+| Route                           | Page             | Auth      |
+| ------------------------------- | ---------------- | --------- |
+| `/org/new`                      | OrgOnboarding    | ✅        |
+| `/org/:slug/dashboard`          | OrgDashboard     | ✅        |
+| `/org/:slug/project/new`        | ProjectCreate    | ✅        |
+| `/org/:slug/project/:projectId` | ProjectDashboard | ✅        |
+| `/org/:slug/bulk/:projectId`    | BulkDashboard    | ✅        |
+| `/register/:projectId`          | RegistrationForm | ❌ Public |
+| `/verify/:cardId`               | VerifyCard       | ❌ Public |
+
+See individual docs for details:
+
+- [10_MULTI_TENANT.md](./10_MULTI_TENANT.md)
+- [11_SUBSCRIPTION_PLANS.md](./11_SUBSCRIPTION_PLANS.md)
+- [12_BULK_GENERATION.md](./12_BULK_GENERATION.md)
+- [13_QR_VERIFICATION.md](./13_QR_VERIFICATION.md)
+- [14_FORM_SYSTEM.md](./14_FORM_SYSTEM.md)
+- [15_EMAIL_QUEUE.md](./15_EMAIL_QUEUE.md)

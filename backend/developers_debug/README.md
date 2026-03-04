@@ -19,6 +19,7 @@ Internal documentation for the Aarannu Community ID Platform backend.
 | 07  | [07_LIBRARIES_USED.md](07_LIBRARIES_USED.md)               | Every dependency explained                                                        |
 | 08  | [08_PRODUCTION_DEPLOYMENT.md](08_PRODUCTION_DEPLOYMENT.md) | Deployment, HTTPS, logging, scaling                                               |
 | 09  | [09_CARD_CUSTOMIZATION.md](09_CARD_CUSTOMIZATION.md)       | Frontend card styling/orientation — backend impact analysis                       |
+| 10  | [10_TOKEN_SYSTEM.md](10_TOKEN_SYSTEM.md)                   | Token/credit system — wallets, transactions, middleware, auto-refund              |
 
 ---
 
@@ -27,10 +28,10 @@ Internal documentation for the Aarannu Community ID Platform backend.
 ```
 backend/src/
 ├── config/supabaseClient.js   ← service-role + anon clients
-├── middleware/                 ← verifyToken → checkApproval → rateLimiter → errorHandler
-├── services/                  ← DB queries + storage operations
-├── controllers/               ← thin HTTP handlers
-├── routes/                    ← Express Router wiring + proxyRoutes.js (Google Drive image proxy)
+├── middleware/                 ← verifyToken → checkApproval → checkTokens → rateLimiter → errorHandler
+├── services/                  ← DB queries + storage + tokenService.js
+├── controllers/               ← thin HTTP handlers + tokenController.js
+├── routes/                    ← Express Router wiring + tokenRoutes.js
 ├── utils/                     ← validators, expiry helpers
 └── server.js                  ← entry point
 ```

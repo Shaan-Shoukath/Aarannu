@@ -14,6 +14,7 @@ const {
 } = require("../services/supabaseService");
 const { getSignedUrls } = require("../services/storageService");
 const { validateBulkPayload } = require("../utils/validators");
+const { deductTokens, refundTokens } = require("../services/tokenService");
 
 /**
  * POST /api/ids/generate
@@ -43,14 +44,33 @@ const generateIds = async (req, res, next) => {
     const userId = req.user.id;
     const { members } = req.body;
 
+    // ── Deduct tokens (1 per member) ─────────────────────────
+    const tokenCount = members.length;
+    const { error: tokenErr } = await deductTokens(
+      userId,
+      tokenCount,
+      `ID generation – ${tokenCount} card(s)`,
+    );
+    if (tokenErr) {
+      const status = tokenErr.code === "INSUFFICIENT_TOKENS" ? 402 : 500;
+      return res.status(status).json({
+        error: tokenErr.code === "INSUFFICIENT_TOKENS"
+          ? "Insufficient Tokens"
+          : "Token Error",
+        message: tokenErr.message,
+      });
+    }
+
     // ── Insert metadata ──────────────────────────────────────
     const { data, error, rows } = await insertGeneratedIds(userId, members);
 
     if (error) {
       console.error("[idController.generateIds] Insert error:", error.message);
+      // Auto-refund tokens on DB failure
+      await refundTokens(userId, tokenCount, `Refund – generation failed: ${error.message}`);
       return res.status(500).json({
         error: "Database Error",
-        message: "Failed to insert generated ID records.",
+        message: "Failed to insert generated ID records. Tokens have been refunded.",
       });
     }
 

@@ -22,6 +22,7 @@ export default function Dashboard() {
   const [generatedIds, setGeneratedIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [signedUrls, setSignedUrls] = useState({});
+  const [tokenBalance, setTokenBalance] = useState(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -62,6 +63,23 @@ export default function Dashboard() {
         console.error("Generated IDs fetch error:", idsError.message);
       }
       setGeneratedIds(idsData || []);
+
+      // 4. Fetch token balance
+      try {
+        const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          const tokenRes = await fetch(`${API}/api/tokens/balance`, {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          if (tokenRes.ok) {
+            const tokenData = await tokenRes.json();
+            setTokenBalance(tokenData.balance);
+          }
+        }
+      } catch (tokenErr) {
+        console.warn("Token balance fetch failed:", tokenErr);
+      }
     } catch (err) {
       console.error("Dashboard load error:", err);
     } finally {
@@ -217,25 +235,65 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-3">
           {member?.approved && (
-            <button
-              onClick={() => navigate("/templates")}
-              className="px-4 py-2 bg-[#1152d4] hover:bg-[#1152d4]/90 text-white text-sm font-medium rounded-lg flex items-center gap-2 shadow-lg shadow-[#1152d4]/20 transition-all"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <>
+              <button
+                onClick={() => navigate("/tokens")}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-sm font-medium rounded-lg flex items-center gap-2 shadow-lg shadow-amber-600/20 transition-all"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              Generate IDs
-            </button>
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                  />
+                </svg>
+                Tokens{tokenBalance !== null ? ` (${tokenBalance})` : ""}
+              </button>
+              <button
+                onClick={() => navigate("/webhooks")}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg flex items-center gap-2 shadow-lg shadow-purple-600/20 transition-all"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                  />
+                </svg>
+                Webhooks
+              </button>
+              <button
+                onClick={() => navigate("/templates")}
+                className="px-4 py-2 bg-[#1152d4] hover:bg-[#1152d4]/90 text-white text-sm font-medium rounded-lg flex items-center gap-2 shadow-lg shadow-[#1152d4]/20 transition-all"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                Generate IDs
+              </button>
+            </>
           )}
           <button
             onClick={handleSignOut}
@@ -322,7 +380,29 @@ export default function Dashboard() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div
+            className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 cursor-pointer hover:border-amber-300 transition-colors"
+            onClick={() => navigate("/tokens")}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                <svg
+                  className="w-5 h-5 text-amber-600"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-slate-800">
+                  {tokenBalance !== null ? tokenBalance : "—"}
+                </p>
+                <p className="text-xs text-slate-500">Token Balance</p>
+              </div>
+            </div>
+          </div>
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
