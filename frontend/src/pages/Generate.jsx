@@ -1936,454 +1936,477 @@ export default function Generate() {
             }}
           >
             <div className="flex gap-6 items-start">
-            {/* ── Sticky Card Preview Column ── */}
-            <div className="sticky top-0 shrink-0 self-start pt-6 flex flex-col items-center" style={{ minWidth: orientation === 'vertical' ? '260px' : '380px' }}>
-            {/* Live Preview */}
-            {previewData && (
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-slate-500 text-center uppercase tracking-wider">
-                  Live Preview
-                </h3>
-                <div className="transform transition-transform hover:scale-[1.02] duration-300">
-                  {renderCard(previewData)}
-                </div>
+              {/* ── Sticky Card Preview Column ── */}
+              <div
+                className="sticky top-0 shrink-0 self-start pt-6 flex flex-col items-center"
+                style={{
+                  minWidth: orientation === "vertical" ? "260px" : "380px",
+                }}
+              >
+                {/* Live Preview */}
+                {previewData && (
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-slate-500 text-center uppercase tracking-wider">
+                      Live Preview
+                    </h3>
+                    <div className="transform transition-transform hover:scale-[1.02] duration-300">
+                      {renderCard(previewData)}
+                    </div>
 
-                {/* Download buttons */}
-                <div className="flex items-center justify-center gap-3 flex-wrap">
-                  <button
-                    onClick={handleDownloadPdf}
-                    disabled={downloading}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                  >
-                    <svg
-                      className="w-3.5 h-3.5"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
+                    {/* Download buttons */}
+                    <div className="flex items-center justify-center gap-3 flex-wrap">
+                      <button
+                        onClick={handleDownloadPdf}
+                        disabled={downloading}
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                      >
+                        <svg
+                          className="w-3.5 h-3.5"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z" />
+                        </svg>
+                        {downloading ? "Processing…" : "Download PDF"}
+                      </button>
+                      <button
+                        onClick={handleDownloadJpeg}
+                        disabled={downloading}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                      >
+                        <svg
+                          className="w-3.5 h-3.5"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
+                        </svg>
+                        {downloading ? "Processing…" : "Download JPEG"}
+                      </button>
+                      <button
+                        onClick={handleDownloadPng}
+                        disabled={downloading}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                      >
+                        <svg
+                          className="w-3.5 h-3.5"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
+                        </svg>
+                        {downloading ? "Processing…" : "Download PNG"}
+                      </button>
+                    </div>
+                    {/* Download status bar */}
+                    {downloadStatus && (
+                      <div
+                        className={`text-center text-xs font-medium py-1.5 px-3 rounded-lg border ${
+                          downloadStatus.startsWith("Error")
+                            ? "bg-red-50 text-red-600 border-red-200"
+                            : downloadStatus === "Done!"
+                              ? "bg-green-50 text-green-600 border-green-200"
+                              : "bg-blue-50 text-blue-600 border-blue-200"
+                        }`}
+                      >
+                        {downloadStatus.startsWith("Error")
+                          ? ""
+                          : downloadStatus === "Done!"
+                            ? "✓ "
+                            : "⏳ "}
+                        {downloadStatus}
+                      </div>
+                    )}
+                    <p className="text-[10px] text-slate-400 text-center">
+                      PDF includes front &amp; back · JPEG/PNG downloads the
+                      currently visible side
+                    </p>
+
+                    {/* Hidden off-screen captures for PDF (front + back separately) */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: "-9999px",
+                        top: 0,
+                        zIndex: -1,
+                        pointerEvents: "none",
+                      }}
+                      aria-hidden="true"
                     >
-                      <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z" />
-                    </svg>
-                    {downloading ? "Processing…" : "Download PDF"}
-                  </button>
-                  <button
-                    onClick={handleDownloadJpeg}
-                    disabled={downloading}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                  >
-                    <svg
-                      className="w-3.5 h-3.5"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
-                    </svg>
-                    {downloading ? "Processing…" : "Download JPEG"}
-                  </button>
-                  <button
-                    onClick={handleDownloadPng}
-                    disabled={downloading}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                  >
-                    <svg
-                      className="w-3.5 h-3.5"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
-                    </svg>
-                    {downloading ? "Processing…" : "Download PNG"}
-                  </button>
-                </div>
-                {/* Download status bar */}
-                {downloadStatus && (
-                  <div
-                    className={`text-center text-xs font-medium py-1.5 px-3 rounded-lg border ${
-                      downloadStatus.startsWith("Error")
-                        ? "bg-red-50 text-red-600 border-red-200"
-                        : downloadStatus === "Done!"
-                          ? "bg-green-50 text-green-600 border-green-200"
-                          : "bg-blue-50 text-blue-600 border-blue-200"
-                    }`}
-                  >
-                    {downloadStatus.startsWith("Error")
-                      ? ""
-                      : downloadStatus === "Done!"
-                        ? "✓ "
-                        : "⏳ "}
-                    {downloadStatus}
+                      <div
+                        ref={previewFrontRef}
+                        style={{ display: "inline-block" }}
+                      >
+                        {renderCard(previewData, null, false, "front")}
+                      </div>
+                      <div
+                        ref={previewBackRef}
+                        style={{ display: "inline-block" }}
+                      >
+                        {renderCard(previewData, null, true, "back")}
+                      </div>
+                    </div>
                   </div>
                 )}
-                <p className="text-[10px] text-slate-400 text-center">
-                  PDF includes front &amp; back · JPEG/PNG downloads the
-                  currently visible side
-                </p>
 
-                {/* Hidden off-screen captures for PDF (front + back separately) */}
-                <div
-                  style={{
-                    position: "absolute",
-                    left: "-9999px",
-                    top: 0,
-                    zIndex: -1,
-                    pointerEvents: "none",
-                  }}
-                  aria-hidden="true"
-                >
+                {!previewData && (
+                  <div className="text-center py-20">
+                    <svg
+                      className="w-16 h-16 text-slate-300 mx-auto mb-4"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12z" />
+                    </svg>
+                    <h3 className="text-lg font-semibold text-slate-500 mb-1">
+                      No cards yet
+                    </h3>
+                    <p className="text-sm text-slate-400">
+                      Add members and click &quot;Preview&quot;
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Scrollable Queue + Settings Column ── */}
+              <div className="flex-1 min-w-0 space-y-6 pb-6">
+                {/* Queue + Bulk Generator */}
+                {members.length > 0 && (
                   <div
-                    ref={previewFrontRef}
-                    style={{ display: "inline-block" }}
+                    ref={generatorSectionRef}
+                    className="w-full max-w-2xl space-y-6"
                   >
-                    {renderCard(previewData, null, false, "front")}
-                  </div>
-                  <div ref={previewBackRef} style={{ display: "inline-block" }}>
-                    {renderCard(previewData, null, true, "back")}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {!previewData && (
-              <div className="text-center py-20">
-                <svg
-                  className="w-16 h-16 text-slate-300 mx-auto mb-4"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12z" />
-                </svg>
-                <h3 className="text-lg font-semibold text-slate-500 mb-1">
-                  No cards yet
-                </h3>
-                <p className="text-sm text-slate-400">
-                  Add members and click &quot;Preview&quot;
-                </p>
-              </div>
-            )}
-            </div>
-
-            {/* ── Scrollable Queue + Settings Column ── */}
-            <div className="flex-1 min-w-0 space-y-6 pb-6">
-            {/* Queue + Bulk Generator */}
-            {members.length > 0 && (
-              <div
-                ref={generatorSectionRef}
-                className="w-full max-w-2xl space-y-6"
-              >
-                {/* Member queue */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-slate-700">
-                      Generation Queue
-                    </h3>
-                    {members.some((m) => m.email?.trim()) && (
-                      <button
-                        onClick={() => {
-                          const hasEmailMembers = members.filter((m) =>
-                            m.email?.trim(),
-                          );
-                          const allOn = hasEmailMembers.every(
-                            (m) => m.sendEmail,
-                          );
-                          setMembers((prev) =>
-                            prev.map((m) =>
-                              m.email?.trim() ? { ...m, sendEmail: !allOn } : m,
-                            ),
-                          );
-                        }}
-                        className="text-[10px] font-medium text-blue-600 hover:text-blue-800 transition-colors"
-                      >
-                        {members
-                          .filter((m) => m.email?.trim())
-                          .every((m) => m.sendEmail)
-                          ? "Deselect all emails"
-                          : "Select all emails"}
-                      </button>
-                    )}
-                  </div>
-                  <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto">
-                    {members.map((m, i) => (
-                      <div
-                        key={i}
-                        className="px-4 py-3 flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="w-7 h-7 bg-[#1152d4]/10 text-[#1152d4] rounded-full flex items-center justify-center text-xs font-bold">
-                            {i + 1}
-                          </span>
-                          <div>
-                            <p className="text-sm font-medium text-slate-800">
-                              {m.name}
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              {m.role} · {m.id_number}
-                              {m.email && (
-                                <span className="text-blue-500 ml-1">
-                                  · {m.email}
-                                </span>
+                    {/* Member queue */}
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                      <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-slate-700">
+                          Generation Queue
+                        </h3>
+                        {members.some((m) => m.email?.trim()) && (
+                          <button
+                            onClick={() => {
+                              const hasEmailMembers = members.filter((m) =>
+                                m.email?.trim(),
+                              );
+                              const allOn = hasEmailMembers.every(
+                                (m) => m.sendEmail,
+                              );
+                              setMembers((prev) =>
+                                prev.map((m) =>
+                                  m.email?.trim()
+                                    ? { ...m, sendEmail: !allOn }
+                                    : m,
+                                ),
+                              );
+                            }}
+                            className="text-[10px] font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                          >
+                            {members
+                              .filter((m) => m.email?.trim())
+                              .every((m) => m.sendEmail)
+                              ? "Deselect all emails"
+                              : "Select all emails"}
+                          </button>
+                        )}
+                      </div>
+                      <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto">
+                        {members.map((m, i) => (
+                          <div
+                            key={i}
+                            className="px-4 py-3 flex items-center justify-between"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="w-7 h-7 bg-[#1152d4]/10 text-[#1152d4] rounded-full flex items-center justify-center text-xs font-bold">
+                                {i + 1}
+                              </span>
+                              <div>
+                                <p className="text-sm font-medium text-slate-800">
+                                  {m.name}
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                  {m.role} · {m.id_number}
+                                  {m.email && (
+                                    <span className="text-blue-500 ml-1">
+                                      · {m.email}
+                                    </span>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {/* Per-member email toggle */}
+                              {m.email?.trim() && (
+                                <button
+                                  onClick={() =>
+                                    setMembers((prev) =>
+                                      prev.map((mem, idx) =>
+                                        idx === i
+                                          ? {
+                                              ...mem,
+                                              sendEmail: !mem.sendEmail,
+                                            }
+                                          : mem,
+                                      ),
+                                    )
+                                  }
+                                  title={
+                                    m.sendEmail
+                                      ? "Email ON — click to disable"
+                                      : "Email OFF — click to enable"
+                                  }
+                                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
+                                    m.sendEmail
+                                      ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                                      : "bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600"
+                                  }`}
+                                >
+                                  <svg
+                                    className="w-3 h-3"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    strokeWidth={2}
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                                    />
+                                  </svg>
+                                  {m.sendEmail ? "Email ON" : "Email"}
+                                </button>
                               )}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {/* Per-member email toggle */}
-                          {m.email?.trim() && (
-                            <button
-                              onClick={() =>
-                                setMembers((prev) =>
-                                  prev.map((mem, idx) =>
-                                    idx === i
-                                      ? { ...mem, sendEmail: !mem.sendEmail }
-                                      : mem,
-                                  ),
-                                )
-                              }
-                              title={
-                                m.sendEmail
-                                  ? "Email ON — click to disable"
-                                  : "Email OFF — click to enable"
-                              }
-                              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
-                                m.sendEmail
-                                  ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                                  : "bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600"
-                              }`}
-                            >
-                              <svg
-                                className="w-3 h-3"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                                strokeWidth={2}
+                              <button
+                                onClick={() => handlePreview(m)}
+                                className="text-xs text-[#1152d4] hover:underline"
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                                />
-                              </svg>
-                              {m.sendEmail ? "Email ON" : "Email"}
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handlePreview(m)}
-                            className="text-xs text-[#1152d4] hover:underline"
-                          >
-                            Preview
-                          </button>
-                          <button
-                            onClick={() => handleRemoveMember(i)}
-                            className="text-xs text-red-500 hover:underline"
-                          >
-                            Remove
-                          </button>
+                                Preview
+                              </button>
+                              <button
+                                onClick={() => handleRemoveMember(i)}
+                                className="text-xs text-red-500 hover:underline"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {emailAfterGenerate && (
+                        <div className="px-4 py-2 bg-amber-50 border-t border-amber-200">
+                          <p className="text-[10px] text-amber-700">
+                            <strong>Brevo API key required</strong> in backend
+                            env var{" "}
+                            <code className="bg-amber-100 px-1 py-0.5 rounded text-[10px]">
+                              BREVO_API_KEY
+                            </code>
+                            . {members.filter((m) => m.sendEmail).length}{" "}
+                            member(s) will receive email after generation.
+                          </p>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                  {emailAfterGenerate && (
-                    <div className="px-4 py-2 bg-amber-50 border-t border-amber-200">
-                      <p className="text-[10px] text-amber-700">
-                        <strong>Brevo API key required</strong> in backend env
-                        var{" "}
-                        <code className="bg-amber-100 px-1 py-0.5 rounded text-[10px]">
-                          BREVO_API_KEY
-                        </code>
-                        . {members.filter((m) => m.sendEmail).length} member(s)
-                        will receive email after generation.
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Bulk generation controls: range, cap, email */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="px-4 py-3 border-b border-slate-200 bg-slate-50">
-                    <h3 className="text-sm font-semibold text-slate-700">
-                      Generation Settings
-                    </h3>
-                  </div>
-                  <div className="p-4 space-y-4">
-                    {/* Range Start / End */}
-                    <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                        Generate Range (Member #)
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          min={1}
-                          max={members.length}
-                          value={rangeStart}
-                          onChange={(e) =>
-                            setRangeStart(
-                              Math.max(1, parseInt(e.target.value, 10) || 1),
-                            )
-                          }
-                          className="w-24 rounded-lg border border-slate-300 bg-slate-50 text-sm text-center focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-2 outline-none"
-                          placeholder="From"
-                        />
-                        <span className="text-slate-400 text-xs">to</span>
-                        <input
-                          type="number"
-                          min={rangeStart}
-                          max={members.length}
-                          value={rangeEnd}
-                          onChange={(e) =>
-                            setRangeEnd(
-                              e.target.value === ""
-                                ? ""
-                                : Math.max(
-                                    rangeStart,
-                                    parseInt(e.target.value, 10) || rangeStart,
-                                  ),
-                            )
-                          }
-                          className="w-24 rounded-lg border border-slate-300 bg-slate-50 text-sm text-center focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-2 outline-none"
-                          placeholder={`${members.length}`}
-                        />
-                        <span className="text-[10px] text-slate-400">
-                          of {members.length} total
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-slate-400 mt-1">
-                        Leave &ldquo;to&rdquo; empty to generate all from the
-                        start position.
-                      </p>
+                      )}
                     </div>
 
-                    {/* Per-Person Generation Cap */}
-                    <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                        Per-Person Cap
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          min={1}
-                          value={perPersonCap}
-                          onChange={(e) =>
-                            setPerPersonCap(
-                              e.target.value === ""
-                                ? ""
-                                : Math.max(
+                    {/* Bulk generation controls: range, cap, email */}
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                      <div className="px-4 py-3 border-b border-slate-200 bg-slate-50">
+                        <h3 className="text-sm font-semibold text-slate-700">
+                          Generation Settings
+                        </h3>
+                      </div>
+                      <div className="p-4 space-y-4">
+                        {/* Range Start / End */}
+                        <div>
+                          <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                            Generate Range (Member #)
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={1}
+                              max={members.length}
+                              value={rangeStart}
+                              onChange={(e) =>
+                                setRangeStart(
+                                  Math.max(
                                     1,
                                     parseInt(e.target.value, 10) || 1,
                                   ),
-                            )
-                          }
-                          className="w-24 rounded-lg border border-slate-300 bg-slate-50 text-sm text-center focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-2 outline-none"
-                          placeholder="No limit"
-                        />
-                        <span className="text-[10px] text-slate-400">
-                          max cards per person
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-slate-400 mt-1">
-                        If a person appears multiple times in the queue, only
-                        the first N are generated. Leave empty for no limit.
-                      </p>
-                    </div>
+                                )
+                              }
+                              className="w-24 rounded-lg border border-slate-300 bg-slate-50 text-sm text-center focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-2 outline-none"
+                              placeholder="From"
+                            />
+                            <span className="text-slate-400 text-xs">to</span>
+                            <input
+                              type="number"
+                              min={rangeStart}
+                              max={members.length}
+                              value={rangeEnd}
+                              onChange={(e) =>
+                                setRangeEnd(
+                                  e.target.value === ""
+                                    ? ""
+                                    : Math.max(
+                                        rangeStart,
+                                        parseInt(e.target.value, 10) ||
+                                          rangeStart,
+                                      ),
+                                )
+                              }
+                              className="w-24 rounded-lg border border-slate-300 bg-slate-50 text-sm text-center focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-2 outline-none"
+                              placeholder={`${members.length}`}
+                            />
+                            <span className="text-[10px] text-slate-400">
+                              of {members.length} total
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 mt-1">
+                            Leave &ldquo;to&rdquo; empty to generate all from
+                            the start position.
+                          </p>
+                        </div>
 
-                    {/* Cloud Upload Toggle */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <svg
-                          className="w-4 h-4 text-indigo-500"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          strokeWidth={2}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                          />
-                        </svg>
+                        {/* Per-Person Generation Cap */}
                         <div>
-                          <label className="text-xs font-medium text-slate-700">
-                            Upload to Supabase
+                          <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                            Per-Person Cap
                           </label>
-                          <p className="text-[10px] text-slate-400">
-                            Store cards in cloud for Dashboard access
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={1}
+                              value={perPersonCap}
+                              onChange={(e) =>
+                                setPerPersonCap(
+                                  e.target.value === ""
+                                    ? ""
+                                    : Math.max(
+                                        1,
+                                        parseInt(e.target.value, 10) || 1,
+                                      ),
+                                )
+                              }
+                              className="w-24 rounded-lg border border-slate-300 bg-slate-50 text-sm text-center focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-2 outline-none"
+                              placeholder="No limit"
+                            />
+                            <span className="text-[10px] text-slate-400">
+                              max cards per person
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 mt-1">
+                            If a person appears multiple times in the queue,
+                            only the first N are generated. Leave empty for no
+                            limit.
+                          </p>
+                        </div>
+
+                        {/* Cloud Upload Toggle */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <svg
+                              className="w-4 h-4 text-indigo-500"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              strokeWidth={2}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                              />
+                            </svg>
+                            <div>
+                              <label className="text-xs font-medium text-slate-700">
+                                Upload to Supabase
+                              </label>
+                              <p className="text-[10px] text-slate-400">
+                                Store cards in cloud for Dashboard access
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setUploadToCloud((v) => !v)}
+                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                              uploadToCloud ? "bg-indigo-500" : "bg-slate-300"
+                            }`}
+                          >
+                            <span
+                              className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform duration-200 ease-in-out ${
+                                uploadToCloud
+                                  ? "translate-x-5"
+                                  : "translate-x-0"
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Email info */}
+                        <div className="rounded-lg bg-slate-50 border border-slate-200 p-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <svg
+                              className="w-3.5 h-3.5 text-blue-500"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              strokeWidth={2}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                              />
+                            </svg>
+                            <span className="text-xs font-medium text-slate-700">
+                              Email Delivery
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-500">
+                            Toggle email per member in the queue above using the
+                            <span className="inline-flex items-center mx-1 px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 text-[9px] font-medium">
+                              Email
+                            </span>
+                            button. Only members with email ON will receive
+                            their card as a PDF attachment via Brevo after
+                            generation.
                           </p>
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setUploadToCloud((v) => !v)}
-                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                          uploadToCloud ? "bg-indigo-500" : "bg-slate-300"
-                        }`}
-                      >
-                        <span
-                          className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform duration-200 ease-in-out ${
-                            uploadToCloud ? "translate-x-5" : "translate-x-0"
-                          }`}
-                        />
-                      </button>
                     </div>
 
-                    {/* Email info */}
-                    <div className="rounded-lg bg-slate-50 border border-slate-200 p-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <svg
-                          className="w-3.5 h-3.5 text-blue-500"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          strokeWidth={2}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                          />
-                        </svg>
-                        <span className="text-xs font-medium text-slate-700">
-                          Email Delivery
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-slate-500">
-                        Toggle email per member in the queue above using the
-                        <span className="inline-flex items-center mx-1 px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 text-[9px] font-medium">
-                          Email
-                        </span>
-                        button. Only members with email ON will receive their
-                        card as a PDF attachment via Brevo after generation.
-                      </p>
-                    </div>
+                    {/* Bulk generator */}
+                    <BulkGenerator
+                      members={members}
+                      userId={user?.id}
+                      onComplete={handleGenerationComplete}
+                      templateId={templateId}
+                      orgName={orgName}
+                      logoUrl={logoUrl}
+                      customFields={customFieldDefs}
+                      watermark={watermark}
+                      gradientColors={gradientColors}
+                      cardStyles={cardStyles}
+                      orientation={orientation}
+                      validityText={validityText}
+                      rangeStart={rangeStart}
+                      rangeEnd={rangeEnd === "" ? members.length : rangeEnd}
+                      perPersonCap={perPersonCap === "" ? 0 : perPersonCap}
+                      emailAfterGenerate={emailAfterGenerate}
+                      uploadToCloud={uploadToCloud}
+                    />
                   </div>
-                </div>
+                )}
 
-                {/* Bulk generator */}
-                <BulkGenerator
-                  members={members}
-                  userId={user?.id}
-                  onComplete={handleGenerationComplete}
-                  templateId={templateId}
-                  orgName={orgName}
-                  logoUrl={logoUrl}
-                  customFields={customFieldDefs}
-                  watermark={watermark}
-                  gradientColors={gradientColors}
-                  cardStyles={cardStyles}
-                  orientation={orientation}
-                  validityText={validityText}
-                  rangeStart={rangeStart}
-                  rangeEnd={rangeEnd === "" ? members.length : rangeEnd}
-                  perPersonCap={perPersonCap === "" ? 0 : perPersonCap}
-                  emailAfterGenerate={emailAfterGenerate}
-                  uploadToCloud={uploadToCloud}
-                />
+                {members.length === 0 && (
+                  <div className="text-center py-12">
+                    <p className="text-sm text-slate-400">
+                      Add members from the left panel to see queue here
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
-
-            {members.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-sm text-slate-400">Add members from the left panel to see queue here</p>
-              </div>
-            )}
-            </div>
             </div>
           </div>
         </div>

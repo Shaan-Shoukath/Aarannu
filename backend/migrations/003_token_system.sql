@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS token_transactions (
   amount        INTEGER NOT NULL,               -- positive = credit, negative = debit
   type          TEXT NOT NULL CHECK (type IN ('purchase','usage','refund','bonus','adjustment')),
   description   TEXT,
-  reference_id  TEXT,                            -- e.g. card ID, webhook ID, payment ID
+  reference_id  TEXT,                            -- e.g. card ID, payment ID
   balance_after INTEGER NOT NULL,               -- snapshot of wallet balance after txn
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );

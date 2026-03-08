@@ -138,7 +138,7 @@ Is member.approved === true?
 
 - Build an admin panel within the app.
 - Use Supabase Edge Functions for automated approval workflows.
-- Send email notifications when a user is approved (via webhook or edge function).
+- Send email notifications when a user is approved (via Brevo transactional email).
 
 ---
 

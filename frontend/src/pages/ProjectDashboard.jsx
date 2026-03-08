@@ -223,13 +223,43 @@ export default function ProjectDashboard() {
               onClick={copyFormLink}
               className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-medium transition cursor-pointer"
             >
-              🔗 Copy Form Link
+              {"\uD83D\uDD17"} Copy Form Link
+            </button>
+            <button
+              onClick={() => navigate(`/org/${slug}/bulk/${projectId}`)}
+              className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-medium transition cursor-pointer"
+            >
+              {"\uD83D\uDCCA"} Bulk Import
+            </button>
+            <button
+              onClick={() => {
+                const approvedMembers = members.filter(
+                  (m) => m.status === "approved",
+                );
+                navigate("/generate", {
+                  state: {
+                    fromProject: true,
+                    projectId,
+                    slug,
+                    orgName: project?.org_name || slug,
+                    members: approvedMembers.map((m) => ({
+                      name: m.name,
+                      email: m.email || "",
+                      photo: m.photo_url || "",
+                      ...m.custom_fields,
+                    })),
+                  },
+                });
+              }}
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-medium transition cursor-pointer"
+            >
+              {"\uD83C\uDCB4"} Generate Cards
             </button>
             <button
               onClick={handleExportCsv}
               className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-medium transition cursor-pointer"
             >
-              📥 CSV
+              {"\uD83D\uDCE5"} CSV
             </button>
           </div>
         </div>

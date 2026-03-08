@@ -2,7 +2,7 @@
 
 ## Overview
 
-Replaces the webhook-based workflow with a self-hosted Google-Forms-like system.
+Implements a self-hosted Google-Forms-like system.
 Organizations create **projects**, each with a custom **form_schema**.
 A public shareable link lets members register; admins approve/reject from a dashboard.
 

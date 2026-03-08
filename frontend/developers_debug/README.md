@@ -4,20 +4,20 @@ This folder contains **advanced internal documentation** for the Aarannu Communi
 
 ## Documents
 
-| File                                                       | Topic                                                                 |
-| ---------------------------------------------------------- | --------------------------------------------------------------------- |
-| [01_ARCHITECTURE.md](./01_ARCHITECTURE.md)                 | System design, data flow, hybrid architecture, component tree         |
-| [02_DATABASE_SCHEMA.md](./02_DATABASE_SCHEMA.md)           | Full SQL definitions, column rationale                                |
-| [03_RLS_POLICIES.md](./03_RLS_POLICIES.md)                 | Row Level Security policies with reasoning                            |
-| [04_AUTH_FLOW.md](./04_AUTH_FLOW.md)                       | Signup, login (password + OTP), session, approval gating              |
-| [05_STORAGE_FLOW.md](./05_STORAGE_FLOW.md)                 | Bucket config, signed URLs, PDF/ZIP delivery, downloadHelpers         |
-| [06_EXPIRY_LOGIC.md](./06_EXPIRY_LOGIC.md)                 | 15-day expiry, daily limit (200/day), filtering, cleanup              |
-| [07_LIBRARIES_USED.md](./07_LIBRARIES_USED.md)             | All dependencies: Supabase, jsPDF, JSZip, file-saver, qrcode.react    |
-| [08_PRODUCTION_HARDENING.md](./08_PRODUCTION_HARDENING.md) | Security, deployment, hardening checklist                             |
-| [09_CARD_CUSTOMIZATION.md](./09_CARD_CUSTOMIZATION.md)     | Card styling (bg, font, accent, radius), orientation (H/V), data flow |
-| [10_TOKEN_SYSTEM.md](./10_TOKEN_SYSTEM.md)                 | Token/credit system: balance, purchase, analytics, 402 handling       |
-| [11_CUSTOM_FORM_SYSTEM.md](./11_CUSTOM_FORM_SYSTEM.md)     | Custom registration forms, project dashboards, approval flow          |
-| [12_FORM_BUILDER_AND_IMPORTS.md](./12_FORM_BUILDER_AND_IMPORTS.md) | Dynamic form builder, file uploads, Google Sheets import      |
+| File                                                               | Topic                                                                 |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| [01_ARCHITECTURE.md](./01_ARCHITECTURE.md)                         | System design, data flow, hybrid architecture, component tree         |
+| [02_DATABASE_SCHEMA.md](./02_DATABASE_SCHEMA.md)                   | Full SQL definitions, column rationale                                |
+| [03_RLS_POLICIES.md](./03_RLS_POLICIES.md)                         | Row Level Security policies with reasoning                            |
+| [04_AUTH_FLOW.md](./04_AUTH_FLOW.md)                               | Signup, login (password + OTP), session, approval gating              |
+| [05_STORAGE_FLOW.md](./05_STORAGE_FLOW.md)                         | Bucket config, signed URLs, PDF/ZIP delivery, downloadHelpers         |
+| [06_EXPIRY_LOGIC.md](./06_EXPIRY_LOGIC.md)                         | 15-day expiry, daily limit (200/day), filtering, cleanup              |
+| [07_LIBRARIES_USED.md](./07_LIBRARIES_USED.md)                     | All dependencies: Supabase, jsPDF, JSZip, file-saver, qrcode.react    |
+| [08_PRODUCTION_HARDENING.md](./08_PRODUCTION_HARDENING.md)         | Security, deployment, hardening checklist                             |
+| [09_CARD_CUSTOMIZATION.md](./09_CARD_CUSTOMIZATION.md)             | Card styling (bg, font, accent, radius), orientation (H/V), data flow |
+| [10_TOKEN_SYSTEM.md](./10_TOKEN_SYSTEM.md)                         | Token/credit system: balance, purchase, analytics, 402 handling       |
+| [11_CUSTOM_FORM_SYSTEM.md](./11_CUSTOM_FORM_SYSTEM.md)             | Custom registration forms, project dashboards, approval flow          |
+| [12_FORM_BUILDER_AND_IMPORTS.md](./12_FORM_BUILDER_AND_IMPORTS.md) | Dynamic form builder, file uploads, Google Sheets import              |
 
 ## Key Concepts
 

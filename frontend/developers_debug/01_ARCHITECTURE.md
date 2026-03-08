@@ -285,8 +285,6 @@ Express Backend (Extended)
 │   ├── adminRoutes.js         # LEGACY
 │   ├── proxyRoutes.js         # LEGACY
 │   ├── emailRoutes.js         # LEGACY
-│   ├── webhookRoutes.js       # LEGACY
-│   ├── webhookConfigRoutes.js # LEGACY
 │   ├── orgRoutes.js           # NEW — /api/org
 │   ├── projectRoutes.js       # NEW — /api/projects
 │   ├── projectMemberRoutes.js # NEW — /api/members

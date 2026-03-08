@@ -13,6 +13,7 @@
 The form builder allows admins to define custom fields for their project's registration form.
 
 **Capabilities:**
+
 - 11 field types with per-type icons (text, email, phone, number, textarea, dropdown, radio, checkbox, date, file_upload, photo_upload)
 - Expandable/collapsible field cards for configuration
 - Per-field settings: label, type, placeholder, description (help text), options (comma-separated), default_value, validation_rules (minLength/maxLength), required toggle
@@ -30,6 +31,7 @@ The form builder allows admins to define custom fields for their project's regis
 The public form that members fill out to register.
 
 **Key changes:**
+
 - Reads from `project.form_fields` array (new) with fallback to `project.form_schema` (legacy)
 - System fields rendered separately at the top (name, email, photo)
 - Photo field is now a **real file upload** (not URL input):
@@ -58,12 +60,14 @@ The public form that members fill out to register.
 3-step wizard for importing members from Google Sheets:
 
 **Step 1 — Paste URL:**
+
 - Input for Google Sheet URL
 - Optional GID input for specific tab
 - "How it works" help section
 - Fetches via POST `/api/sheets/fetch`
 
 **Step 2 — Map Columns:**
+
 - Shows all sheet columns with preview data
 - Dropdown per column to map → form field key
 - Auto-mapping: exact match on field label or field key (case-insensitive)
@@ -74,6 +78,7 @@ The public form that members fill out to register.
 - Mapped column count indicator
 
 **Step 3 — Results:**
+
 - Success summary with import count
 - Validation errors listed (with row numbers)
 - "Import Another Sheet" and "Go to Project Dashboard" buttons
@@ -85,6 +90,7 @@ The public form that members fill out to register.
 All components use local `useState` + `useEffect`. No global state library.
 
 **RegistrationForm upload state:**
+
 ```
 photoPreview   — ObjectURL or signedUrl for system photo
 photoPath      — Storage path returned by upload API
@@ -94,6 +100,7 @@ uploadingField — fieldKey currently uploading (null when idle)
 ```
 
 **BulkDashboard flow state:**
+
 ```
 step           — 1 (URL) | 2 (mapping) | 3 (results)
 sheetHeaders   — string[] from sheet
@@ -106,8 +113,8 @@ importResult   — { imported, skipped, validationErrors }
 
 ## API Integration
 
-| Component | Endpoints Used |
-|-----------|---------------|
-| ProjectCreate | `POST /api/projects` (existing, now includes form_schema) |
+| Component        | Endpoints Used                                                                                                                |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| ProjectCreate    | `POST /api/projects` (existing, now includes form_schema)                                                                     |
 | RegistrationForm | `GET /api/projects/:id/public`, `POST /api/uploads/photo/:id`, `POST /api/uploads/file/:id`, `POST /api/members/register/:id` |
-| BulkDashboard | `GET /api/projects/:id`, `GET /api/form-fields/:id`, `POST /api/sheets/fetch`, `POST /api/sheets/import/:id` |
+| BulkDashboard    | `GET /api/projects/:id`, `GET /api/form-fields/:id`, `POST /api/sheets/fetch`, `POST /api/sheets/import/:id`                  |

@@ -20,7 +20,6 @@ A production-grade web application for generating, managing, and distributing di
 - **Approval gating** — Admin must approve members before they can generate cards
 - **Admin-controlled expiry** — Card expiry based on subscription/project settings; deletion is admin-managed
 - **Token / credit system** — Usage-based billing; each card costs 1 token; purchase packages; auto-refund on failure
-- **Webhook automation** — Google Form → Webhook → Puppeteer render → Supabase Storage → Email delivery
 - **Configurable limits** — Daily cap (default 200), queue size (default 500), API batch (default 50)
 
 ---
@@ -189,7 +188,6 @@ This avoids all CORS issues since the blob is created client-side.
 ## Documentation
 
 - **Supabase setup**: [SUPABASE_SETUP.md](SUPABASE_SETUP.md) — complete guide for DB, RLS, Storage, Auth
-- **Webhook setup**: [WEBHOOK_SETUP.md](WEBHOOK_SETUP.md) — Google Form → Webhook automation guide
 - **Frontend internals**: [frontend/developers_debug/](frontend/developers_debug/README.md) — docs on architecture, schema, auth flow, storage, libraries
 - **Backend internals**: [backend/developers_debug/](backend/developers_debug/README.md) — docs on architecture, security, signed URLs, token system, deployment
 

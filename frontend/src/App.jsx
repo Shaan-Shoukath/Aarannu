@@ -4,7 +4,6 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Generate from "./pages/Generate";
 import Templates from "./pages/Templates";
-import Webhooks from "./pages/Webhooks";
 import RenderCard from "./pages/RenderCard";
 import TokenDashboard from "./pages/TokenDashboard";
 import TokenPurchase from "./pages/TokenPurchase";
@@ -25,7 +24,7 @@ import BulkDashboard from "./pages/BulkDashboard";
  * Sets up client-side routing:
  *
  *  LEGACY (single-user):
- *    /login, /signup, /dashboard, /templates, /generate, /webhooks
+ *    /login, /signup, /dashboard, /templates, /generate
  *
  *  SAAS PLATFORM:
  *    /org/new            → Create or select organization
@@ -74,14 +73,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/webhooks"
-          element={
-            <ProtectedRoute>
-              <Webhooks />
-            </ProtectedRoute>
-          }
-        />
+
         <Route
           path="/tokens"
           element={

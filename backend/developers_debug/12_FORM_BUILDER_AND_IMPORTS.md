@@ -44,29 +44,29 @@ CREATE TABLE form_fields (
 
 Three immutable system fields are auto-seeded when a project is created:
 
-| field_key | type          | required | is_system |
-|-----------|---------------|----------|-----------|
-| `name`    | `text`        | true     | true      |
-| `email`   | `email`       | true     | true      |
-| `photo`   | `photo_upload` | false   | true      |
+| field_key | type           | required | is_system |
+| --------- | -------------- | -------- | --------- |
+| `name`    | `text`         | true     | true      |
+| `email`   | `email`        | true     | true      |
+| `photo`   | `photo_upload` | false    | true      |
 
 System fields cannot be deleted or have their `is_system` flag changed.
 
 ### Supported Field Types (11)
 
-| Type           | Renders As                | Options Used? |
-|----------------|---------------------------|---------------|
-| `text`         | Text input                | No            |
-| `email`        | Email input               | No            |
-| `phone`        | Tel input                 | No            |
-| `number`       | Number input              | No            |
-| `textarea`     | Multi-line textarea       | No            |
-| `dropdown`     | `<select>` element        | Yes (array)   |
-| `radio`        | Radio button group        | Yes (array)   |
-| `checkbox`     | Checkbox group            | Yes (array)   |
-| `date`         | Date picker               | No            |
-| `file_upload`  | File upload (base64)      | No            |
-| `photo_upload` | Image upload (base64)     | No            |
+| Type           | Renders As            | Options Used? |
+| -------------- | --------------------- | ------------- |
+| `text`         | Text input            | No            |
+| `email`        | Email input           | No            |
+| `phone`        | Tel input             | No            |
+| `number`       | Number input          | No            |
+| `textarea`     | Multi-line textarea   | No            |
+| `dropdown`     | `<select>` element    | Yes (array)   |
+| `radio`        | Radio button group    | Yes (array)   |
+| `checkbox`     | Checkbox group        | Yes (array)   |
+| `date`         | Date picker           | No            |
+| `file_upload`  | File upload (base64)  | No            |
+| `photo_upload` | Image upload (base64) | No            |
 
 ### Versioning Strategy
 
@@ -79,15 +79,15 @@ The service (`formFieldService.js`) uses **smart versioning**:
 
 ### API Endpoints
 
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| GET | `/api/form-fields/:projectId/public` | None | Public fields for registration form |
-| GET | `/api/form-fields/:projectId` | JWT | All fields (admin) |
-| PUT | `/api/form-fields/:projectId` | JWT | Save/replace custom fields |
-| POST | `/api/form-fields/:projectId/seed` | JWT | Re-seed system fields |
-| GET | `/api/form-fields/:projectId/mapping` | JWT | Field mapping for CSV/card |
-| PATCH | `/api/form-fields/field/:fieldId` | JWT | Update single field |
-| DELETE | `/api/form-fields/field/:fieldId` | JWT | Delete field (not system) |
+| Method | Route                                 | Auth | Description                         |
+| ------ | ------------------------------------- | ---- | ----------------------------------- |
+| GET    | `/api/form-fields/:projectId/public`  | None | Public fields for registration form |
+| GET    | `/api/form-fields/:projectId`         | JWT  | All fields (admin)                  |
+| PUT    | `/api/form-fields/:projectId`         | JWT  | Save/replace custom fields          |
+| POST   | `/api/form-fields/:projectId/seed`    | JWT  | Re-seed system fields               |
+| GET    | `/api/form-fields/:projectId/mapping` | JWT  | Field mapping for CSV/card          |
+| PATCH  | `/api/form-fields/field/:fieldId`     | JWT  | Update single field                 |
+| DELETE | `/api/form-fields/field/:fieldId`     | JWT  | Delete field (not system)           |
 
 ### Backend Files
 
@@ -106,7 +106,7 @@ Instead of multipart/form-data (which would require `multer`), uploads use **bas
 ```json
 {
   "fileName": "avatar.jpg",
-  "fileData": "iVBORw0KGgo...",  // base64 string (no prefix)
+  "fileData": "iVBORw0KGgo...", // base64 string (no prefix)
   "mimeType": "image/jpeg",
   "fieldKey": "photo"
 }
@@ -122,10 +122,10 @@ The server body limit is 10 MB (`server.js` → `express.json({ limit: "10mb" })
 
 ### Size & Type Limits
 
-| Endpoint | Max Size | Allowed Types |
-|----------|----------|---------------|
-| `/api/uploads/photo/:projectId` | 5 MB | jpeg, png, webp, gif |
-| `/api/uploads/file/:projectId` | 5 MB | jpeg, png, webp, gif, pdf, msword, docx, plain text |
+| Endpoint                        | Max Size | Allowed Types                                       |
+| ------------------------------- | -------- | --------------------------------------------------- |
+| `/api/uploads/photo/:projectId` | 5 MB     | jpeg, png, webp, gif                                |
+| `/api/uploads/file/:projectId`  | 5 MB     | jpeg, png, webp, gif, pdf, msword, docx, plain text |
 
 ### Signed URLs
 
@@ -168,10 +168,10 @@ The frontend auto-maps columns whose names exactly match field labels or field k
 
 ### API Endpoints
 
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| POST | `/api/sheets/fetch` | JWT | Fetch sheet and return preview |
-| POST | `/api/sheets/import/:projectId` | JWT | Import with column mapping |
+| Method | Route                           | Auth | Description                    |
+| ------ | ------------------------------- | ---- | ------------------------------ |
+| POST   | `/api/sheets/fetch`             | JWT  | Fetch sheet and return preview |
+| POST   | `/api/sheets/import/:projectId` | JWT  | Import with column mapping     |
 
 ### Backend Files
 

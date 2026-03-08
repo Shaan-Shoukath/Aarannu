@@ -2,85 +2,52 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 
+const API = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
 /**
- * Dashboard Page
- * --------------------------------------------------
- * The main hub after login. Shows:
- *  1. User's approval status.
- *  2. Quick stats (total generated IDs, active IDs, expired).
- *  3. List of generated IDs with download links.
- *  4. Navigation to the Generate page (if approved).
- *
- * Expiry logic:
- *  Cards have configurable expiry (subscription-based).
- *  Deletion is admin-controlled — expired cards still show with a badge.
+ * Dashboard — Unified Home
+ * ────────────────────────
+ * Two clear pathways:
+ *   1. Organization Manager (SaaS) — orgs, projects, forms, approve, bulk generate
+ *   2. Quick Generate (legacy)     — pick template, enter data, generate
  */
 export default function Dashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [member, setMember] = useState(null);
-  const [generatedIds, setGeneratedIds] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [signedUrls, setSignedUrls] = useState({});
   const [tokenBalance, setTokenBalance] = useState(null);
+  const [isUnlimited, setIsUnlimited] = useState(false);
+  const [orgs, setOrgs] = useState([]);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
-  const loadDashboardData = async () => {
-    setLoading(true);
+  const loadData = async () => {
     try {
-      // 1. Get current user
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
-
       if (!user) return;
 
-      // 2. Fetch member profile
-      const { data: memberData, error: memberError } = await supabase
-        .from("members")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = { Authorization: `Bearer ${session?.access_token}` };
 
-      if (memberError && memberError.code !== "PGRST116") {
-        console.error("Member fetch error:", memberError.message);
-      }
-      setMember(memberData);
-
-      // 3. Fetch all generated IDs (expiry is admin-controlled)
-      const { data: idsData, error: idsError } = await supabase
-        .from("generated_ids")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (idsError) {
-        console.error("Generated IDs fetch error:", idsError.message);
-      }
-      setGeneratedIds(idsData || []);
-
-      // 4. Fetch token balance
+      // Fetch token balance
       try {
-        const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          const tokenRes = await fetch(`${API}/api/tokens/balance`, {
-            headers: { Authorization: `Bearer ${session.access_token}` },
-          });
-          if (tokenRes.ok) {
-            const tokenData = await tokenRes.json();
-            setTokenBalance(tokenData.balance);
-          }
+        const tokenRes = await fetch(`${API}/api/tokens/balance`, { headers });
+        if (tokenRes.ok) {
+          const d = await tokenRes.json();
+          setTokenBalance(d.is_unlimited ? "∞" : d.balance);
+          setIsUnlimited(d.is_unlimited);
         }
-      } catch (tokenErr) {
-        console.warn("Token balance fetch failed:", tokenErr);
-      }
+      } catch (e) { console.warn("Token fetch:", e.message); }
+
+      // Fetch user's organizations
+      try {
+        const orgRes = await fetch(`${API}/api/org/my`, { headers });
+        if (orgRes.ok) {
+          const d = await orgRes.json();
+          setOrgs(d.organizations || []);
+        }
+      } catch (e) { console.warn("Org fetch:", e.message); }
     } catch (err) {
       console.error("Dashboard load error:", err);
     } finally {
@@ -93,610 +60,224 @@ export default function Dashboard() {
     navigate("/login", { replace: true });
   };
 
-  /** Generate & cache a signed URL for a private storage file (1-hour TTL). */
-  const getSignedUrl = async (filePath) => {
-    if (signedUrls[filePath]) return signedUrls[filePath];
-
-    const { data, error } = await supabase.storage
-      .from("id-cards")
-      .createSignedUrl(filePath, 60 * 60);
-
-    if (error) {
-      console.error("Signed URL error:", error);
-      return null;
-    }
-
-    setSignedUrls((prev) => ({ ...prev, [filePath]: data.signedUrl }));
-    return data.signedUrl;
-  };
-
-  const handleDownload = async (filePath, fileName) => {
-    try {
-      // Generate a signed URL with download disposition header
-      const { data, error } = await supabase.storage
-        .from("id-cards")
-        .createSignedUrl(filePath, 60 * 5, {
-          download: fileName || "id-card.png",
-        });
-
-      if (error || !data?.signedUrl) {
-        console.error("Signed URL error:", error);
-        return;
-      }
-
-      // Fetch the file as a blob to trigger a true browser download
-      const response = await fetch(data.signedUrl);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = fileName || "id-card.png";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-    } catch (err) {
-      console.error("Download failed, opening in new tab:", err);
-      // Last-resort fallback: open signed URL in new tab
-      const url = await getSignedUrl(filePath);
-      if (url) window.open(url, "_blank");
-    }
-  };
-
-  const handlePreview = async (filePath) => {
-    const url = await getSignedUrl(filePath);
-    if (url) window.open(url, "_blank");
-  };
-
-  /** Delete an ID card from Supabase Storage + DB via the backend. */
-  const handleDelete = async (recordId) => {
-    if (!confirm("Delete this ID card? This cannot be undone.")) return;
-
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      if (!token) {
-        alert("Session expired — please sign in again.");
-        return;
-      }
-
-      const backendUrl =
-        import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
-      const res = await fetch(`${backendUrl}/api/ids/${recordId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `HTTP ${res.status}`);
-      }
-
-      // Optimistically remove from local state
-      setGeneratedIds((prev) => prev.filter((g) => g.id !== recordId));
-    } catch (err) {
-      console.error("Delete failed:", err);
-      alert(`Delete failed: ${err.message}`);
-    }
-  };
-
-  // days remaining helper
-  const daysRemaining = (expiresAt) => {
-    const diff = new Date(expiresAt) - new Date();
-    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8]">
-        <div className="flex flex-col items-center gap-3">
-          <svg
-            className="animate-spin h-8 w-8 text-[#1152d4]"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-            />
-          </svg>
-          <span className="text-sm text-slate-500">Loading dashboard…</span>
-        </div>
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-2 border-indigo-400 border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f6f8] font-['Public_Sans',sans-serif]">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 text-white font-['Inter',sans-serif]">
       {/* ─── Header ─── */}
-      <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-[#1152d4] rounded-lg flex items-center justify-center text-white font-bold text-lg">
-            A
+      <header className="sticky top-0 z-50 backdrop-blur bg-slate-950/80 border-b border-white/10">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-linear-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg shadow-indigo-500/30">
+              A
+            </div>
+            <h1 className="font-bold text-lg">
+              Aarannu
+              <span className="text-slate-500 font-normal text-sm ml-2">Home</span>
+            </h1>
           </div>
-          <h1 className="font-bold text-lg text-slate-900">
-            Aarannu{" "}
-            <span className="text-slate-400 font-normal ml-2 text-sm">
-              | Dashboard
-            </span>
-          </h1>
-        </div>
-        <div className="flex items-center gap-3">
-          {member?.approved && (
-            <>
-              <button
-                onClick={() => navigate("/tokens")}
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-sm font-medium rounded-lg flex items-center gap-2 shadow-lg shadow-amber-600/20 transition-all"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                  />
-                </svg>
-                Tokens{tokenBalance !== null ? ` (${tokenBalance})` : ""}
-              </button>
-              <button
-                onClick={() => navigate("/webhooks")}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg flex items-center gap-2 shadow-lg shadow-purple-600/20 transition-all"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                  />
-                </svg>
-                Webhooks
-              </button>
-              <button
-                onClick={() => navigate("/templates")}
-                className="px-4 py-2 bg-[#1152d4] hover:bg-[#1152d4]/90 text-white text-sm font-medium rounded-lg flex items-center gap-2 shadow-lg shadow-[#1152d4]/20 transition-all"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-                Generate IDs
-              </button>
-            </>
-          )}
-          <button
-            onClick={handleSignOut}
-            className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-red-600 transition-colors border border-slate-300 rounded-lg"
-          >
-            Sign Out
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Token Badge */}
+            <button
+              onClick={() => navigate("/tokens")}
+              className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 rounded-lg text-amber-300 text-sm font-medium transition cursor-pointer"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {isUnlimited ? "∞ Unlimited" : tokenBalance !== null ? tokenBalance : "—"}
+            </button>
+            <button
+              onClick={handleSignOut}
+              className="px-3 py-1.5 text-sm text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition cursor-pointer"
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* ─── Main Content ─── */}
-      <main className="max-w-6xl mx-auto px-6 py-8 space-y-8">
-        {/* Approval Status Banner */}
-        {!member?.approved && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 flex items-start gap-4">
-            <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
-              <svg
-                className="w-5 h-5 text-amber-600"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-amber-800">
-                Account Pending Approval
-              </h3>
-              <p className="text-sm text-amber-700 mt-1">
-                Your account is awaiting admin approval. Once approved,
-                you&apos;ll be able to generate ID cards. Please check back
-                later or contact your administrator.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {member?.approved && (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
-            <svg
-              className="w-5 h-5 text-green-600"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-            </svg>
-            <span className="text-sm font-medium text-green-700">
-              Account approved — you can generate ID cards.
-            </span>
-          </div>
-        )}
-
-        {/* Profile Card */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-          <h2 className="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-4">
-            Your Profile
+      <main className="max-w-6xl mx-auto px-6 py-10 space-y-10">
+        {/* ─── Welcome ─── */}
+        <div>
+          <h2 className="text-2xl font-bold">
+            Welcome back{user?.user_metadata?.name ? `, ${user.user_metadata.name}` : ""}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <p className="text-xs text-slate-400 uppercase font-semibold">
-                Name
-              </p>
-              <p className="text-sm font-semibold text-slate-800 mt-1">
-                {member?.name || "N/A"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-400 uppercase font-semibold">
-                Role
-              </p>
-              <p className="text-sm font-semibold text-slate-800 mt-1">
-                {member?.role || "Member"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-400 uppercase font-semibold">
-                Email
-              </p>
-              <p className="text-sm font-semibold text-slate-800 mt-1">
-                {user?.email || "N/A"}
-              </p>
-            </div>
-          </div>
+          <p className="text-slate-400 mt-1">Choose how you want to create ID cards.</p>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* ─── Two Pathways ─── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* ═══ PATHWAY 1: Organization Manager ═══ */}
           <div
-            className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 cursor-pointer hover:border-amber-300 transition-colors"
-            onClick={() => navigate("/tokens")}
+            onClick={() => navigate("/org/new")}
+            className="group relative bg-slate-800/50 hover:bg-slate-800/80 border border-slate-700/50 hover:border-indigo-500/50 rounded-2xl p-8 cursor-pointer transition-all duration-300 overflow-hidden"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                <svg
-                  className="w-5 h-5 text-amber-600"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-800">
-                  {tokenBalance !== null ? tokenBalance : "—"}
-                </p>
-                <p className="text-xs text-slate-500">Token Balance</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <svg
-                  className="w-5 h-5 text-[#1152d4]"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-800">
-                  {generatedIds.length}
-                </p>
-                <p className="text-xs text-slate-500">Active IDs</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <svg
-                  className="w-5 h-5 text-green-600"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-800">
-                  {member?.approved ? "Yes" : "No"}
-                </p>
-                <p className="text-xs text-slate-500">Approved</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <svg
-                  className="w-5 h-5 text-purple-600"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-800">&#8734;</p>
-                <p className="text-xs text-slate-500">Admin-managed</p>
-              </div>
-            </div>
-          </div>
-        </div>
+            {/* Glow effect */}
+            <div className="absolute inset-0 bg-linear-to-br from-indigo-600/5 to-purple-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
 
-        {/* Generated IDs — Card Grid */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-slate-800">
-                Your Generated IDs
-              </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Expiry managed by admin · {generatedIds.length} card
-                {generatedIds.length !== 1 ? "s" : ""}
-              </p>
-            </div>
-            <button
-              onClick={loadDashboardData}
-              className="text-sm text-[#1152d4] hover:underline flex items-center gap-1"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-              Refresh
-            </button>
-          </div>
+            <div className="relative space-y-4">
+              {/* Icon */}
+              <div className="w-14 h-14 bg-linear-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
 
-          {generatedIds.length === 0 ? (
-            <div className="px-6 py-16 text-center">
-              <svg
-                className="w-16 h-16 text-slate-200 mx-auto mb-4"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12z" />
-              </svg>
-              <h3 className="text-lg font-semibold text-slate-500 mb-1">
-                No ID cards generated yet
-              </h3>
-              <p className="text-sm text-slate-400 mb-4">
-                Generate ID cards to see them here. Card expiry is managed by
-                your admin.
-              </p>
-              {member?.approved && (
-                <button
-                  onClick={() => navigate("/templates")}
-                  className="px-5 py-2.5 bg-[#1152d4] text-white text-sm font-medium rounded-lg hover:bg-[#1152d4]/90 transition-colors shadow-lg shadow-[#1152d4]/20"
-                >
-                  Generate your first ID
-                </button>
+              {/* Title & Description */}
+              <div>
+                <h3 className="text-xl font-bold text-white group-hover:text-indigo-300 transition-colors">
+                  Organization Manager
+                </h3>
+                <p className="text-slate-400 text-sm mt-1 leading-relaxed">
+                  Create organizations & projects. Share a registration form link — members fill it out, you approve them, and generate cards in bulk.
+                </p>
+              </div>
+
+              {/* Feature pills */}
+              <div className="flex flex-wrap gap-2">
+                {["Registration Forms", "Approve & Reject", "Bulk Generate", "Email Delivery", "Google Sheets Import"].map((f) => (
+                  <span key={f} className="px-2.5 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-xs text-indigo-300">
+                    {f}
+                  </span>
+                ))}
+              </div>
+
+              {/* Existing orgs count */}
+              {orgs.length > 0 && (
+                <p className="text-xs text-indigo-400 font-medium">
+                  {orgs.length} organization{orgs.length !== 1 ? "s" : ""} active →
+                </p>
               )}
             </div>
-          ) : (
-            <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {generatedIds.map((id) => (
-                <DashboardCard
-                  key={id.id}
-                  record={id}
-                  daysLeft={daysRemaining(id.expires_at)}
-                  getSignedUrl={getSignedUrl}
-                  onPreview={handlePreview}
-                  onDownload={handleDownload}
-                  onDelete={handleDelete}
-                />
+
+            {/* Arrow */}
+            <div className="absolute top-8 right-8 text-slate-600 group-hover:text-indigo-400 transition-colors">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </div>
+          </div>
+
+          {/* ═══ PATHWAY 2: Quick Generate ═══ */}
+          <div
+            onClick={() => navigate("/templates")}
+            className="group relative bg-slate-800/50 hover:bg-slate-800/80 border border-slate-700/50 hover:border-emerald-500/50 rounded-2xl p-8 cursor-pointer transition-all duration-300 overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-linear-to-br from-emerald-600/5 to-teal-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+            <div className="relative space-y-4">
+              <div className="w-14 h-14 bg-linear-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                </svg>
+              </div>
+
+              <div>
+                <h3 className="text-xl font-bold text-white group-hover:text-emerald-300 transition-colors">
+                  Quick Generate
+                </h3>
+                <p className="text-slate-400 text-sm mt-1 leading-relaxed">
+                  Pick a card template, enter member data manually or import from Google Sheets, preview and generate cards instantly.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {["4 Templates", "Manual Entry", "Google Sheets", "PDF / ZIP / PNG", "Live Preview"].map((f) => (
+                  <span key={f} className="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs text-emerald-300">
+                    {f}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="absolute top-8 right-8 text-slate-600 group-hover:text-emerald-400 transition-colors">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* ─── Quick Links ─── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <button
+            onClick={() => navigate("/tokens")}
+            className="bg-slate-800/40 hover:bg-slate-800/70 border border-slate-700/30 hover:border-amber-500/30 rounded-xl p-4 text-left transition-all cursor-pointer group"
+          >
+            <div className="text-2xl mb-2">{"\uD83D\uDCB0"}</div>
+            <p className="text-lg font-bold text-white">{isUnlimited ? "\u221E" : (tokenBalance ?? "\u2014")}</p>
+            <p className="text-xs text-slate-500 group-hover:text-slate-400">Token Balance</p>
+          </button>
+          <button
+            onClick={() => navigate("/tokens/purchase")}
+            className="bg-slate-800/40 hover:bg-slate-800/70 border border-slate-700/30 hover:border-green-500/30 rounded-xl p-4 text-left transition-all cursor-pointer group"
+          >
+            <div className="text-2xl mb-2">{"\uD83D\uDED2"}</div>
+            <p className="text-lg font-bold text-white">Purchase</p>
+            <p className="text-xs text-slate-500 group-hover:text-slate-400">Buy Tokens</p>
+          </button>
+          <button
+            onClick={() => navigate("/org/new")}
+            className="bg-slate-800/40 hover:bg-slate-800/70 border border-slate-700/30 hover:border-indigo-500/30 rounded-xl p-4 text-left transition-all cursor-pointer group"
+          >
+            <div className="text-2xl mb-2">{"\uD83C\uDFE2"}</div>
+            <p className="text-lg font-bold text-white">{orgs.length}</p>
+            <p className="text-xs text-slate-500 group-hover:text-slate-400">Organizations</p>
+          </button>
+          <button
+            onClick={() => navigate("/templates")}
+            className="bg-slate-800/40 hover:bg-slate-800/70 border border-slate-700/30 hover:border-purple-500/30 rounded-xl p-4 text-left transition-all cursor-pointer group"
+          >
+            <div className="text-2xl mb-2">{"\uD83C\uDFA8"}</div>
+            <p className="text-lg font-bold text-white">Browse</p>
+            <p className="text-xs text-slate-500 group-hover:text-slate-400">Templates</p>
+          </button>
+        </div>
+
+        {/* ─── Your Organizations (if any) ─── */}
+        {orgs.length > 0 && (
+          <div className="bg-slate-800/40 border border-slate-700/30 rounded-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-700/30 flex items-center justify-between">
+              <h3 className="font-bold text-white">Your Organizations</h3>
+              <button
+                onClick={() => navigate("/org/new")}
+                className="text-xs text-indigo-400 hover:text-indigo-300 transition cursor-pointer"
+              >
+                + New Organization
+              </button>
+            </div>
+            <div className="divide-y divide-slate-700/30">
+              {orgs.map((org) => (
+                <button
+                  key={org.id}
+                  onClick={() => navigate(`/org/${org.slug}/dashboard`)}
+                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/5 transition cursor-pointer text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-400 font-bold text-sm">
+                      {(org.name || "O").charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-medium text-white">{org.name}</p>
+                      <p className="text-xs text-slate-500">/{org.slug}</p>
+                    </div>
+                  </div>
+                  <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
               ))}
             </div>
-          )}
-        </div>
-      </main>
-    </div>
-  );
-}
-
-/**
- * DashboardCard — Shows a single generated ID with thumbnail, metadata, and actions.
- */
-function DashboardCard({
-  record,
-  daysLeft,
-  getSignedUrl,
-  onPreview,
-  onDownload,
-  onDelete,
-}) {
-  const [thumbUrl, setThumbUrl] = useState(null);
-  const [thumbLoading, setThumbLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const url = await getSignedUrl(record.file_url);
-      if (!cancelled) {
-        setThumbUrl(url);
-        setThumbLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [record.file_url]);
-
-  const fileName =
-    record.file_url
-      .split("/")
-      .pop()
-      ?.replace(/_\d+\.png$/, "")
-      .replace(/_/g, " ") || "ID Card";
-  const created = new Date(record.created_at).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-
-  return (
-    <div className="group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden">
-      {/* Thumbnail */}
-      <div
-        className="relative aspect-video bg-slate-100 flex items-center justify-center cursor-pointer overflow-hidden"
-        onClick={() => onPreview(record.file_url)}
-      >
-        {thumbLoading ? (
-          <svg
-            className="animate-spin w-6 h-6 text-slate-300"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-            />
-          </svg>
-        ) : thumbUrl ? (
-          <img
-            src={thumbUrl}
-            alt={fileName}
-            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-          />
-        ) : (
-          <svg
-            className="w-10 h-10 text-slate-300"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12z" />
-          </svg>
+          </div>
         )}
-        {/* Hover overlay */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-          <svg
-            className="w-8 h-8 text-white opacity-0 group-hover:opacity-80 transition-opacity drop-shadow-lg"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-            />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-            />
-          </svg>
-        </div>
-      </div>
-
-      {/* Info */}
-      <div className="p-3 space-y-2">
-        <p
-          className="text-sm font-semibold text-slate-800 truncate capitalize"
-          title={fileName}
-        >
-          {fileName}
-        </p>
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] text-slate-400">{created}</span>
-          <span
-            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-              daysLeft <= 0
-                ? "bg-slate-200 text-slate-600"
-                : daysLeft <= 3
-                  ? "bg-red-100 text-red-700"
-                  : daysLeft <= 7
-                    ? "bg-amber-100 text-amber-700"
-                    : "bg-green-100 text-green-700"
-            }`}
-          >
-            {daysLeft <= 0 ? "Expired" : `${daysLeft}d left`}
-          </span>
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-2 pt-1">
-          <button
-            onClick={() => onPreview(record.file_url)}
-            className="flex-1 py-1.5 text-xs font-medium text-[#1152d4] bg-[#1152d4]/5 hover:bg-[#1152d4]/10 rounded-lg transition-colors text-center"
-          >
-            View
-          </button>
-          <button
-            onClick={() =>
-              onDownload(record.file_url, record.file_url.split("/").pop())
-            }
-            className="flex-1 py-1.5 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors text-center"
-          >
-            Download
-          </button>
-          <button
-            onClick={() => onDelete(record.id)}
-            className="flex-1 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors text-center"
-            title="Delete from Supabase"
-          >
-            Delete
-          </button>
-        </div>
-      </div>
+      </main>
     </div>
   );
 }

@@ -36,7 +36,6 @@ await supabase.from("generated_ids").insert({
 - Stored as `TIMESTAMPTZ` (timestamp with timezone) for unambiguous comparison.
 - **SaaS projects** use the project's `expiry_days` setting (default 365).
 - **Bulk uploads** default to 365 days (1 year).
-- **Webhooks** use the webhook config's `expiry_days` or the default.
 
 ### On dashboard load:
 
@@ -61,7 +60,6 @@ const { data } = await supabase
 | Legacy bulk upload     | 365 days              | Frontend `BulkGenerator.jsx`               |
 | SaaS project (Service) | `project.expiry_days` | `projects` table, default 365              |
 | SaaS project (Bulk)    | `project.expiry_days` | `projects` table, default 365              |
-| Webhook generation     | `config.expiry_days`  | `webhook_configs` table, default 365       |
 
 ---
 

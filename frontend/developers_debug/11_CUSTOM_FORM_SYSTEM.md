@@ -2,7 +2,7 @@
 
 ## Overview
 
-Four new pages implement the self-hosted registration system, replacing the webhook-based workflow.
+Four new pages implement the self-hosted registration system.
 Organizations create projects with custom form schemas; members register via a public link; admins manage from dashboards.
 
 ---

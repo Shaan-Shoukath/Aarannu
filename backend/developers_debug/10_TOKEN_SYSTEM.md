@@ -51,7 +51,7 @@ Immutable ledger of all token movements.
 | amount        | INTEGER                 | Positive = credit, negative = debit                  |
 | type          | TEXT                    | `purchase`, `usage`, `refund`, `bonus`, `adjustment` |
 | description   | TEXT                    | Human-readable reason                                |
-| reference_id  | TEXT                    | Link to card ID, webhook ID, payment ID              |
+| reference_id  | TEXT                    | Link to card ID, payment ID                          |
 | balance_after | INTEGER                 | Snapshot of balance post-transaction                 |
 | created_at    | TIMESTAMPTZ             | Auto                                                 |
 
@@ -124,7 +124,6 @@ Returns **402 Payment Required** if insufficient:
 | Endpoint                            | File                  | Tokens Cost             | Auto-Refund                           |
 | ----------------------------------- | --------------------- | ----------------------- | ------------------------------------- |
 | POST /api/ids/generate              | idController.js       | `members.length`        | Yes (DB fail)                         |
-| POST /api/webhook/:id               | webhookController.js  | 1 per submission        | Yes (render/upload/DB fail)           |
 | POST /api/generate/:projectId       | generateController.js | # members needing cards | Yes (generation fail, over-deduction) |
 | POST /api/generate/:memberId/single | generateController.js | 1                       | Yes (fail or already existing)        |
 | POST /api/bulk/generate/:projectId  | bulkRoutes.js         | # members needing cards | Yes (generation fail, over-deduction) |

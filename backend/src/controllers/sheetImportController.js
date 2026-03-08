@@ -61,7 +61,8 @@ const importSheet = async (req, res, next) => {
     }
 
     // Verify project exists
-    const { data: project, error: pErr } = await projectService.getProjectById(projectId);
+    const { data: project, error: pErr } =
+      await projectService.getProjectById(projectId);
     if (pErr || !project) {
       return res.status(404).json({ error: "Project not found." });
     }
@@ -73,20 +74,22 @@ const importSheet = async (req, res, next) => {
     }
 
     // Apply column mapping
-    const mappedRows = sheetsService.applyColumnMapping(sheetResult.rows, columnMapping);
+    const mappedRows = sheetsService.applyColumnMapping(
+      sheetResult.rows,
+      columnMapping,
+    );
 
     // Get form fields for validation
     const { fields } = await formFieldService.getPublicFormFields(projectId);
 
     // Validate mapped rows
-    const { valid, errors: validationErrors } = sheetsService.validateMappedRows(
-      mappedRows,
-      fields || [],
-    );
+    const { valid, errors: validationErrors } =
+      sheetsService.validateMappedRows(mappedRows, fields || []);
 
     // Check member limit
     if (project.member_limit) {
-      const { data: existing } = await memberService.getMembersByProject(projectId);
+      const { data: existing } =
+        await memberService.getMembersByProject(projectId);
       const currentCount = (existing || []).filter(
         (m) => m.status === "pending" || m.status === "approved",
       ).length;
@@ -130,7 +133,8 @@ const importSheet = async (req, res, next) => {
     let imported = 0;
     if (dbRows.length > 0) {
       const { data, error } = await memberService.bulkInsertMembers(dbRows);
-      if (error) return res.status(500).json({ error: error.message, validationErrors });
+      if (error)
+        return res.status(500).json({ error: error.message, validationErrors });
       imported = data?.length || 0;
     }
 

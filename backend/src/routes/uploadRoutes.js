@@ -13,7 +13,12 @@ const { supabase } = require("../config/supabaseClient");
 
 const BUCKET = "member-uploads";
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const ALLOWED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+];
 const ALLOWED_FILE_TYPES = [
   ...ALLOWED_IMAGE_TYPES,
   "application/pdf",
@@ -37,7 +42,9 @@ router.post("/photo/:projectId", async (req, res, next) => {
     const { fileName, fileData, mimeType, fieldKey } = req.body;
 
     if (!fileName || !fileData) {
-      return res.status(400).json({ error: "fileName and fileData are required." });
+      return res
+        .status(400)
+        .json({ error: "fileName and fileData are required." });
     }
 
     // Validate mime type
@@ -76,7 +83,9 @@ router.post("/photo/:projectId", async (req, res, next) => {
       });
 
     if (uploadError) {
-      return res.status(500).json({ error: `Upload failed: ${uploadError.message}` });
+      return res
+        .status(500)
+        .json({ error: `Upload failed: ${uploadError.message}` });
     }
 
     // Track upload in member_uploads table
@@ -116,7 +125,9 @@ router.post("/file/:projectId", async (req, res, next) => {
     const { fileName, fileData, mimeType, fieldKey } = req.body;
 
     if (!fileName || !fileData) {
-      return res.status(400).json({ error: "fileName and fileData are required." });
+      return res
+        .status(400)
+        .json({ error: "fileName and fileData are required." });
     }
 
     if (mimeType && !ALLOWED_FILE_TYPES.includes(mimeType)) {
@@ -149,7 +160,9 @@ router.post("/file/:projectId", async (req, res, next) => {
       });
 
     if (uploadError) {
-      return res.status(500).json({ error: `Upload failed: ${uploadError.message}` });
+      return res
+        .status(500)
+        .json({ error: `Upload failed: ${uploadError.message}` });
     }
 
     await supabase.from("member_uploads").insert({
@@ -185,7 +198,9 @@ router.get("/signed-url", async (req, res, next) => {
   try {
     const { path: filePath } = req.query;
     if (!filePath) {
-      return res.status(400).json({ error: "path query parameter is required." });
+      return res
+        .status(400)
+        .json({ error: "path query parameter is required." });
     }
 
     const { data, error } = await supabase.storage

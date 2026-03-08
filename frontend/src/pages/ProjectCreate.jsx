@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabaseClient";
 const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 /**
- * ProjectCreate — Create a new project with a dynamic form builder
+ * ProjectCreate â€” Create a new project with a dynamic form builder
  * -----------------------------------------------------------------
  * URL: /org/:slug/project/new
  *
@@ -152,7 +152,7 @@ export default function ProjectCreate() {
   // Loading
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center">
         <div className="animate-spin h-8 w-8 border-2 border-indigo-400 border-t-transparent rounded-full" />
       </div>
     );
@@ -162,7 +162,7 @@ export default function ProjectCreate() {
   if (createdProject) {
     const formLink = `${window.location.origin}/register/${createdProject.id}`;
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
         <div className="w-full max-w-lg text-center">
           <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -249,7 +249,7 @@ export default function ProjectCreate() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 text-white">
       {/* Header */}
       <div className="sticky top-0 z-50 backdrop-blur bg-slate-950/80 border-b border-white/10">
         <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
@@ -257,7 +257,7 @@ export default function ProjectCreate() {
             className="text-sm text-indigo-300 hover:text-white transition cursor-pointer">
             {"\u2190"} {org?.name || slug}
           </button>
-          <h1 className="text-lg font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">Create Project</h1>
+          <h1 className="text-lg font-bold bg-linear-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">Create Project</h1>
           <button onClick={() => setShowPreview(!showPreview)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${showPreview ? "bg-indigo-600 text-white" : "bg-white/10 text-slate-400 hover:text-white"}`}>
             {showPreview ? "Hide Preview" : "\uD83D\uDC41 Preview"}
@@ -449,7 +449,7 @@ export default function ProjectCreate() {
             )}
 
             <button type="submit" disabled={creating || !name.trim()}
-              className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer text-lg">
+              className="w-full py-3 bg-linear-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer text-lg">
               {creating ? (
                 <span className="flex items-center justify-center gap-2">
                   <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />Creating...
@@ -508,7 +508,7 @@ export default function ProjectCreate() {
                     </div>
                   )}
 
-                  <button disabled className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg text-sm opacity-80">
+                  <button disabled className="w-full py-2.5 bg-linear-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg text-sm opacity-80">
                     Submit Registration
                   </button>
                 </div>

@@ -153,13 +153,18 @@ const getPublicProjectInfo = async (req, res, next) => {
 
     // Fetch form fields from the dedicated table (falls back to form_schema JSONB)
     let formFields = [];
-    const { fields: ffData } = await formFieldService.getPublicFormFields(req.params.projectId);
+    const { fields: ffData } = await formFieldService.getPublicFormFields(
+      req.params.projectId,
+    );
     if (ffData && ffData.length > 0) {
       formFields = ffData;
     } else {
       // Fallback to legacy form_schema
       formFields = (project.form_schema || []).map((f, i) => ({
-        field_key: f.field_key || f.label?.toLowerCase().replace(/[^a-z0-9]+/g, "_") || `field_${i}`,
+        field_key:
+          f.field_key ||
+          f.label?.toLowerCase().replace(/[^a-z0-9]+/g, "_") ||
+          `field_${i}`,
         label: f.label,
         type: f.type || "text",
         required: f.required || false,

@@ -79,7 +79,7 @@ const getBalance = async (userId, orgId = null) => {
  * @param {string} userId
  * @param {number} amount        – positive integer, number of tokens to deduct
  * @param {string} description   – human-readable reason
- * @param {string|null} referenceId – optional link to card / webhook etc.
+ * @param {string|null} referenceId – optional link to card etc.
  * @param {string|null} orgId
  * @returns {Promise<{wallet, transaction, error}>}
  */

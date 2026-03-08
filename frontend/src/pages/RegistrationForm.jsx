@@ -295,7 +295,7 @@ export default function RegistrationForm() {
   // Loading
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center">
         <div className="animate-spin h-8 w-8 border-2 border-indigo-400 border-t-transparent rounded-full" />
       </div>
     );
@@ -304,7 +304,7 @@ export default function RegistrationForm() {
   // Error / closed
   if (error && !project) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center">
           <div className="text-6xl mb-4">{"\uD83D\uDEAB"}</div>
           <h1 className="text-2xl font-bold text-white mb-2">Form Unavailable</h1>
@@ -317,7 +317,7 @@ export default function RegistrationForm() {
   // Spots full
   if (project?.spots_remaining === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center">
           {org?.logo_url && <img src={org.logo_url} alt={org.name} className="w-16 h-16 rounded-xl object-cover mx-auto mb-4 ring-2 ring-slate-700" />}
           <div className="text-6xl mb-4">{"\uD83D\uDCCB"}</div>
@@ -331,7 +331,7 @@ export default function RegistrationForm() {
   // Success
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center">
           {org?.logo_url && <img src={org.logo_url} alt={org.name} className="w-16 h-16 rounded-xl object-cover mx-auto mb-4 ring-2 ring-slate-700" />}
           <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center mx-auto mb-4">
@@ -351,7 +351,7 @@ export default function RegistrationForm() {
   const customFormFields = formFields.filter(f => !f.is_system);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         {/* Org branding */}
         <div className="text-center mb-6">
@@ -419,7 +419,7 @@ export default function RegistrationForm() {
 
           {/* Submit */}
           <button type="submit" disabled={submitting || !name.trim() || photoUploading || uploadingField}
-            className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer">
+            className="w-full py-3 bg-linear-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer">
             {submitting ? (
               <span className="flex items-center justify-center gap-2">
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Submitting...

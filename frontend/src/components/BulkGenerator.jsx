@@ -1011,15 +1011,30 @@ export default function BulkGenerator({
         <div className="flex items-center justify-between gap-4">
           {/* Upload to Supabase indicator */}
           <div className="flex items-center gap-2">
-            <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            <svg
+              className="w-4 h-4 text-indigo-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+              />
             </svg>
             <div>
               <p className="text-xs font-medium text-slate-700 leading-none">
-                {uploadToCloud ? "Uploads to Supabase" : "Local only (no upload)"}
+                {uploadToCloud
+                  ? "Uploads to Supabase"
+                  : "Local only (no upload)"}
               </p>
               <p className="text-[10px] text-slate-400 mt-0.5">
-                {(() => { const f = getFilteredMembers(); return `${f.length} card${f.length !== 1 ? "s" : ""} will be generated`; })()}
+                {(() => {
+                  const f = getFilteredMembers();
+                  return `${f.length} card${f.length !== 1 ? "s" : ""} will be generated`;
+                })()}
               </p>
             </div>
           </div>
@@ -1039,8 +1054,18 @@ export default function BulkGenerator({
                 disabled={members.length === 0}
                 className="px-6 py-2.5 bg-[#1152d4] hover:bg-[#1152d4]/90 text-white text-sm font-medium rounded-lg flex items-center gap-2 shadow-lg shadow-[#1152d4]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                  />
                 </svg>
                 Generate &amp; Download
               </button>
