@@ -3,7 +3,7 @@
  * ══════════════════════════════════
  *
  * Renders ID card templates in a headless browser and captures
- * them as PNG images + a 2-page PDF (front + back).
+ * them as PNG images, JPEG images, and a 2-page PDF (front + back).
  *
  * Flow:
  *   1. Launch (or reuse) a Puppeteer browser instance.
@@ -12,7 +12,7 @@
  *   4. Wait for the card to render.
  *   5. Screenshot the front and back card elements.
  *   6. Combine into a 2-page PDF.
- *   7. Return { pngBuffer, pdfBuffer, pdfBase64 }.
+ *   7. Return { frontPng, frontJpeg, backPng, pdfBuffer, pdfBase64 }.
  *
  * Environment:
  *   FRONTEND_URL  — The base URL of the running frontend (default: http://localhost:5173)
@@ -50,20 +50,22 @@ const getBrowser = async () => {
 };
 
 /**
- * Render a card and capture front + back as PNG buffers and a combined PDF.
+ * Render a card and capture front + back as PNG/JPEG buffers and a combined PDF.
  *
  * @param {object} params
- * @param {object} params.data         – Member data (name, role, etc.)
- * @param {string} params.template     – "custom" | "corporate" | "event" | "student"
- * @param {string} params.orgName      – Organization name
- * @param {string} params.logoUrl      – Logo URL
- * @param {object} params.cardStyles   – Card style overrides
- * @param {object} params.gradientColors – { start, end }
+ * @param {object} params.data            – Member data (name, role, etc.)
+ * @param {string} params.template        – "custom" | "corporate" | "event" | "student"
+ * @param {string} params.orgName         – Organization name
+ * @param {string} params.logoUrl         – Logo URL
+ * @param {object} params.cardStyles      – Card style overrides
+ * @param {object} params.gradientColors  – { start, end }
  * @param {object} params.fieldVisibility – Which fields to show
- * @param {string} params.orientation  – "horizontal" | "vertical"
- * @param {string} params.validityText – Validity text shown on back
- * @param {object} params.watermark    – Watermark config
- * @returns {Promise<{ frontPng: Buffer, backPng: Buffer, pdfBuffer: Buffer, pdfBase64: string }>}
+ * @param {string} params.orientation     – "horizontal" | "vertical"
+ * @param {string} params.validityText    – Validity text shown on back
+ * @param {object} params.watermark       – Watermark config
+ * @param {Array}  params.customFields    – Custom field definitions [{label, side}]
+ * @param {string} params.signatureUrl    – Registrar signature image URL
+ * @returns {Promise<{ frontPng: Buffer, frontJpeg: Buffer, backPng: Buffer, pdfBuffer: Buffer, pdfBase64: string }>}
  */
 const renderCard = async (params) => {
   const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
@@ -76,13 +78,15 @@ const renderCard = async (params) => {
     logoUrl: params.logoUrl || "",
     cardStyles: params.cardStyles || {},
     gradientColors: params.gradientColors || {
-      start: "#1152d4",
+      start: "#2563EB",
       end: "#ef4444",
     },
     fieldVisibility: params.fieldVisibility || {},
     orientation: params.orientation || "horizontal",
-    validityText: params.validityText || "Valid for 1 year from issue",
+    validityText: params.validityText || "Valid as per subscription plan",
     watermark: params.watermark || {},
+    customFields: params.customFields || [],
+    signatureUrl: params.signatureUrl || "",
   };
 
   const encodedPayload = encodeURIComponent(JSON.stringify(payload));
@@ -114,8 +118,8 @@ const renderCard = async (params) => {
       timeout: 15000,
     });
 
-    // Small delay for fonts / images to settle
-    await new Promise((r) => setTimeout(r, 500));
+    // Wait for fonts / images to settle
+    await new Promise((r) => setTimeout(r, 800));
 
     // Screenshot the front card
     const frontEl = await page.$("#card-front");
@@ -125,6 +129,13 @@ const renderCard = async (params) => {
     const frontPng = await frontEl.screenshot({
       type: "png",
       omitBackground: true,
+    });
+
+    // JPEG version of front
+    const frontJpeg = await frontEl.screenshot({
+      type: "jpeg",
+      quality: 95,
+      omitBackground: false,
     });
 
     // Screenshot the back card
@@ -137,10 +148,8 @@ const renderCard = async (params) => {
       });
     }
 
-    // Generate a 2-page PDF using the page's built-in PDF functionality
-    // We'll use a simpler approach: embed the PNGs into a PDF via the page
+    // Generate a 2-page PDF using the render page's __generatePDF function
     const pdfResult = await page.evaluate(() => {
-      // The render page exposes a global function that returns the PDF base64
       if (typeof window.__generatePDF === "function") {
         return window.__generatePDF();
       }
@@ -155,7 +164,7 @@ const renderCard = async (params) => {
       pdfBuffer = Buffer.from(pdfResult, "base64");
     }
 
-    return { frontPng, backPng, pdfBuffer, pdfBase64 };
+    return { frontPng, frontJpeg, backPng, pdfBuffer, pdfBase64 };
   } finally {
     await page.close();
   }

@@ -8,6 +8,7 @@ const projectService = require("../services/projectService");
 const memberService = require("../services/projectMemberService");
 const orgService = require("../services/orgService");
 const formFieldService = require("../services/formFieldService");
+const { supabase } = require("../config/supabaseClient");
 
 const createProject = async (req, res, next) => {
   try {
@@ -204,6 +205,7 @@ const getPublicProjectInfo = async (req, res, next) => {
 /**
  * GET /api/projects/:projectId/export-csv — Export project members as CSV
  * Requires auth + org membership
+ * Includes generated card ID, card status, and card expiry for each member.
  */
 const exportMembersCsv = async (req, res, next) => {
   try {
@@ -224,6 +226,21 @@ const exportMembersCsv = async (req, res, next) => {
       return res.status(200).send("No members found.");
     }
 
+    // Fetch generated cards for this project to include card IDs in CSV
+    const { data: cards } = await supabase
+      .from("generated_cards")
+      .select("member_id, qr_data, status, expires_at")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: false });
+
+    // Build member → card lookup (most recent card per member)
+    const cardByMember = new Map();
+    (cards || []).forEach((c) => {
+      if (!cardByMember.has(c.member_id)) {
+        cardByMember.set(c.member_id, c);
+      }
+    });
+
     // Collect all custom_fields keys across members
     const customKeys = new Set();
     members.forEach((m) => {
@@ -242,7 +259,8 @@ const exportMembersCsv = async (req, res, next) => {
       "status",
       "created_at",
     ];
-    const allHeaders = [...baseHeaders, ...sortedCustomKeys];
+    const cardHeaders = ["card_id_number", "card_status", "card_expires_at"];
+    const allHeaders = [...baseHeaders, ...sortedCustomKeys, ...cardHeaders];
     const csvRows = [allHeaders.join(",")];
 
     // CSV-safe helper — wraps in quotes and escapes inner quotes
@@ -256,6 +274,7 @@ const exportMembersCsv = async (req, res, next) => {
 
     // Build CSV rows
     members.forEach((m) => {
+      const card = cardByMember.get(m.id);
       const row = [
         csvSafe(m.id),
         csvSafe(m.name),
@@ -267,6 +286,10 @@ const exportMembersCsv = async (req, res, next) => {
       sortedCustomKeys.forEach((key) => {
         row.push(csvSafe(m.custom_fields?.[key]));
       });
+      // Append card columns
+      row.push(csvSafe(card?.qr_data || "—"));
+      row.push(csvSafe(card?.status || "—"));
+      row.push(csvSafe(card?.expires_at || "—"));
       csvRows.push(row.join(","));
     });
 

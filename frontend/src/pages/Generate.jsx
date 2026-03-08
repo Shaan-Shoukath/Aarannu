@@ -1,14 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import html2canvas from "html2canvas";
 import { supabase } from "../lib/supabaseClient";
-import {
-  canvasesToPdfBlob,
-  canvasToJpegBlob,
-  canvasToPngBlob,
-  downloadBlob,
-} from "../utils/downloadHelpers";
-import { fixOklabColors } from "../utils/fixOklabColors";
+import { downloadBlob, safeFileName } from "../utils/downloadHelpers";
 import BulkGenerator from "../components/BulkGenerator";
 import IDCard from "../components/IDCard";
 import CorporateCard from "../components/CorporateCard";
@@ -108,7 +101,7 @@ export default function Generate() {
   // Gradient colors
   const [gradientStart, setGradientStart] = useState(
     ["corporate", "custom"].includes(templateId)
-      ? "#1152d4"
+      ? "#2563EB"
       : templateId === "student"
         ? "#f97316"
         : "#f59e0b",
@@ -169,10 +162,6 @@ export default function Generate() {
         ? "Valid for current academic session"
         : "Valid as per subscription plan",
   );
-
-  // Refs for single-card download capture
-  const previewFrontRef = useRef(null);
-  const previewBackRef = useRef(null);
 
   // Ref to the bulk generator section so we can scroll to it after import
   const generatorSectionRef = useRef(null);
@@ -301,45 +290,55 @@ export default function Generate() {
     setPreviewData(data);
   };
 
-  /** Capture a ref element as a canvas (waits for images to load). */
-  const captureRef = async (ref) => {
-    if (!ref.current) return null;
-    await new Promise((r) => setTimeout(r, 500));
-    const imgs = ref.current.querySelectorAll("img");
-    if (imgs.length > 0) {
-      await Promise.all(
-        [...imgs].map(
-          (img) =>
-            new Promise((res) => {
-              if (img.complete) return res();
-              img.onload = res;
-              img.onerror = res;
-            }),
-        ),
+  /**
+   * Build the render payload that matches what the Puppeteer backend expects.
+   */
+  const buildRenderPayload = (memberData) => ({
+    data: memberData,
+    template: templateId,
+    orgName,
+    logoUrl: effectiveLogoUrl,
+    cardStyles,
+    gradientColors,
+    fieldVisibility,
+    orientation,
+    validityText,
+    watermark,
+    customFields: customFieldDefs,
+    signatureUrl,
+  });
+
+  /**
+   * Render a card via the backend Puppeteer service.
+   * Returns a Blob of the requested format.
+   */
+  const renderViaServer = async (memberData, format = "png") => {
+    const backendUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const payload = buildRenderPayload(memberData);
+
+    const res = await fetch(`${backendUrl}/api/render/card`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...payload, format }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(
+        errData.error || `Server render failed (HTTP ${res.status})`,
       );
     }
-    const restoreColors = fixOklabColors(ref.current);
-    try {
-      const canvas = await html2canvas(ref.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: null, // transparent so rounded corners & shadow show in PDF
-        logging: false,
-      });
-      return canvas;
-    } finally {
-      restoreColors();
-    }
+
+    return res.blob();
   };
 
   /**
-   * Upload front canvas PNG to Supabase Storage and insert a
+   * Upload a PNG blob to Supabase Storage and insert a
    * `generated_ids` row so the card appears on the Dashboard.
    */
-  const uploadCardToSupabase = async (frontCanvas, memberName) => {
-    if (!user?.id || !frontCanvas) return;
+  const uploadCardToSupabase = async (pngBlob, memberName) => {
+    if (!user?.id || !pngBlob) return;
     try {
-      const pngBlob = await canvasToPngBlob(frontCanvas);
       const safeName = (memberName || "card").replace(/[^a-zA-Z0-9]/g, "_");
       const filePath = `${user.id}/${safeName}_${Date.now()}.png`;
 
@@ -365,25 +364,21 @@ export default function Generate() {
     }
   };
 
-  /** Download the previewed card as a 2-page PDF (front + back) */
+  /** Download the previewed card as a 2-page PDF (front + back) via Puppeteer */
   const handleDownloadPdf = async () => {
     if (!previewData) return;
     setDownloading(true);
-    setDownloadStatus("Capturing front side...");
+    setDownloadStatus("Rendering card on server...");
     try {
-      const frontCanvas = await captureRef(previewFrontRef);
-      if (!frontCanvas) throw new Error("Failed to capture front side");
-      setDownloadStatus("Capturing back side...");
-      const backCanvas = await captureRef(previewBackRef);
-      setDownloadStatus("Building PDF...");
-      const blob = canvasesToPdfBlob(frontCanvas, backCanvas);
+      const blob = await renderViaServer(previewData, "pdf");
       const safeName = (previewData.name || "id-card").replace(
         /[^a-zA-Z0-9]/g,
         "_",
       );
       downloadBlob(blob, `${safeName}_ID.pdf`);
       setDownloadStatus("Uploading to cloud...");
-      await uploadCardToSupabase(frontCanvas, previewData.name);
+      const pngBlob = await renderViaServer(previewData, "png");
+      await uploadCardToSupabase(pngBlob, previewData.name);
       setDownloadStatus("Done!");
     } catch (err) {
       console.error("PDF download failed:", err);
@@ -394,30 +389,21 @@ export default function Generate() {
     }
   };
 
-  /** Download the currently visible side as a JPEG. */
+  /** Download the card as a JPEG via Puppeteer */
   const handleDownloadJpeg = async () => {
     if (!previewData) return;
     setDownloading(true);
-    setDownloadStatus("Capturing card...");
+    setDownloadStatus("Rendering card on server...");
     try {
-      const ref = showBack ? previewBackRef : previewFrontRef;
-      const canvas = await captureRef(ref);
-      if (!canvas) throw new Error("Failed to capture card");
-      setDownloadStatus("Converting to JPEG...");
-      const blob = await canvasToJpegBlob(canvas);
+      const blob = await renderViaServer(previewData, "jpeg");
       const safeName = (previewData.name || "id-card").replace(
         /[^a-zA-Z0-9]/g,
         "_",
       );
-      const side = showBack ? "back" : "front";
-      downloadBlob(blob, `${safeName}_${side}.jpg`);
+      downloadBlob(blob, `${safeName}_front.jpg`);
       setDownloadStatus("Uploading to cloud...");
-      if (!showBack) {
-        await uploadCardToSupabase(canvas, previewData.name);
-      } else {
-        const frontCanvas = await captureRef(previewFrontRef);
-        await uploadCardToSupabase(frontCanvas, previewData.name);
-      }
+      const pngBlob = await renderViaServer(previewData, "png");
+      await uploadCardToSupabase(pngBlob, previewData.name);
       setDownloadStatus("Done!");
     } catch (err) {
       console.error("JPEG download failed:", err);
@@ -428,30 +414,20 @@ export default function Generate() {
     }
   };
 
-  /** Download the currently visible side as a PNG. */
+  /** Download the card as a PNG via Puppeteer */
   const handleDownloadPng = async () => {
     if (!previewData) return;
     setDownloading(true);
-    setDownloadStatus("Capturing card...");
+    setDownloadStatus("Rendering card on server...");
     try {
-      const ref = showBack ? previewBackRef : previewFrontRef;
-      const canvas = await captureRef(ref);
-      if (!canvas) throw new Error("Failed to capture card");
-      setDownloadStatus("Converting to PNG...");
-      const blob = await canvasToPngBlob(canvas);
+      const blob = await renderViaServer(previewData, "png");
       const safeName = (previewData.name || "id-card").replace(
         /[^a-zA-Z0-9]/g,
         "_",
       );
-      const side = showBack ? "back" : "front";
-      downloadBlob(blob, `${safeName}_${side}.png`);
+      downloadBlob(blob, `${safeName}_front.png`);
       setDownloadStatus("Uploading to cloud...");
-      if (!showBack) {
-        await uploadCardToSupabase(canvas, previewData.name);
-      } else {
-        const frontCanvas = await captureRef(previewFrontRef);
-        await uploadCardToSupabase(frontCanvas, previewData.name);
-      }
+      await uploadCardToSupabase(blob, previewData.name);
       setDownloadStatus("Done!");
     } catch (err) {
       console.error("PNG download failed:", err);
@@ -736,7 +712,7 @@ export default function Generate() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8]">
         <svg
-          className="animate-spin h-8 w-8 text-[#1152d4]"
+          className="animate-spin h-8 w-8 text-[#2563EB]"
           fill="none"
           viewBox="0 0 24 24"
         >
@@ -761,7 +737,7 @@ export default function Generate() {
   return (
     <div className="min-h-screen bg-[#f6f6f8] font-['Public_Sans',sans-serif] flex flex-col">
       {/* ─── Header ─── */}
-      <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shadow-sm">
+      <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-40">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -778,13 +754,13 @@ export default function Generate() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate("/templates")}
-            className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-[#1152d4] transition-colors border border-slate-300 rounded-lg"
+            className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-[#2563EB] transition-colors border border-slate-300 rounded-lg"
           >
             ← Change Template
           </button>
           <button
             onClick={() => navigate("/dashboard")}
-            className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-[#1152d4] transition-colors border border-slate-300 rounded-lg"
+            className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-[#2563EB] transition-colors border border-slate-300 rounded-lg"
           >
             Dashboard
           </button>
@@ -976,7 +952,7 @@ export default function Generate() {
                     value={form.name}
                     onChange={(e) => handleFormChange("name", e.target.value)}
                     placeholder="Aarav Sharma"
-                    className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-3 outline-none"
+                    className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2 px-3 outline-none"
                   />
                 </div>
 
@@ -989,7 +965,7 @@ export default function Generate() {
                     value={form.email}
                     onChange={(e) => handleFormChange("email", e.target.value)}
                     placeholder="aarav@example.com"
-                    className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-3 outline-none"
+                    className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2 px-3 outline-none"
                   />
                   <p className="text-[10px] text-slate-400 mt-0.5">
                     Used for emailing the generated ID card via Brevo
@@ -1004,7 +980,7 @@ export default function Generate() {
                     type="date"
                     value={form.dob}
                     onChange={(e) => handleFormChange("dob", e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-3 outline-none"
+                    className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2 px-3 outline-none"
                   />
                 </div>
 
@@ -1015,7 +991,7 @@ export default function Generate() {
                   <select
                     value={form.gender}
                     onChange={(e) => handleFormChange("gender", e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-3 outline-none"
+                    className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2 px-3 outline-none"
                   >
                     <option>Male</option>
                     <option>Female</option>
@@ -1032,7 +1008,7 @@ export default function Generate() {
                     onChange={(e) =>
                       handleFormChange("blood_group", e.target.value)
                     }
-                    className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-3 outline-none"
+                    className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2 px-3 outline-none"
                   >
                     <option value="">— Select —</option>
                     <option>A+</option>
@@ -1055,7 +1031,7 @@ export default function Generate() {
                     value={form.role}
                     onChange={(e) => handleFormChange("role", e.target.value)}
                     placeholder="Member"
-                    className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-3 outline-none"
+                    className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2 px-3 outline-none"
                   />
                 </div>
 
@@ -1080,7 +1056,7 @@ export default function Generate() {
                         handleFormChange("id_number", e.target.value)
                       }
                       placeholder="Auto-generated if empty"
-                      className="pl-9 w-full rounded-lg border border-slate-300 bg-slate-50 text-sm font-mono tracking-wide focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-3 outline-none"
+                      className="pl-9 w-full rounded-lg border border-slate-300 bg-slate-50 text-sm font-mono tracking-wide focus:border-[#2563EB] focus:ring-[#2563EB] py-2 px-3 outline-none"
                     />
                   </div>
                 </div>
@@ -1105,7 +1081,7 @@ export default function Generate() {
                     handleFormChange("photo_url", e.target.value)
                   }
                   placeholder="https://example.com/photo.jpg"
-                  className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-3 outline-none"
+                  className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2 px-3 outline-none"
                 />
                 <p className="text-[10px] text-slate-400 mt-1">
                   Direct link to an image (JPG/PNG)
@@ -1248,7 +1224,7 @@ export default function Generate() {
                   onChange={(e) => handleFormChange("address", e.target.value)}
                   placeholder="H.No 45, Lotus Boulevard, Sector 100, Noida, UP - 201304"
                   rows={3}
-                  className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-3 outline-none resize-none"
+                  className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2 px-3 outline-none resize-none"
                 />
               </div>
             </div>
@@ -1836,7 +1812,7 @@ export default function Generate() {
               <button
                 onClick={handleAddMember}
                 disabled={!form.name.trim()}
-                className="flex-1 py-2.5 bg-[#1152d4] text-white text-sm font-medium rounded-lg hover:bg-[#1152d4]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 py-2.5 bg-[#2563EB] text-white text-sm font-medium rounded-lg hover:bg-[#2563EB]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 + Add to Queue
               </button>
@@ -1873,14 +1849,14 @@ export default function Generate() {
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
               <div className="flex gap-2">
                 <svg
-                  className="w-4 h-4 text-[#1152d4] mt-0.5 shrink-0"
+                  className="w-4 h-4 text-[#2563EB] mt-0.5 shrink-0"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
                 </svg>
                 <div>
-                  <h4 className="text-xs font-bold text-[#1152d4] mb-1">
+                  <h4 className="text-xs font-bold text-[#2563EB] mb-1">
                     How it works
                   </h4>
                   <p className="text-xs text-slate-600 leading-relaxed">
@@ -1904,7 +1880,7 @@ export default function Generate() {
                 onClick={() => setShowBack(false)}
                 className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
                   !showBack
-                    ? "bg-white text-[#1152d4] shadow-sm"
+                    ? "bg-white text-[#2563EB] shadow-sm"
                     : "text-slate-500 hover:text-slate-700"
                 }`}
               >
@@ -1914,7 +1890,7 @@ export default function Generate() {
                 onClick={() => setShowBack(true)}
                 className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
                   showBack
-                    ? "bg-white text-[#1152d4] shadow-sm"
+                    ? "bg-white text-[#2563EB] shadow-sm"
                     : "text-slate-500 hover:text-slate-700"
                 }`}
               >
@@ -2021,31 +1997,6 @@ export default function Generate() {
                       PDF includes front &amp; back · JPEG/PNG downloads the
                       currently visible side
                     </p>
-
-                    {/* Hidden off-screen captures for PDF (front + back separately) */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: "-9999px",
-                        top: 0,
-                        zIndex: -1,
-                        pointerEvents: "none",
-                      }}
-                      aria-hidden="true"
-                    >
-                      <div
-                        ref={previewFrontRef}
-                        style={{ display: "inline-block" }}
-                      >
-                        {renderCard(previewData, null, false, "front")}
-                      </div>
-                      <div
-                        ref={previewBackRef}
-                        style={{ display: "inline-block" }}
-                      >
-                        {renderCard(previewData, null, true, "back")}
-                      </div>
-                    </div>
                   </div>
                 )}
 
@@ -2116,7 +2067,7 @@ export default function Generate() {
                             className="px-4 py-3 flex items-center justify-between"
                           >
                             <div className="flex items-center gap-3">
-                              <span className="w-7 h-7 bg-[#1152d4]/10 text-[#1152d4] rounded-full flex items-center justify-center text-xs font-bold">
+                              <span className="w-7 h-7 bg-[#2563EB]/10 text-[#2563EB] rounded-full flex items-center justify-center text-xs font-bold">
                                 {i + 1}
                               </span>
                               <div>
@@ -2178,7 +2129,7 @@ export default function Generate() {
                               )}
                               <button
                                 onClick={() => handlePreview(m)}
-                                className="text-xs text-[#1152d4] hover:underline"
+                                className="text-xs text-[#2563EB] hover:underline"
                               >
                                 Preview
                               </button>
@@ -2234,7 +2185,7 @@ export default function Generate() {
                                   ),
                                 )
                               }
-                              className="w-24 rounded-lg border border-slate-300 bg-slate-50 text-sm text-center focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-2 outline-none"
+                              className="w-24 rounded-lg border border-slate-300 bg-slate-50 text-sm text-center focus:border-[#2563EB] focus:ring-[#2563EB] py-2 px-2 outline-none"
                               placeholder="From"
                             />
                             <span className="text-slate-400 text-xs">to</span>
@@ -2254,7 +2205,7 @@ export default function Generate() {
                                       ),
                                 )
                               }
-                              className="w-24 rounded-lg border border-slate-300 bg-slate-50 text-sm text-center focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-2 outline-none"
+                              className="w-24 rounded-lg border border-slate-300 bg-slate-50 text-sm text-center focus:border-[#2563EB] focus:ring-[#2563EB] py-2 px-2 outline-none"
                               placeholder={`${members.length}`}
                             />
                             <span className="text-[10px] text-slate-400">
@@ -2287,7 +2238,7 @@ export default function Generate() {
                                       ),
                                 )
                               }
-                              className="w-24 rounded-lg border border-slate-300 bg-slate-50 text-sm text-center focus:border-[#1152d4] focus:ring-[#1152d4] py-2 px-2 outline-none"
+                              className="w-24 rounded-lg border border-slate-300 bg-slate-50 text-sm text-center focus:border-[#2563EB] focus:ring-[#2563EB] py-2 px-2 outline-none"
                               placeholder="No limit"
                             />
                             <span className="text-[10px] text-slate-400">

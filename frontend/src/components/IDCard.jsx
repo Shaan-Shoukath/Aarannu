@@ -9,7 +9,7 @@ import { proxyImageUrl } from "../lib/proxyImage";
  * extracted from the Figma / HTML design files.
  *
  * Design tokens (from attachments):
- *  Primary:    #1152d4
+ *  Primary:    #2563EB
  *  Secondary:  #ef4444
  *  Font:       Public Sans
  *  Card ratio: 85.6 : 53.98 (standard CR-80)
@@ -29,7 +29,7 @@ const IDCard = forwardRef(function IDCard(
     customFields = [],
     watermark = {},
     renderSide,
-    gradientColors = { start: "#1152d4", end: "#ef4444" },
+    gradientColors = { start: "#2563EB", end: "#ef4444" },
     cardStyles = {
       bgColor: "#ffffff",
       fontColor: "#1e293b",
@@ -266,7 +266,7 @@ const IDCard = forwardRef(function IDCard(
           {/* Main content – standard top-to-bottom flow */}
           <div
             className="absolute inset-0 flex flex-col z-10"
-            style={{ paddingTop: "48px" }}
+            style={{ paddingTop: "56px" }}
           >
             {isVertical ? (
               <>
@@ -599,7 +599,7 @@ const IDCard = forwardRef(function IDCard(
               <div className={`${isVertical ? "" : "flex-1"} space-y-4`}>
                 {fv.address && (
                   <div>
-                    <h4 className="text-xs font-bold text-slate-800 mb-1 uppercase tracking-wide border-b border-[#1152d4]/20 pb-1 inline-block">
+                    <h4 className="text-xs font-bold text-slate-800 mb-1 uppercase tracking-wide border-b border-[#2563EB]/20 pb-1 inline-block">
                       Address
                     </h4>
                     <p className="text-[11px] leading-relaxed text-slate-600 font-medium">
@@ -608,7 +608,7 @@ const IDCard = forwardRef(function IDCard(
                   </div>
                 )}
                 <div className="pt-2">
-                  <h4 className="text-xs font-bold text-slate-800 mb-1 uppercase tracking-wide border-b border-[#1152d4]/20 pb-1 inline-block">
+                  <h4 className="text-xs font-bold text-slate-800 mb-1 uppercase tracking-wide border-b border-[#2563EB]/20 pb-1 inline-block">
                     Issuing Authority
                   </h4>
                   <p className="text-[11px] leading-relaxed text-slate-600 font-medium">

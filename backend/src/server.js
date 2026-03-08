@@ -78,6 +78,7 @@ const tokenRoutes = require("./routes/tokenRoutes");
 const formFieldRoutes = require("./routes/formFieldRoutes");
 const sheetImportRoutes = require("./routes/sheetImportRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
+const renderRoutes = require("./routes/renderRoutes");
 
 // Health check (no auth required)
 app.get("/api/health", (_req, res) => {
@@ -103,6 +104,7 @@ app.use("/api/tokens", tokenRoutes);
 app.use("/api/form-fields", formFieldRoutes);
 app.use("/api/sheets", sheetImportRoutes);
 app.use("/api/uploads", uploadRoutes);
+app.use("/api/render", renderRoutes);
 
 // 404 catch-all for unknown routes
 app.use((_req, res) => {

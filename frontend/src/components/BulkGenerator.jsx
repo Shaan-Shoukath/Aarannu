@@ -1,18 +1,8 @@
 import { useState, useRef, useCallback } from "react";
-import html2canvas from "html2canvas";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { supabase } from "../lib/supabaseClient";
-import {
-  canvasesToPdfBlob,
-  canvasToPngBlob,
-  safeFileName,
-} from "../utils/downloadHelpers";
-import { fixOklabColors } from "../utils/fixOklabColors";
-import IDCard from "./IDCard";
-import CorporateCard from "./CorporateCard";
-import EventCard from "./EventCard";
-import StudentCard from "./StudentCard";
+import { safeFileName } from "../utils/downloadHelpers";
 
 /** Build a unique storage path – extracted to avoid React compiler purity check */
 function buildFilePath(userId, memberName) {
@@ -50,7 +40,7 @@ export default function BulkGenerator({
   logoUrl = "",
   customFields = [],
   watermark = {},
-  gradientColors = { start: "#1152d4", end: "#ef4444" },
+  gradientColors = { start: "#2563EB", end: "#ef4444" },
   cardStyles = {
     bgColor: "#ffffff",
     fontColor: "#1e293b",
@@ -78,8 +68,6 @@ export default function BulkGenerator({
   const [liveLog, setLiveLog] = useState([]); // [{name, status, time}]
   const [results, setResults] = useState([]);
   const [error, setError] = useState("");
-  const frontRef = useRef(null);
-  const backRef = useRef(null);
   const [currentMember, setCurrentMember] = useState(null);
   const cancelRef = useRef(false);
 
@@ -124,50 +112,41 @@ export default function BulkGenerator({
     return `${m}:${String(sec).padStart(2, "0")}`;
   };
 
-  /** Resolve the correct card component for the selected template */
-  const CardComponent = (() => {
-    switch (templateId) {
-      case "corporate":
-        return CorporateCard;
-      case "event":
-        return EventCard;
-      case "student":
-        return StudentCard;
-      default:
-        return IDCard;
+  /**
+   * Build the render payload and call the Puppeteer backend.
+   * Returns a Blob of the requested format.
+   */
+  const renderViaServer = async (memberData, format = "png") => {
+    const backendUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const payload = {
+      data: memberData,
+      template: templateId,
+      orgName,
+      logoUrl,
+      cardStyles,
+      gradientColors,
+      fieldVisibility: {},
+      orientation,
+      validityText,
+      watermark,
+      customFields,
+      format,
+    };
+
+    const res = await fetch(`${backendUrl}/api/render/card`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(
+        errData.error || `Server render failed (HTTP ${res.status})`,
+      );
     }
-  })();
 
-  /** Capture a ref element as an html2canvas Canvas */
-  const captureRef = async (ref) => {
-    await new Promise((r) => setTimeout(r, 600));
-    if (!ref.current) throw new Error("Card element not available for capture");
-
-    // Wait for all images inside the card to finish loading
-    const imgs = ref.current.querySelectorAll("img");
-    await Promise.all(
-      [...imgs].map(
-        (img) =>
-          new Promise((res) => {
-            if (img.complete) return res();
-            img.onload = res;
-            img.onerror = res;
-          }),
-      ),
-    );
-
-    const restoreColors = fixOklabColors(ref.current);
-    try {
-      const canvas = await html2canvas(ref.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: null, // transparent so rounded corners & shadow show in PDF
-        logging: false,
-      });
-      return canvas;
-    } finally {
-      restoreColors();
-    }
+    return res.blob();
   };
 
   /** Check how many cards this user uploaded today */
@@ -276,20 +255,13 @@ export default function BulkGenerator({
         const cardStart = Date.now();
 
         try {
-          // Capture front + back canvases
+          // Capture front PNG via Puppeteer API
           setProgress((prev) => ({ ...prev, step: "capture" }));
-          const frontCanvas = await captureRef(frontRef);
-          const backCanvas = await captureRef(backRef);
+          const pngBlob = await renderViaServer(member, "png");
 
-          // Upload front PNG to Supabase (for Dashboard signed-URL access)
-          setProgress((prev) => ({ ...prev, step: "upload" }));
-          const pngBlob = await canvasToPngBlob(frontCanvas);
-          const filePath = buildFilePath(userId, member.name);
-
-          // Build 2-page PDF (front + back) and add to ZIP FIRST
-          // so local download always works even if cloud upload fails
+          // Get PDF via Puppeteer API
           setProgress((prev) => ({ ...prev, step: "pdf" }));
-          const pdfBlob = canvasesToPdfBlob(frontCanvas, backCanvas);
+          const pdfBlob = await renderViaServer(member, "pdf");
           pdfFolder.file(safeFileName(member.name, i, "pdf"), pdfBlob);
 
           // Store PDF blob for potential email step
@@ -300,6 +272,7 @@ export default function BulkGenerator({
           if (uploadToCloud) {
             try {
               setProgress((prev) => ({ ...prev, step: "upload" }));
+              const filePath = buildFilePath(userId, member.name);
               const { error: uploadError } = await supabase.storage
                 .from("id-cards")
                 .upload(filePath, pngBlob, {
@@ -605,7 +578,7 @@ export default function BulkGenerator({
                   key={s.key}
                   className={`flex-1 flex flex-col items-center py-3 gap-1 text-[10px] font-medium transition-colors ${
                     isActive
-                      ? "bg-[#1152d4]/5 text-[#1152d4]"
+                      ? "bg-[#2563EB]/5 text-[#2563EB]"
                       : isDone
                         ? "text-green-600"
                         : "text-slate-300"
@@ -650,7 +623,7 @@ export default function BulkGenerator({
               ) : (
                 <div
                   className={`h-2.5 rounded-full transition-all duration-300 ${
-                    progress.phase === "Done" ? "bg-green-500" : "bg-[#1152d4]"
+                    progress.phase === "Done" ? "bg-green-500" : "bg-[#2563EB]"
                   }`}
                   style={{
                     width: `${(progress.current / progress.total) * 100}%`,
@@ -670,7 +643,7 @@ export default function BulkGenerator({
                   <>
                     {progress.current}/{progress.total}
                     {" · "}
-                    <span className="text-[#1152d4] font-semibold">
+                    <span className="text-[#2563EB] font-semibold">
                       {currentMember?.name || "…"}
                     </span>
                   </>
@@ -963,49 +936,6 @@ export default function BulkGenerator({
         </div>
       )}
 
-      {/* ─── Off-screen card renderers (front + back) ─── */}
-      <div
-        style={{
-          position: "absolute",
-          left: "-9999px",
-          top: 0,
-          zIndex: -1,
-          pointerEvents: "none",
-        }}
-        aria-hidden="true"
-      >
-        <div ref={frontRef} style={{ display: "inline-block" }}>
-          <CardComponent
-            data={currentMember}
-            showBack={false}
-            orgName={orgName}
-            logoUrl={logoUrl}
-            customFields={customFields}
-            watermark={watermark}
-            gradientColors={gradientColors}
-            cardStyles={cardStyles}
-            orientation={orientation}
-            validityText={validityText}
-            renderSide="front"
-          />
-        </div>
-        <div ref={backRef} style={{ display: "inline-block" }}>
-          <CardComponent
-            data={currentMember}
-            showBack={true}
-            orgName={orgName}
-            logoUrl={logoUrl}
-            customFields={customFields}
-            watermark={watermark}
-            gradientColors={gradientColors}
-            cardStyles={cardStyles}
-            orientation={orientation}
-            validityText={validityText}
-            renderSide="back"
-          />
-        </div>
-      </div>
-
       {/* ─── Sticky Bottom Bar: Generate & Download + Upload to Supabase ─── */}
       <div className="sticky bottom-0 z-10 bg-white/95 backdrop-blur-sm border-t border-slate-200 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] rounded-b-xl px-5 py-3">
         <div className="flex items-center justify-between gap-4">
@@ -1052,7 +982,7 @@ export default function BulkGenerator({
               <button
                 onClick={handleGenerate}
                 disabled={members.length === 0}
-                className="px-6 py-2.5 bg-[#1152d4] hover:bg-[#1152d4]/90 text-white text-sm font-medium rounded-lg flex items-center gap-2 shadow-lg shadow-[#1152d4]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="px-6 py-2.5 bg-[#2563EB] hover:bg-[#2563EB]/90 text-white text-sm font-medium rounded-lg flex items-center gap-2 shadow-lg shadow-[#2563EB]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 <svg
                   className="w-4 h-4"

@@ -15,7 +15,7 @@ const CorporateCard = forwardRef(function CorporateCard(
     customFields = [],
     watermark = {},
     renderSide,
-    gradientColors = { start: "#1152d4", end: "#ef4444" },
+    gradientColors = { start: "#2563EB", end: "#ef4444" },
     cardStyles = {
       bgColor: "#ffffff",
       fontColor: "#1e293b",
@@ -212,11 +212,11 @@ const CorporateCard = forwardRef(function CorporateCard(
                   <img
                     src={photoSrc}
                     alt={name}
-                    className="w-full h-full object-cover rounded-md shadow-md border-2 border-white ring-1 ring-[#1152d4]/20"
+                    className="w-full h-full object-cover rounded-md shadow-md border-2 border-white ring-1 ring-[#2563EB]/20"
                     crossOrigin="anonymous"
                   />
                 ) : (
-                  <div className="w-full h-full rounded-md shadow-md border-2 border-white ring-1 ring-[#1152d4]/20 bg-slate-100 flex items-center justify-center">
+                  <div className="w-full h-full rounded-md shadow-md border-2 border-white ring-1 ring-[#2563EB]/20 bg-slate-100 flex items-center justify-center">
                     <svg
                       className="w-12 h-12 text-slate-300"
                       fill="currentColor"
@@ -348,7 +348,7 @@ const CorporateCard = forwardRef(function CorporateCard(
             >
               <div className={`${isVertical ? "" : "flex-1"} space-y-4`}>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-800 mb-1 uppercase tracking-wide border-b border-[#1152d4]/20 pb-1 inline-block">
+                  <h4 className="text-xs font-bold text-slate-800 mb-1 uppercase tracking-wide border-b border-[#2563EB]/20 pb-1 inline-block">
                     Address
                   </h4>
                   <p className="text-[11px] leading-relaxed text-slate-600 font-medium">
@@ -356,7 +356,7 @@ const CorporateCard = forwardRef(function CorporateCard(
                   </p>
                 </div>
                 <div className="pt-2">
-                  <h4 className="text-xs font-bold text-slate-800 mb-1 uppercase tracking-wide border-b border-[#1152d4]/20 pb-1 inline-block">
+                  <h4 className="text-xs font-bold text-slate-800 mb-1 uppercase tracking-wide border-b border-[#2563EB]/20 pb-1 inline-block">
                     Issuing Authority
                   </h4>
                   <p className="text-[11px] leading-relaxed text-slate-600 font-medium">

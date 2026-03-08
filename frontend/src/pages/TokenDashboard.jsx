@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabaseClient";
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 /* ── Tiny SVG-based line / area chart ──────────────────────── */
-function MiniChart({ data, width = 600, height = 160, color = "#1152d4" }) {
+function MiniChart({ data, width = 600, height = 160, color = "#2563EB" }) {
   if (!data?.length) return null;
   const max = Math.max(1, ...data.map((d) => d.count));
   const pad = { top: 20, right: 10, bottom: 30, left: 40 };
@@ -110,7 +110,7 @@ function MiniChart({ data, width = 600, height = 160, color = "#1152d4" }) {
 }
 
 /* ── Bar chart variant ─────────────────────────────────────── */
-function BarChart({ data, width = 600, height = 160, color = "#1152d4" }) {
+function BarChart({ data, width = 600, height = 160, color = "#2563EB" }) {
   if (!data?.length) return null;
   const max = Math.max(1, ...data.map((d) => d.count));
   const pad = { top: 20, right: 10, bottom: 30, left: 40 };
@@ -436,20 +436,25 @@ export default function TokenDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#f6f6f8] font-['Public_Sans',sans-serif]">
       {/* ─── Header ─── */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30">
+      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">Tokens</h1>
-            <p className="text-sm text-slate-500">
-              Manage your credits &amp; view usage history
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-[#2563EB] rounded-lg flex items-center justify-center text-white font-bold text-sm">
+              A
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-slate-900">Tokens</h1>
+              <p className="text-sm text-slate-500">
+                Manage your credits &amp; view usage history
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate("/tokens/purchase")}
-              className="px-5 py-2.5 bg-[#1152d4] hover:bg-[#1152d4]/90 text-white text-sm font-medium rounded-lg shadow-lg shadow-[#1152d4]/20 transition-all flex items-center gap-2"
+              className="px-5 py-2.5 bg-[#2563EB] hover:bg-[#2563EB]/90 text-white text-sm font-medium rounded-lg shadow-lg shadow-[#2563EB]/20 transition-all flex items-center gap-2"
             >
               <svg
                 className="w-4 h-4"
@@ -574,9 +579,9 @@ export default function TokenDashboard() {
             </div>
           </div>
           {chartView === "line" ? (
-            <MiniChart data={tokensPerDayData} color="#1152d4" />
+            <MiniChart data={tokensPerDayData} color="#2563EB" />
           ) : (
-            <BarChart data={tokensPerDayData} color="#1152d4" />
+            <BarChart data={tokensPerDayData} color="#2563EB" />
           )}
         </div>
 
@@ -614,7 +619,7 @@ export default function TokenDashboard() {
                   }}
                   className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
                     txnFilter === t
-                      ? "bg-[#1152d4] text-white"
+                      ? "bg-[#2563EB] text-white"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                   }`}
                 >

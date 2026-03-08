@@ -233,7 +233,7 @@ export default function Signup() {
           </p>
           <button
             onClick={() => navigate("/dashboard", { replace: true })}
-            className="inline-flex items-center px-6 py-2.5 bg-[#1152d4] text-white text-sm font-medium rounded-lg hover:bg-[#1152d4]/90 transition-colors shadow-lg shadow-[#1152d4]/25"
+            className="inline-flex items-center px-6 py-2.5 bg-[#2563EB] text-white text-sm font-medium rounded-lg hover:bg-[#2563EB]/90 transition-colors shadow-lg shadow-[#2563EB]/25"
           >
             Go to Dashboard
           </button>
@@ -249,7 +249,7 @@ export default function Signup() {
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
             <div className="inline-flex items-center justify-center gap-2 mb-6">
-              <div className="w-10 h-10 bg-[#1152d4] rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-[#1152d4]/30">
+              <div className="w-10 h-10 bg-[#2563EB] rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-[#2563EB]/30">
                 A
               </div>
               <span className="text-2xl font-bold text-slate-900 tracking-tight">
@@ -312,7 +312,7 @@ export default function Signup() {
                     setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))
                   }
                   placeholder="Enter 6-digit code"
-                  className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none tracking-widest text-center font-mono text-lg"
+                  className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#2563EB] focus:ring-[#2563EB] sm:text-sm py-2.5 outline-none tracking-widest text-center font-mono text-lg"
                 />
               </div>
             </div>
@@ -323,7 +323,7 @@ export default function Signup() {
                 type="button"
                 onClick={handleResendOtp}
                 disabled={loading}
-                className="text-[#1152d4] hover:underline font-medium"
+                className="text-[#2563EB] hover:underline font-medium"
               >
                 Resend code
               </button>
@@ -332,7 +332,7 @@ export default function Signup() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#1152d4] hover:bg-[#1152d4]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1152d4] transition-all duration-200 shadow-lg shadow-[#1152d4]/25 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#2563EB] hover:bg-[#2563EB]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2563EB] transition-all duration-200 shadow-lg shadow-[#2563EB]/25 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <svg
@@ -369,7 +369,7 @@ export default function Signup() {
                 setError("");
                 setOtpMessage("");
               }}
-              className="text-[#1152d4] hover:underline font-medium"
+              className="text-[#2563EB] hover:underline font-medium"
             >
               &larr; Back to signup form
             </button>
@@ -384,7 +384,7 @@ export default function Signup() {
       {/* ─── Left Panel: Decorative ─── */}
       <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-slate-900 items-center justify-center">
         <div className="absolute inset-0 z-0">
-          <div className="absolute -top-20 -left-20 w-150 h-150 bg-linear-to-br from-[#1152d4] via-blue-600 to-transparent rounded-full blur-[100px] opacity-60" />
+          <div className="absolute -top-20 -left-20 w-150 h-150 bg-linear-to-br from-[#2563EB] via-blue-600 to-transparent rounded-full blur-[100px] opacity-60" />
           <div className="absolute -bottom-20 -right-20 w-150 h-150 bg-linear-to-tl from-[#ef4444] via-red-500 to-transparent rounded-full blur-[100px] opacity-40" />
           <div
             className="absolute inset-0 bg-slate-900/40 z-10"
@@ -428,7 +428,7 @@ export default function Signup() {
           {/* Brand */}
           <div className="text-center lg:text-left">
             <div className="inline-flex items-center justify-center lg:justify-start gap-2 mb-6">
-              <div className="w-10 h-10 bg-[#1152d4] rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-[#1152d4]/30">
+              <div className="w-10 h-10 bg-[#2563EB] rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-[#2563EB]/30">
                 A
               </div>
               <span className="text-2xl font-bold text-slate-900 tracking-tight">
@@ -483,7 +483,7 @@ export default function Signup() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Alex Morgan"
-                    className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#2563EB] focus:ring-[#2563EB] sm:text-sm py-2.5 outline-none"
                   />
                 </div>
               </div>
@@ -518,7 +518,7 @@ export default function Signup() {
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
                     placeholder="Member (default)"
-                    className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#2563EB] focus:ring-[#2563EB] sm:text-sm py-2.5 outline-none"
                   />
                 </div>
               </div>
@@ -555,7 +555,7 @@ export default function Signup() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@company.com"
-                    className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#2563EB] focus:ring-[#2563EB] sm:text-sm py-2.5 outline-none"
                   />
                 </div>
               </div>
@@ -591,7 +591,7 @@ export default function Signup() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Min. 8 characters"
-                    className="pl-10 pr-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 pr-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#2563EB] focus:ring-[#2563EB] sm:text-sm py-2.5 outline-none"
                   />
                   <button
                     type="button"
@@ -668,7 +668,7 @@ export default function Signup() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Re-enter password"
-                    className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#2563EB] focus:ring-[#2563EB] sm:text-sm py-2.5 outline-none"
                   />
                 </div>
               </div>
@@ -678,7 +678,7 @@ export default function Signup() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#1152d4] hover:bg-[#1152d4]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1152d4] transition-all duration-200 shadow-lg shadow-[#1152d4]/25 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#2563EB] hover:bg-[#2563EB]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2563EB] transition-all duration-200 shadow-lg shadow-[#2563EB]/25 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <svg
@@ -711,7 +711,7 @@ export default function Signup() {
             Already have an account?{" "}
             <Link
               to="/login"
-              className="font-medium text-[#1152d4] hover:text-[#1152d4]/80 transition-colors"
+              className="font-medium text-[#2563EB] hover:text-[#2563EB]/80 transition-colors"
             >
               Sign in
             </Link>

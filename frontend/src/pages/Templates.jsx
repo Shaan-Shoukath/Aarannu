@@ -24,7 +24,7 @@ const TEMPLATES = [
     description: "Red & Blue Dynamic Gradient",
     tags: ["Portrait", "Employee"],
     badge: "PRO",
-    gradient: "from-[#1152d4] via-blue-500 to-red-400",
+    gradient: "from-[#2563EB] via-blue-500 to-red-400",
   },
   {
     id: "event",
@@ -49,6 +49,7 @@ export default function Templates() {
   const [loading, setLoading] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [showOrgModal, setShowOrgModal] = useState(false);
+  const [templateFilter, setTemplateFilter] = useState("all");
   const [orgConfig, setOrgConfig] = useState({
     orgName: "",
     logoUrl: "",
@@ -111,7 +112,7 @@ export default function Templates() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8]">
         <svg
-          className="animate-spin h-8 w-8 text-[#1152d4]"
+          className="animate-spin h-8 w-8 text-[#2563EB]"
           fill="none"
           viewBox="0 0 24 24"
         >
@@ -134,11 +135,11 @@ export default function Templates() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f6f8] font-['Public_Sans',sans-serif]">
+    <div className="min-h-screen bg-[#f6f6f8] font-['Public_Sans',sans-serif] flex flex-col">
       {/* ─── Header ─── */}
-      <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shadow-sm">
+      <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-40">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-[#1152d4] rounded-lg flex items-center justify-center text-white font-bold text-lg">
+          <div className="w-8 h-8 bg-[#2563EB] rounded-lg flex items-center justify-center text-white font-bold text-lg">
             A
           </div>
           <h1 className="font-bold text-lg text-slate-900">
@@ -150,16 +151,16 @@ export default function Templates() {
         </div>
         <button
           onClick={() => navigate("/dashboard")}
-          className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-[#1152d4] transition-colors border border-slate-300 rounded-lg"
+          className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-[#2563EB] transition-colors border border-slate-200 rounded-lg hover:border-[#2563EB]/30 cursor-pointer"
         >
           &larr; Back to Dashboard
         </button>
       </header>
 
       {/* ─── Main ─── */}
-      <main className="max-w-6xl mx-auto px-6 py-10">
-        <div className="mb-10">
-          <h2 className="text-3xl font-bold text-slate-900 italic">
+      <main className="max-w-6xl mx-auto px-6 py-10 flex-1">
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-slate-900">
             Select a Template
           </h2>
           <p className="text-slate-500 mt-2 max-w-xl">
@@ -169,23 +170,47 @@ export default function Templates() {
           </p>
         </div>
 
+        {/* ─── Filter Tags ─── */}
+        <div className="flex flex-wrap gap-2 mb-8">
+          {[
+            { key: "all", label: "All Templates" },
+            { key: "professional", label: "Professional" },
+            { key: "modern", label: "Modern" },
+            { key: "educational", label: "Educational" },
+            { key: "event", label: "Event Access" },
+            { key: "vertical", label: "Vertical Layout" },
+          ].map((tag) => (
+            <button
+              key={tag.key}
+              onClick={() => setTemplateFilter(tag.key)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all cursor-pointer ${
+                templateFilter === tag.key
+                  ? "bg-[#2563EB] text-white shadow-lg shadow-[#2563EB]/20"
+                  : "bg-white text-slate-600 border border-slate-200 hover:border-[#2563EB]/30 hover:text-[#2563EB]"
+              }`}
+            >
+              {tag.label}
+            </button>
+          ))}
+        </div>
+
         {/* ─── Template Grid ─── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
           {TEMPLATES.map((t) => (
             <button
               key={t.id}
               onClick={() => handleSelectTemplate(t)}
-              className="group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-[#1152d4]/30 transition-all duration-300 overflow-hidden text-left"
+              className="group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-[#2563EB]/30 transition-all duration-300 overflow-hidden text-left"
             >
               {/* Card Preview */}
               <div
                 className={`${t.id === "custom" ? "h-full" : "h-44"} relative overflow-hidden`}
               >
                 {t.id === "custom" ? (
-                  <div className="h-full min-h-44 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center gap-3 bg-slate-50 group-hover:border-[#1152d4]/40 transition-colors text-center px-4">
-                    <div className="w-14 h-14 bg-[#1152d4]/10 rounded-full flex items-center justify-center group-hover:bg-[#1152d4]/20 transition-colors">
+                  <div className="h-full min-h-44 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center gap-3 bg-slate-50 group-hover:border-[#2563EB]/40 transition-colors text-center px-4">
+                    <div className="w-14 h-14 bg-[#2563EB]/10 rounded-full flex items-center justify-center group-hover:bg-[#2563EB]/20 transition-colors">
                       <svg
-                        className="w-6 h-6 text-[#1152d4]"
+                        className="w-6 h-6 text-[#2563EB]"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -224,7 +249,7 @@ export default function Templates() {
                       <span
                         className={`absolute top-3 right-3 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
                           t.badge === "PRO"
-                            ? "bg-[#1152d4] text-white"
+                            ? "bg-[#2563EB] text-white"
                             : t.badge === "POPULAR"
                               ? "bg-green-500 text-white"
                               : "bg-slate-200 text-slate-600"
@@ -265,7 +290,7 @@ export default function Templates() {
       <footer className="border-t border-slate-200 bg-white py-6 px-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-[#1152d4] rounded-md flex items-center justify-center text-white font-bold text-xs">
+            <div className="w-6 h-6 bg-[#2563EB] rounded-md flex items-center justify-center text-white font-bold text-xs">
               A
             </div>
             <span className="text-sm font-medium text-slate-600">Aarannu</span>
@@ -308,7 +333,7 @@ export default function Templates() {
                     }))
                   }
                   placeholder="e.g. TinkerSpace Academy"
-                  className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#1152d4] focus:ring-[#1152d4] py-2.5 px-3 outline-none"
+                  className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2.5 px-3 outline-none"
                 />
               </div>
 
@@ -326,7 +351,7 @@ export default function Templates() {
                     }))
                   }
                   placeholder="https://example.com/logo.png"
-                  className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#1152d4] focus:ring-[#1152d4] py-2.5 px-3 outline-none"
+                  className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2.5 px-3 outline-none"
                 />
                 <p className="text-[10px] text-slate-400 mt-1">
                   Direct link to your organization&apos;s logo (PNG/SVG
@@ -353,7 +378,7 @@ export default function Templates() {
                 <button
                   type="button"
                   onClick={() => setShowWatermark((v) => !v)}
-                  className="w-full flex items-center justify-between text-sm font-semibold text-slate-700 hover:text-[#1152d4] transition-colors"
+                  className="w-full flex items-center justify-between text-sm font-semibold text-slate-700 hover:text-[#2563EB] transition-colors"
                 >
                   <span className="flex items-center gap-2">
                     <svg
@@ -405,7 +430,7 @@ export default function Templates() {
                           }))
                         }
                         placeholder="e.g. CONFIDENTIAL, org name..."
-                        className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#1152d4] focus:ring-[#1152d4] py-2.5 px-3 outline-none"
+                        className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2.5 px-3 outline-none"
                       />
                       {watermark.text && (
                         <div className="mt-2 flex items-center gap-2">
@@ -424,7 +449,7 @@ export default function Templates() {
                                 textOpacity: parseFloat(e.target.value),
                               }))
                             }
-                            className="flex-1 h-1 accent-[#1152d4]"
+                            className="flex-1 h-1 accent-[#2563EB]"
                           />
                           <span className="text-[11px] text-slate-400 w-8 text-right">
                             {Math.round(watermark.textOpacity * 100)}%
@@ -447,7 +472,7 @@ export default function Templates() {
                           }))
                         }
                         placeholder="https://example.com/watermark.png"
-                        className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#1152d4] focus:ring-[#1152d4] py-2.5 px-3 outline-none"
+                        className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2.5 px-3 outline-none"
                       />
                       {watermark.imageUrl && (
                         <div className="mt-2 flex items-center gap-2">
@@ -466,7 +491,7 @@ export default function Templates() {
                                 imageOpacity: parseFloat(e.target.value),
                               }))
                             }
-                            className="flex-1 h-1 accent-[#1152d4]"
+                            className="flex-1 h-1 accent-[#2563EB]"
                           />
                           <span className="text-[11px] text-slate-400 w-8 text-right">
                             {Math.round(watermark.imageOpacity * 100)}%
@@ -492,7 +517,7 @@ export default function Templates() {
               <button
                 onClick={handleProceed}
                 disabled={!orgConfig.orgName.trim()}
-                className="px-6 py-2 text-sm font-medium text-white bg-[#1152d4] rounded-lg hover:bg-[#1152d4]/90 transition-colors shadow-lg shadow-[#1152d4]/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-2 text-sm font-medium text-white bg-[#2563EB] rounded-lg hover:bg-[#2563EB]/90 transition-colors shadow-lg shadow-[#2563EB]/25 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continue &rarr;
               </button>

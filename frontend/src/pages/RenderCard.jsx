@@ -156,6 +156,8 @@ export default function RenderCard() {
     orientation = "horizontal",
     validityText = "",
     watermark = {},
+    customFields = [],
+    signatureUrl = "",
   } = payload;
 
   // Choose the right template component
@@ -181,7 +183,8 @@ export default function RenderCard() {
           renderSide="front"
           orgName={orgName}
           logoUrl={logoUrl}
-          customFields={[]}
+          customFields={customFields}
+          signatureUrl={signatureUrl}
           watermark={watermark}
           gradientColors={gradientColors}
           cardStyles={cardStyles}
@@ -199,7 +202,8 @@ export default function RenderCard() {
           renderSide="back"
           orgName={orgName}
           logoUrl={logoUrl}
-          customFields={[]}
+          customFields={customFields}
+          signatureUrl={signatureUrl}
           watermark={watermark}
           gradientColors={gradientColors}
           cardStyles={cardStyles}

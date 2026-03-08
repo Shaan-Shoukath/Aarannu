@@ -124,21 +124,24 @@ export default function OrgOnboarding() {
 
   if (step === "loading") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-2 border-indigo-400 border-t-transparent rounded-full" />
+      <div className="min-h-screen bg-[#f6f6f8] flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-2 border-[#2563EB] border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#f6f6f8] font-['Public_Sans',sans-serif] flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white tracking-tight">
+          <div className="w-12 h-12 bg-[#2563EB] rounded-xl flex items-center justify-center text-white font-bold text-xl mx-auto mb-3 shadow-lg shadow-[#2563EB]/20">
+            A
+          </div>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
             Aarannu Platform
           </h1>
-          <p className="text-slate-400 mt-2">
+          <p className="text-slate-500 mt-2">
             {step === "select"
               ? "Select an organization or create a new one"
               : "Create your organization to get started"}
@@ -154,21 +157,21 @@ export default function OrgOnboarding() {
                 onClick={() =>
                   navigate(`/org/${om.organizations.slug}/dashboard`)
                 }
-                className="w-full bg-slate-800/60 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex items-center gap-4 hover:border-indigo-500/50 hover:bg-slate-800/80 transition-all group cursor-pointer"
+                className="w-full bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-4 hover:border-[#2563EB]/30 hover:shadow-md transition-all group cursor-pointer"
               >
                 {om.organizations.logo_url ? (
                   <img
                     src={om.organizations.logo_url}
                     alt=""
-                    className="w-10 h-10 rounded-lg object-cover ring-1 ring-slate-600"
+                    className="w-10 h-10 rounded-lg object-cover ring-1 ring-slate-200"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+                  <div className="w-10 h-10 rounded-lg bg-[#2563EB] flex items-center justify-center text-white font-bold text-lg">
                     {om.organizations.name.charAt(0).toUpperCase()}
                   </div>
                 )}
                 <div className="flex-1 text-left">
-                  <p className="text-white font-semibold group-hover:text-indigo-300 transition-colors">
+                  <p className="text-slate-900 font-semibold group-hover:text-[#2563EB] transition-colors">
                     {om.organizations.name}
                   </p>
                   <p className="text-slate-500 text-sm">
@@ -176,7 +179,7 @@ export default function OrgOnboarding() {
                   </p>
                 </div>
                 <svg
-                  className="w-5 h-5 text-slate-500 group-hover:text-indigo-400 transition-colors"
+                  className="w-5 h-5 text-slate-400 group-hover:text-[#2563EB] transition-colors"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -193,7 +196,7 @@ export default function OrgOnboarding() {
 
             <button
               onClick={() => setStep("create")}
-              className="w-full border-2 border-dashed border-slate-700 rounded-xl p-4 text-slate-400 hover:text-indigo-400 hover:border-indigo-500/50 transition-all cursor-pointer"
+              className="w-full border-2 border-dashed border-slate-300 rounded-xl p-4 text-slate-500 hover:text-[#2563EB] hover:border-[#2563EB]/40 transition-all cursor-pointer"
             >
               + Create New Organization
             </button>
@@ -204,10 +207,10 @@ export default function OrgOnboarding() {
         {step === "create" && (
           <form
             onSubmit={handleCreate}
-            className="bg-slate-800/60 backdrop-blur border border-slate-700/50 rounded-2xl p-6 space-y-5"
+            className="bg-white border border-slate-200 rounded-2xl p-6 space-y-5 shadow-sm"
           >
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
                 Organization Name
               </label>
               <input
@@ -216,12 +219,12 @@ export default function OrgOnboarding() {
                 onChange={(e) => handleNameChange(e.target.value)}
                 placeholder="Acme University"
                 required
-                className="w-full px-4 py-2.5 bg-slate-900/60 border border-slate-600/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
                 Slug (URL identifier)
               </label>
               <div className="flex items-center gap-2">
@@ -239,7 +242,7 @@ export default function OrgOnboarding() {
                   placeholder="acme-university"
                   required
                   minLength={3}
-                  className="flex-1 px-4 py-2.5 bg-slate-900/60 border border-slate-600/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                  className="flex-1 px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] transition-all"
                 />
               </div>
               {/* Slug status indicator */}
@@ -247,18 +250,18 @@ export default function OrgOnboarding() {
                 <p className="text-xs text-slate-400 mt-1">Checking…</p>
               )}
               {slugAvailable === true && (
-                <p className="text-xs text-emerald-400 mt-1">✓ Available</p>
+                <p className="text-xs text-emerald-600 mt-1">✓ Available</p>
               )}
               {slugAvailable === false && (
-                <p className="text-xs text-red-400 mt-1">
+                <p className="text-xs text-red-600 mt-1">
                   ✗ Slug taken or too short (min 3 characters)
                 </p>
               )}
             </div>
 
             {error && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-                <p className="text-red-400 text-sm">{error}</p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-red-600 text-sm">{error}</p>
               </div>
             )}
 
@@ -267,7 +270,7 @@ export default function OrgOnboarding() {
               disabled={
                 loading || slugAvailable === false || orgSlug.length < 3
               }
-              className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+              className="w-full py-2.5 bg-[#2563EB] text-white font-semibold rounded-lg hover:bg-[#2563EB]/90 shadow-lg shadow-[#2563EB]/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
             >
               {loading ? "Creating…" : "Create Organization"}
             </button>
@@ -276,7 +279,7 @@ export default function OrgOnboarding() {
               <button
                 type="button"
                 onClick={() => setStep("select")}
-                className="w-full py-2 text-slate-400 text-sm hover:text-indigo-400 transition-colors cursor-pointer"
+                className="w-full py-2 text-slate-500 text-sm hover:text-[#2563EB] transition-colors cursor-pointer"
               >
                 ← Back to My Organizations
               </button>
@@ -288,7 +291,7 @@ export default function OrgOnboarding() {
         <div className="text-center mt-6">
           <button
             onClick={handleSignOut}
-            className="text-sm text-slate-500 hover:text-red-400 transition-colors cursor-pointer"
+            className="text-sm text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
           >
             Sign Out
           </button>

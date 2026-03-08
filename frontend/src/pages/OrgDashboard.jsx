@@ -27,7 +27,6 @@ export default function OrgDashboard() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // ── Auth header helper ────────────────────────────────────
   const getAuth = useCallback(async () => {
     const {
       data: { session },
@@ -39,13 +38,10 @@ export default function OrgDashboard() {
     return { Authorization: `Bearer ${session.access_token}` };
   }, [navigate]);
 
-  // ── Load data ─────────────────────────────────────────────
   const loadData = useCallback(async () => {
     try {
       const headers = await getAuth();
       if (!headers) return;
-
-      // Fetch org by slug
       const orgRes = await fetch(`${BACKEND}/api/org/slug/${slug}`, {
         headers,
       });
@@ -57,16 +53,12 @@ export default function OrgDashboard() {
       }
       setOrg(orgJson.org);
       setUserRole(orgJson.userRole);
-
-      // Fetch stats + projects in parallel
       const [statsRes, projRes] = await Promise.all([
         fetch(`${BACKEND}/api/org/${orgJson.org.id}/stats`, { headers }),
         fetch(`${BACKEND}/api/projects/org/${orgJson.org.id}`, { headers }),
       ]);
-
       const statsJson = await statsRes.json();
       const projJson = await projRes.json();
-
       if (statsRes.ok) setOrgStats(statsJson.stats);
       if (projRes.ok) setProjects(projJson.projects || []);
     } catch {
@@ -92,27 +84,40 @@ export default function OrgDashboard() {
     navigate("/login");
   };
 
-  // ── Loading ────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-2 border-indigo-400 border-t-transparent rounded-full" />
+      <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-2 border-[#2563EB] border-t-transparent rounded-full" />
       </div>
     );
   }
 
   if (error && !org) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="text-5xl mb-4">🏢</div>
-          <h1 className="text-xl font-bold text-white mb-2">
+          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg
+              className="w-8 h-8 text-slate-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              />
+            </svg>
+          </div>
+          <h1 className="text-xl font-bold text-slate-900 mb-2">
             Organization Not Found
           </h1>
-          <p className="text-slate-400 mb-4">{error}</p>
+          <p className="text-slate-500 mb-4">{error}</p>
           <button
             onClick={() => navigate("/org/new")}
-            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm transition cursor-pointer"
+            className="px-5 py-2 bg-[#2563EB] hover:bg-[#2563EB]/90 text-white rounded-lg text-sm font-medium transition cursor-pointer shadow-sm"
           >
             Go to My Organizations
           </button>
@@ -123,33 +128,35 @@ export default function OrgDashboard() {
 
   const statusBadge = (status) => {
     const colors = {
-      active: "text-emerald-400 bg-emerald-400/10",
-      archived: "text-slate-400 bg-slate-400/10",
-      completed: "text-indigo-400 bg-indigo-400/10",
+      active: "text-emerald-700 bg-emerald-50 border-emerald-200",
+      archived: "text-slate-600 bg-slate-50 border-slate-200",
+      completed: "text-blue-700 bg-blue-50 border-blue-200",
     };
-    return colors[status] || "text-slate-400 bg-slate-400/10";
+    return colors[status] || "text-slate-600 bg-slate-50 border-slate-200";
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white">
-      {/* ── Header ─────────────────────────────────────────── */}
-      <div className="sticky top-0 z-50 backdrop-blur bg-slate-950/80 border-b border-white/10">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
+    <div className="min-h-screen bg-[#f6f6f8] font-['Public_Sans',sans-serif]">
+      {/* ── Header */}
+      <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
+        <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3">
           <div className="flex items-center gap-3">
             {org?.logo_url ? (
               <img
                 src={org.logo_url}
                 alt=""
-                className="w-8 h-8 rounded-lg object-cover ring-1 ring-slate-600"
+                className="w-8 h-8 rounded-lg object-cover ring-1 ring-slate-200"
               />
             ) : (
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+              <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center text-white font-bold text-sm">
                 {org?.name?.charAt(0)?.toUpperCase() || "O"}
               </div>
             )}
             <div>
-              <h1 className="text-lg font-bold">{org?.name}</h1>
-              <p className="text-xs text-slate-500">
+              <h1 className="text-lg font-semibold text-slate-900">
+                {org?.name}
+              </h1>
+              <p className="text-xs text-slate-400">
                 /{org?.slug} · {userRole}
               </p>
             </div>
@@ -157,13 +164,13 @@ export default function OrgDashboard() {
           <div className="flex gap-2">
             <button
               onClick={() => navigate("/org/new")}
-              className="px-3 py-1.5 text-xs text-slate-400 hover:text-white transition cursor-pointer"
+              className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition cursor-pointer"
             >
               Switch Org
             </button>
             <button
               onClick={handleSignOut}
-              className="px-3 py-1.5 text-xs text-slate-500 hover:text-red-400 transition cursor-pointer"
+              className="px-3 py-1.5 text-xs text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
             >
               Sign Out
             </button>
@@ -171,60 +178,64 @@ export default function OrgDashboard() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
-        {/* ── Messages ─────────────────────────────────────── */}
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
         {success && (
-          <div className="px-4 py-3 rounded-lg bg-green-500/20 border border-green-400/30 text-green-300 text-sm">
+          <div className="px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
             {success}
           </div>
         )}
 
-        {/* ── Stats cards ──────────────────────────────────── */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {/* ── Stats cards */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {[
             {
               label: "Projects",
               value: orgStats?.totalProjects || 0,
-              color: "text-indigo-400",
+              color: "text-[#2563EB] bg-blue-50",
             },
             {
               label: "Total Members",
               value: orgStats?.totalMembers || 0,
-              color: "text-white",
+              color: "text-slate-900 bg-slate-50",
             },
             {
               label: "Pending",
               value: orgStats?.pendingMembers || 0,
-              color: "text-amber-400",
+              color: "text-amber-600 bg-amber-50",
             },
             {
               label: "Total Cards",
               value: orgStats?.totalCards || 0,
-              color: "text-purple-400",
+              color: "text-violet-600 bg-violet-50",
             },
             {
               label: "Active Cards",
               value: orgStats?.activeCards || 0,
-              color: "text-emerald-400",
+              color: "text-emerald-600 bg-emerald-50",
             },
           ].map((s) => (
             <div
               key={s.label}
-              className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 text-center"
+              className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow"
             >
-              <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+              <div
+                className={`inline-flex items-center justify-center w-10 h-10 rounded-lg ${s.color} mb-3`}
+              >
+                <span className="text-lg font-bold">{s.value}</span>
+              </div>
+              <p className="text-2xl font-bold text-slate-900">{s.value}</p>
               <p className="text-xs text-slate-500 mt-1">{s.label}</p>
             </div>
           ))}
         </div>
 
-        {/* ── Projects section ─────────────────────────────── */}
+        {/* ── Projects section */}
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Projects</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Projects</h2>
           {(userRole === "owner" || userRole === "admin") && (
             <button
               onClick={() => navigate(`/org/${slug}/project/new`)}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition cursor-pointer"
+              className="px-4 py-2 bg-[#2563EB] hover:bg-[#2563EB]/90 rounded-lg text-sm font-medium text-white transition cursor-pointer shadow-sm"
             >
               + New Project
             </button>
@@ -232,16 +243,30 @@ export default function OrgDashboard() {
         </div>
 
         {projects.length === 0 ? (
-          <div className="text-center py-16 bg-slate-800/30 border border-slate-700/30 rounded-xl">
-            <div className="text-5xl mb-3">📁</div>
-            <p className="text-slate-400 font-medium">No projects yet</p>
+          <div className="text-center py-16 bg-white border border-slate-200 rounded-xl">
+            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg
+                className="w-8 h-8 text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                />
+              </svg>
+            </div>
+            <p className="text-slate-900 font-medium">No projects yet</p>
             <p className="text-sm text-slate-500 mt-1 mb-4">
               Create your first project to generate a registration form link.
             </p>
             {(userRole === "owner" || userRole === "admin") && (
               <button
                 onClick={() => navigate(`/org/${slug}/project/new`)}
-                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg font-medium transition cursor-pointer"
+                className="px-6 py-2.5 bg-[#2563EB] hover:bg-[#2563EB]/90 rounded-lg text-white font-medium transition cursor-pointer shadow-sm"
               >
                 + Create First Project
               </button>
@@ -252,20 +277,20 @@ export default function OrgDashboard() {
             {projects.map((p) => (
               <div
                 key={p.id}
-                className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-5 hover:border-indigo-500/30 transition group"
+                className="bg-white border border-slate-200 rounded-xl p-5 hover:border-[#2563EB]/30 hover:shadow-md transition group"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-white font-semibold truncate">
+                      <h3 className="text-slate-900 font-semibold truncate">
                         {p.name}
                       </h3>
                       <span
-                        className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${statusBadge(p.status)}`}
+                        className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium border ${statusBadge(p.status)}`}
                       >
                         {p.status}
                       </span>
-                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-700/50 text-slate-400">
+                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-500 border border-slate-200">
                         {p.type}
                       </span>
                     </div>
@@ -278,21 +303,20 @@ export default function OrgDashboard() {
                       </span>
                     </div>
                   </div>
-
                   <div className="flex gap-2 ml-4 shrink-0">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         copyFormLink(p.id);
                       }}
-                      className="px-3 py-1.5 bg-white/5 hover:bg-indigo-500/20 text-slate-400 hover:text-indigo-300 rounded-lg text-xs transition cursor-pointer"
+                      className="px-3 py-1.5 bg-slate-50 hover:bg-blue-50 text-slate-500 hover:text-[#2563EB] border border-slate-200 rounded-lg text-xs transition cursor-pointer"
                       title="Copy form link"
                     >
                       🔗 Link
                     </button>
                     <button
                       onClick={() => navigate(`/org/${slug}/project/${p.id}`)}
-                      className="px-3 py-1.5 bg-indigo-600/80 hover:bg-indigo-500 rounded-lg text-xs font-medium transition cursor-pointer"
+                      className="px-3 py-1.5 bg-[#2563EB] hover:bg-[#2563EB]/90 rounded-lg text-xs font-medium text-white transition cursor-pointer shadow-sm"
                     >
                       Open →
                     </button>
@@ -303,11 +327,10 @@ export default function OrgDashboard() {
           </div>
         )}
 
-        {/* ── Back to legacy dashboard link ─────────────────── */}
-        <div className="text-center pt-4 border-t border-slate-800/50">
+        <div className="text-center pt-4 border-t border-slate-200">
           <button
             onClick={() => navigate("/dashboard")}
-            className="text-xs text-slate-500 hover:text-indigo-400 transition cursor-pointer"
+            className="text-xs text-slate-500 hover:text-[#2563EB] transition cursor-pointer"
           >
             ← Back to Personal Dashboard
           </button>

@@ -140,7 +140,7 @@ export default function TokenPurchase() {
           {balance !== null && (
             <p className="mt-3 text-sm">
               Current balance:{" "}
-              <span className="font-bold text-[#1152d4]">
+              <span className="font-bold text-[#2563EB]">
                 {isUnlimited
                   ? "∞ Unlimited"
                   : `${balance.toLocaleString()} tokens`}
@@ -192,12 +192,12 @@ export default function TokenPurchase() {
                 key={pkg.id}
                 className={`relative bg-white rounded-2xl border-2 p-8 shadow-sm transition-all hover:shadow-md ${
                   isBestValue
-                    ? "border-[#1152d4] shadow-[#1152d4]/10"
+                    ? "border-[#2563EB] shadow-[#2563EB]/10"
                     : "border-slate-200"
                 }`}
               >
                 {isBestValue && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-[#1152d4] text-white text-xs font-bold rounded-full uppercase tracking-wide">
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-[#2563EB] text-white text-xs font-bold rounded-full uppercase tracking-wide">
                     Best Value
                   </span>
                 )}
@@ -223,7 +223,7 @@ export default function TokenPurchase() {
                 <div className="text-center mb-6">
                   <span className="inline-flex items-center gap-1 px-4 py-2 rounded-full bg-slate-100 text-slate-700 font-semibold">
                     <svg
-                      className="w-4 h-4 text-[#1152d4]"
+                      className="w-4 h-4 text-[#2563EB]"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -244,7 +244,7 @@ export default function TokenPurchase() {
                   disabled={purchasing !== null}
                   className={`w-full py-3 rounded-xl font-semibold text-sm transition-all ${
                     isBestValue
-                      ? "bg-[#1152d4] hover:bg-[#1152d4]/90 text-white shadow-lg shadow-[#1152d4]/20"
+                      ? "bg-[#2563EB] hover:bg-[#2563EB]/90 text-white shadow-lg shadow-[#2563EB]/20"
                       : "bg-slate-800 hover:bg-slate-700 text-white"
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
@@ -280,7 +280,7 @@ export default function TokenPurchase() {
         <div className="mt-8 text-center">
           <button
             onClick={() => navigate("/tokens")}
-            className="text-sm text-[#1152d4] hover:underline"
+            className="text-sm text-[#2563EB] hover:underline"
           >
             ← Back to Token Dashboard
           </button>
