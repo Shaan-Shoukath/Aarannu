@@ -266,7 +266,7 @@ const IDCard = forwardRef(function IDCard(
           {/* Main content – standard top-to-bottom flow */}
           <div
             className="absolute inset-0 flex flex-col z-10"
-            style={{ paddingTop: "56px" }}
+            style={{ paddingTop: "60px", paddingBottom: "8px" }}
           >
             {isVertical ? (
               <>
@@ -416,7 +416,7 @@ const IDCard = forwardRef(function IDCard(
             ) : (
               <>
                 {/* ── BODY (horizontal – Aadhaar-style) ── */}
-                <div className="flex-1 flex flex-row gap-5 items-start px-8">
+                <div className="flex-1 flex flex-row gap-5 items-center px-8">
                   {/* Photo – left side */}
                   {(() => {
                     const scale = (cs.photoScale || 100) / 100;

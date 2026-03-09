@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
-import { downloadBlob, safeFileName } from "../utils/downloadHelpers";
+import { downloadBlob } from "../utils/downloadHelpers";
 import BulkGenerator from "../components/BulkGenerator";
 import IDCard from "../components/IDCard";
 import CorporateCard from "../components/CorporateCard";
@@ -97,6 +97,10 @@ export default function Generate() {
   const [showBack, setShowBack] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadStatus, setDownloadStatus] = useState(""); // status message for download
+
+  // Refs for client-side card capture (html2canvas)
+  const cardFrontRef = useRef(null);
+  const cardBackRef = useRef(null);
 
   // Gradient colors
   const [gradientStart, setGradientStart] = useState(
@@ -309,30 +313,6 @@ export default function Generate() {
   });
 
   /**
-   * Render a card via the backend Puppeteer service.
-   * Returns a Blob of the requested format.
-   */
-  const renderViaServer = async (memberData, format = "png") => {
-    const backendUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
-    const payload = buildRenderPayload(memberData);
-
-    const res = await fetch(`${backendUrl}/api/render/card`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...payload, format }),
-    });
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(
-        errData.error || `Server render failed (HTTP ${res.status})`,
-      );
-    }
-
-    return res.blob();
-  };
-
-  /**
    * Upload a PNG blob to Supabase Storage and insert a
    * `generated_ids` row so the card appears on the Dashboard.
    */
@@ -364,7 +344,47 @@ export default function Generate() {
     }
   };
 
-  /** Download the previewed card as a 2-page PDF (front + back) via Puppeteer */
+  /**
+   * Render a card via the backend Puppeteer service.
+   * Returns a Blob of the requested format.
+   */
+  const renderViaServer = async (memberData, format = "png") => {
+    const backendUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const payload = {
+      data: memberData,
+      template: templateId,
+      orgName,
+      logoUrl: effectiveLogoUrl,
+      cardStyles,
+      gradientColors,
+      fieldVisibility,
+      orientation,
+      validityText,
+      watermark,
+      customFields: customFieldDefs,
+      signatureUrl,
+      format,
+    };
+
+    const res = await fetch(`${backendUrl}/api/render/card`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(
+        errData.details ||
+          errData.error ||
+          `Server render failed (HTTP ${res.status})`,
+      );
+    }
+
+    return res.blob();
+  };
+
+  /** Download the previewed card as a 2-page PDF via Puppeteer */
   const handleDownloadPdf = async () => {
     if (!previewData) return;
     setDownloading(true);
@@ -376,6 +396,7 @@ export default function Generate() {
         "_",
       );
       downloadBlob(blob, `${safeName}_ID.pdf`);
+
       setDownloadStatus("Uploading to cloud...");
       const pngBlob = await renderViaServer(previewData, "png");
       await uploadCardToSupabase(pngBlob, previewData.name);
@@ -401,6 +422,7 @@ export default function Generate() {
         "_",
       );
       downloadBlob(blob, `${safeName}_front.jpg`);
+
       setDownloadStatus("Uploading to cloud...");
       const pngBlob = await renderViaServer(previewData, "png");
       await uploadCardToSupabase(pngBlob, previewData.name);
@@ -426,6 +448,7 @@ export default function Generate() {
         "_",
       );
       downloadBlob(blob, `${safeName}_front.png`);
+
       setDownloadStatus("Uploading to cloud...");
       await uploadCardToSupabase(blob, previewData.name);
       setDownloadStatus("Done!");
@@ -1925,8 +1948,18 @@ export default function Generate() {
                     <h3 className="text-sm font-semibold text-slate-500 text-center uppercase tracking-wider">
                       Live Preview
                     </h3>
-                    <div className="transform transition-transform hover:scale-[1.02] duration-300">
+                    <div
+                      ref={cardFrontRef}
+                      className="transform transition-transform hover:scale-[1.02] duration-300"
+                    >
                       {renderCard(previewData)}
+                    </div>
+                    {/* Hidden back card for PDF capture */}
+                    <div
+                      ref={cardBackRef}
+                      style={{ position: "absolute", left: "-9999px", top: 0 }}
+                    >
+                      {renderCard(previewData, null, true, "back")}
                     </div>
 
                     {/* Download buttons */}

@@ -70,6 +70,7 @@ export default function BulkGenerator({
   const [error, setError] = useState("");
   const [currentMember, setCurrentMember] = useState(null);
   const cancelRef = useRef(false);
+  const [downloadFormat, setDownloadFormat] = useState("pdf"); // "pdf" | "jpeg" | "png"
 
   // Email step state
   const [emailProgress, setEmailProgress] = useState({
@@ -255,17 +256,38 @@ export default function BulkGenerator({
         const cardStart = Date.now();
 
         try {
-          // Capture front PNG via Puppeteer API
+          // Capture front PNG via Puppeteer API (always needed for cloud upload)
           setProgress((prev) => ({ ...prev, step: "capture" }));
           const pngBlob = await renderViaServer(member, "png");
 
-          // Get PDF via Puppeteer API
-          setProgress((prev) => ({ ...prev, step: "pdf" }));
-          const pdfBlob = await renderViaServer(member, "pdf");
-          pdfFolder.file(safeFileName(member.name, i, "pdf"), pdfBlob);
+          // Fetch the user-selected download format for ZIP
+          setProgress((prev) => ({
+            ...prev,
+            step: downloadFormat === "pdf" ? "pdf" : "capture",
+          }));
+          const ext = downloadFormat === "jpeg" ? "jpg" : downloadFormat;
+          let downloadBlob;
+          if (downloadFormat === "png") {
+            downloadBlob = pngBlob; // reuse the PNG we already have
+          } else {
+            downloadBlob = await renderViaServer(member, downloadFormat);
+          }
+          pdfFolder.file(safeFileName(member.name, i, ext), downloadBlob);
 
-          // Store PDF blob for potential email step
-          pdfBlobsRef.current[i] = { blob: pdfBlob, member };
+          // Always generate PDF blob for email attachments
+          if (downloadFormat === "pdf") {
+            pdfBlobsRef.current[i] = { blob: downloadBlob, member };
+          } else {
+            // Generate PDF separately for email (if email is enabled)
+            if (
+              emailAfterGenerate &&
+              member.sendEmail &&
+              member.email?.trim()
+            ) {
+              const emailPdf = await renderViaServer(member, "pdf");
+              pdfBlobsRef.current[i] = { blob: emailPdf, member };
+            }
+          }
 
           // Attempt cloud upload (non-blocking for local download)
           let cloudWarning = "";
@@ -413,6 +435,7 @@ export default function BulkGenerator({
     watermark,
     getFilteredMembers,
     emailAfterGenerate,
+    downloadFormat,
   ]);
 
   /**
@@ -969,8 +992,25 @@ export default function BulkGenerator({
             </div>
           </div>
 
-          {/* Action button */}
+          {/* Format selector + Action button */}
           <div className="flex items-center gap-3">
+            {!generating && (
+              <div className="flex items-center bg-slate-100 rounded-lg p-0.5">
+                {["pdf", "jpeg", "png"].map((fmt) => (
+                  <button
+                    key={fmt}
+                    onClick={() => setDownloadFormat(fmt)}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                      downloadFormat === fmt
+                        ? "bg-white text-[#2563EB] shadow-sm"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    {fmt.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            )}
             {generating ? (
               <button
                 onClick={handleCancel}

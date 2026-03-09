@@ -30,23 +30,38 @@ const getBrowser = async () => {
     return browserInstance;
   }
 
-  browserInstance = await puppeteer.launch({
-    headless: "new",
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-gpu",
-      "--font-render-hinting=none",
-    ],
-  });
+  try {
+    browserInstance = await puppeteer.launch({
+      headless: "new",
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--font-render-hinting=none",
+        "--disable-features=NetworkService",
+        "--disable-software-rasterizer",
+        "--allow-running-insecure-content",
+      ],
+    });
 
-  // Auto-cleanup on disconnect
-  browserInstance.on("disconnected", () => {
-    browserInstance = null;
-  });
+    // Auto-cleanup on disconnect
+    browserInstance.on("disconnected", () => {
+      browserInstance = null;
+    });
 
-  return browserInstance;
+    console.log("[CardRenderer] Puppeteer browser launched successfully");
+    return browserInstance;
+  } catch (err) {
+    console.error(
+      "[CardRenderer] Failed to launch Puppeteer browser:",
+      err.message,
+    );
+    console.error(
+      "[CardRenderer] If Windows Firewall blocked it, allow Node.js through the firewall.",
+    );
+    throw new Error(`Browser launch failed: ${err.message}`);
+  }
 };
 
 /**
@@ -108,14 +123,15 @@ const renderCard = async (params) => {
     });
 
     // Navigate to the render page
+    console.log(`[CardRenderer] Navigating to: ${frontendUrl}/render-card#...`);
     await page.goto(renderUrl, {
       waitUntil: "networkidle0",
-      timeout: 30000,
+      timeout: 45000,
     });
 
     // Wait for the card to be rendered (the render page sets a data attr)
     await page.waitForSelector("[data-render-ready='true']", {
-      timeout: 15000,
+      timeout: 20000,
     });
 
     // Wait for fonts / images to settle
@@ -128,7 +144,7 @@ const renderCard = async (params) => {
 
     const frontPng = await frontEl.screenshot({
       type: "png",
-      omitBackground: true,
+      omitBackground: false,
     });
 
     // JPEG version of front
@@ -144,24 +160,61 @@ const renderCard = async (params) => {
     if (backEl) {
       backPng = await backEl.screenshot({
         type: "png",
-        omitBackground: true,
+        omitBackground: false,
       });
     }
 
-    // Generate a 2-page PDF using the render page's __generatePDF function
-    const pdfResult = await page.evaluate(() => {
-      if (typeof window.__generatePDF === "function") {
-        return window.__generatePDF();
-      }
-      return null;
-    });
-
+    // Build PDF server-side from the PNG screenshots
+    // (no client-side __generatePDF needed — it was fragile)
     let pdfBuffer = null;
     let pdfBase64 = null;
 
-    if (pdfResult) {
-      pdfBase64 = pdfResult;
-      pdfBuffer = Buffer.from(pdfResult, "base64");
+    try {
+      const isVertical = params.orientation === "vertical";
+      // CR-80 card dimensions in mm
+      const cardW = isVertical ? 53.98 : 85.6;
+      const cardH = isVertical ? 85.6 : 53.98;
+      const padding = 2; // mm padding around card in PDF page
+      const pageW = cardW + padding * 2;
+      const pageH = cardH + padding * 2;
+
+      const frontB64 = frontPng.toString("base64");
+      const backB64 = backPng ? backPng.toString("base64") : null;
+
+      // Build a small HTML doc with 1-2 pages, each containing the card screenshot
+      let pdfHtml = `<!DOCTYPE html><html><head><style>
+        @page { size: ${pageW}mm ${pageH}mm; margin: ${padding}mm; }
+        body { margin: 0; padding: 0; }
+        img { width: ${cardW}mm; height: ${cardH}mm; display: block; }
+        .page-break { page-break-after: always; }
+      </style></head><body>
+        <img src="data:image/png;base64,${frontB64}" />`;
+
+      if (backB64) {
+        pdfHtml += `<div class="page-break"></div>
+          <img src="data:image/png;base64,${backB64}" />`;
+      }
+      pdfHtml += `</body></html>`;
+
+      // Use a new Puppeteer page to print to PDF
+      const pdfPage = await browser.newPage();
+      await pdfPage.setContent(pdfHtml, { waitUntil: "load" });
+      pdfBuffer = await pdfPage.pdf({
+        width: `${pageW}mm`,
+        height: `${pageH}mm`,
+        printBackground: true,
+        margin: {
+          top: `${padding}mm`,
+          right: `${padding}mm`,
+          bottom: `${padding}mm`,
+          left: `${padding}mm`,
+        },
+      });
+      await pdfPage.close();
+
+      pdfBase64 = pdfBuffer.toString("base64");
+    } catch (pdfErr) {
+      console.error("[CardRenderer] PDF generation failed:", pdfErr.message);
     }
 
     return { frontPng, frontJpeg, backPng, pdfBuffer, pdfBase64 };

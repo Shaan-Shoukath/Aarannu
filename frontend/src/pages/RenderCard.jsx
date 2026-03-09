@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useState, useRef } from "react";
-import html2canvas from "html2canvas";
+import { useEffect, useMemo, useState } from "react";
 import jsPDF from "jspdf";
 import IDCard from "../components/IDCard";
 import CorporateCard from "../components/CorporateCard";
 import EventCard from "../components/EventCard";
 import StudentCard from "../components/StudentCard";
-import { fixOklabColors } from "../utils/fixOklabColors";
 
 /**
  * RenderCard Page — Headless Card Renderer
@@ -14,27 +12,24 @@ import { fixOklabColors } from "../utils/fixOklabColors";
  * This page is NOT for end-users. It's visited by Puppeteer on the backend
  * to render ID cards server-side and capture them as screenshots/PDFs.
  *
- * Card data + styling is passed via the URL hash fragment:
- *   /render-card#<encoded JSON payload>
+ * Flow:
+ *   1. Backend encodes card payload as JSON in the URL hash.
+ *   2. Puppeteer navigates here: /render-card#<encoded JSON>
+ *   3. This page renders the card using the SAME React components
+ *      used in the preview (IDCard, CorporateCard, etc.).
+ *   4. Sets data-render-ready="true" once rendered.
+ *   5. Puppeteer screenshots #card-front / #card-back elements directly.
+ *   6. For PDF, Puppeteer calls window.__generatePDF() which uses jsPDF
+ *      to combine front+back screenshots into a multi-page PDF.
  *
- * Payload shape:
- *   {
- *     data: { name, role, id_number, ... },
- *     template: "custom" | "corporate" | "event" | "student",
- *     orgName, logoUrl, cardStyles, gradientColors,
- *     fieldVisibility, orientation, validityText, watermark
- *   }
- *
- * After rendering, this page:
- *   1. Sets data-render-ready="true" on the root div.
- *   2. Exposes window.__generatePDF() for the backend to call.
+ * IMPORTANT: #card-front and #card-back use display:inline-block so they
+ * shrink-wrap around the card. This ensures Puppeteer screenshots match
+ * the exact card dimensions (not the full viewport width).
  */
 export default function RenderCard() {
   const [ready, setReady] = useState(false);
-  const frontRef = useRef(null);
-  const backRef = useRef(null);
 
-  // Parse payload from URL hash synchronously (not in an effect)
+  // Parse payload from URL hash synchronously
   const payload = useMemo(() => {
     try {
       const hash = window.location.hash.slice(1);
@@ -51,68 +46,33 @@ export default function RenderCard() {
   useEffect(() => {
     if (!payload) return;
 
-    // Give card components a moment to render fully (fonts, images)
+    // Give card components time to render (fonts, images, SVGs)
     const timer = setTimeout(() => {
-      // Expose PDF generation function for Puppeteer to invoke
+      // Expose __generatePDF for the backend cardRenderer to call via Puppeteer
+      // This creates a 2-page PDF from screenshots of #card-front and #card-back
       window.__generatePDF = async () => {
         try {
-          fixOklabColors();
-
-          const frontEl = frontRef.current?.querySelector(
-            "[class*='shadow-2xl'], [class*='relative']",
-          );
-          const backEl = backRef.current?.querySelector(
-            "[class*='shadow-2xl'], [class*='relative']",
-          );
-
+          const frontEl = document.querySelector("#card-front");
+          const backEl = document.querySelector("#card-back");
           if (!frontEl) return null;
 
-          const frontCanvas = await html2canvas(frontEl, {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: null,
-          });
-
-          let backCanvas = null;
-          if (backEl) {
-            backCanvas = await html2canvas(backEl, {
-              scale: 2,
-              useCORS: true,
-              backgroundColor: null,
-            });
-          }
-
-          // Generate 2-page PDF
           const isVertical = payload.orientation === "vertical";
           const pageWidth = isVertical ? 63.5 : 85.6;
           const pageHeight = isVertical ? 88.9 : 53.98;
           const padding = 2;
-
           const pdfOrientation = isVertical ? "portrait" : "landscape";
+
           const pdf = new jsPDF({
             orientation: pdfOrientation,
             unit: "mm",
             format: [pageWidth + padding * 2, pageHeight + padding * 2],
           });
 
-          // Front page
-          pdf.addImage(
-            frontCanvas.toDataURL("image/png"),
-            "PNG",
-            padding,
-            padding,
-            pageWidth,
-            pageHeight,
-          );
-
-          // Back page
-          if (backCanvas) {
-            pdf.addPage(
-              [pageWidth + padding * 2, pageHeight + padding * 2],
-              pdfOrientation,
-            );
+          // Use canvas from the DOM elements (Puppeteer runs in real Chromium)
+          const frontCanvas = await domToCanvas(frontEl);
+          if (frontCanvas) {
             pdf.addImage(
-              backCanvas.toDataURL("image/png"),
+              frontCanvas.toDataURL("image/png"),
               "PNG",
               padding,
               padding,
@@ -121,10 +81,26 @@ export default function RenderCard() {
             );
           }
 
-          // Return base64 (strip the data:application/pdf;base64, prefix)
+          if (backEl) {
+            const backCanvas = await domToCanvas(backEl);
+            if (backCanvas) {
+              pdf.addPage(
+                [pageWidth + padding * 2, pageHeight + padding * 2],
+                pdfOrientation,
+              );
+              pdf.addImage(
+                backCanvas.toDataURL("image/png"),
+                "PNG",
+                padding,
+                padding,
+                pageWidth,
+                pageHeight,
+              );
+            }
+          }
+
           const pdfOutput = pdf.output("datauristring");
-          const base64 = pdfOutput.split(",")[1];
-          return base64;
+          return pdfOutput.split(",")[1]; // base64 only
         } catch (err) {
           console.error("[RenderCard] PDF generation error:", err);
           return null;
@@ -160,7 +136,6 @@ export default function RenderCard() {
     signatureUrl = "",
   } = payload;
 
-  // Choose the right template component
   const templateMap = {
     custom: IDCard,
     corporate: CorporateCard,
@@ -169,14 +144,35 @@ export default function RenderCard() {
   };
   const CardComponent = templateMap[template] || IDCard;
 
+  // Compute contrasting background: white for dark cards, dark for light cards
+  const contrastBg = (() => {
+    const bg = cardStyles.bgColor || "#ffffff";
+    // Parse hex to RGB
+    const hex = bg.replace("#", "");
+    const r = parseInt(hex.substring(0, 2), 16) || 255;
+    const g = parseInt(hex.substring(2, 4), 16) || 255;
+    const b = parseInt(hex.substring(4, 6), 16) || 255;
+    // Relative luminance (sRGB)
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.5 ? "#1a1a2e" : "#ffffff";
+  })();
+
   return (
     <div
       data-render-ready={ready ? "true" : "false"}
-      className="min-h-screen bg-white p-4"
+      className="min-h-screen"
       style={{ fontFamily: "'Public Sans', sans-serif" }}
     >
-      {/* FRONT SIDE — captured by Puppeteer via #card-front */}
-      <div id="card-front" ref={frontRef}>
+      {/* FRONT — Puppeteer screenshots this element directly */}
+      <div
+        id="card-front"
+        style={{
+          display: "inline-block",
+          background: contrastBg,
+          padding: "12px",
+          borderRadius: "4px",
+        }}
+      >
         <CardComponent
           data={data}
           showBack={false}
@@ -194,8 +190,17 @@ export default function RenderCard() {
         />
       </div>
 
-      {/* BACK SIDE — captured by Puppeteer via #card-back */}
-      <div id="card-back" ref={backRef} className="mt-8">
+      {/* BACK — Puppeteer screenshots this element directly */}
+      <div
+        id="card-back"
+        style={{
+          display: "inline-block",
+          marginTop: "32px",
+          background: contrastBg,
+          padding: "12px",
+          borderRadius: "4px",
+        }}
+      >
         <CardComponent
           data={data}
           showBack={true}
@@ -214,4 +219,54 @@ export default function RenderCard() {
       </div>
     </div>
   );
+}
+
+/**
+ * Convert a DOM element to a canvas using SVG foreignObject serialization.
+ * Works in Puppeteer's real Chromium (no html2canvas needed).
+ */
+async function domToCanvas(el) {
+  try {
+    const rect = el.getBoundingClientRect();
+    const scale = 2;
+    const canvas = document.createElement("canvas");
+    canvas.width = rect.width * scale;
+    canvas.height = rect.height * scale;
+
+    const serialized = new XMLSerializer().serializeToString(el);
+    const svgData = `
+      <svg xmlns="http://www.w3.org/2000/svg"
+           width="${rect.width * scale}" height="${rect.height * scale}">
+        <foreignObject width="${rect.width}" height="${rect.height}"
+                       style="transform: scale(${scale}); transform-origin: 0 0;">
+          <body xmlns="http://www.w3.org/1999/xhtml"
+                style="margin:0; padding:0;">
+            ${serialized}
+          </body>
+        </foreignObject>
+      </svg>
+    `;
+
+    const svgBlob = new Blob([svgData], {
+      type: "image/svg+xml;charset=utf-8",
+    });
+    const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
+
+    return new Promise((resolve) => {
+      img.onload = () => {
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+        resolve(canvas);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(null);
+      };
+      img.src = url;
+    });
+  } catch {
+    return null;
+  }
 }
