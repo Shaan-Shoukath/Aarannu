@@ -46,6 +46,8 @@ const IDCard = forwardRef(function IDCard(
       role: true,
       address: true,
     },
+    fullGradientBg = false,
+    gradientOpacity = 1,
   },
   ref,
 ) {
@@ -85,105 +87,151 @@ const IDCard = forwardRef(function IDCard(
           className={`relative ${isVertical ? "w-80" : "w-125"} shadow-2xl overflow-hidden ring-1 ring-slate-900/5`}
           style={{
             aspectRatio: isVertical ? "53.98 / 85.6" : "85.6 / 53.98",
-            backgroundColor: cs.bgColor,
+            backgroundColor: fullGradientBg ? "#ffffff" : cs.bgColor,
             fontFamily: cs.fontFamily,
             borderRadius: `${cs.borderRadius}px`,
           }}
         >
-          {/* Geometric Background – triangle sizes adjust dynamically to stay
-              proportional to the photo scale so content never overlaps */}
+          {/* Background – full gradient or corner triangles */}
           <div className="absolute inset-0 z-0">
-            {(() => {
-              // Dynamic gradient size: base 36 (w-36=144px) scaled with photo
-              const scale = (cs.photoScale || 100) / 100;
-              const triSize = Math.round(
-                Math.max(20, 36 * (1 - (scale - 1) * 0.6)),
-              );
-              return (
-                <>
-                  {/* Top-right gradient blob */}
-                  <div
-                    className="absolute -top-14 -right-14 w-56 h-56 rounded-full"
-                    style={{
-                      background: `radial-gradient(circle, ${gc.start}33 0%, ${gc.start}15 40%, transparent 70%)`,
-                    }}
-                  />
-                  {/* Top-right triangle */}
-                  <div
-                    className="absolute top-0 right-0"
-                    style={{
-                      width: `${triSize * 4}px`,
-                      height: `${triSize * 4}px`,
-                    }}
-                  >
-                    <svg
-                      viewBox="0 0 100 100"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
+            {fullGradientBg ? (
+              /* Full vertical gradient background with round decorations */
+              <>
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: `linear-gradient(135deg, ${gc.start}, ${gc.end})`,
+                    opacity: gradientOpacity,
+                  }}
+                />
+                {/* Decorative circles */}
+                <div
+                  className="absolute rounded-full"
+                  style={{
+                    width: '120px',
+                    height: '120px',
+                    top: '-30px',
+                    right: '-30px',
+                    background: `radial-gradient(circle, ${gc.end}66 0%, transparent 70%)`,
+                    opacity: gradientOpacity,
+                  }}
+                />
+                <div
+                  className="absolute rounded-full"
+                  style={{
+                    width: '80px',
+                    height: '80px',
+                    bottom: '10%',
+                    left: '-20px',
+                    background: `radial-gradient(circle, ${gc.start}44 0%, transparent 70%)`,
+                    opacity: gradientOpacity,
+                  }}
+                />
+                <div
+                  className="absolute rounded-full"
+                  style={{
+                    width: '60px',
+                    height: '60px',
+                    top: '40%',
+                    right: '10%',
+                    background: `radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)`,
+                    opacity: gradientOpacity,
+                  }}
+                />
+              </>
+            ) : (
+              (() => {
+                // Dynamic gradient size: base 36 (w-36=144px) scaled with photo
+                const scale = (cs.photoScale || 100) / 100;
+                const triSize = Math.round(
+                  Math.max(20, 36 * (1 - (scale - 1) * 0.6)),
+                );
+                return (
+                  <>
+                    {/* Top-right gradient blob */}
+                    <div
+                      className="absolute -top-14 -right-14 w-56 h-56 rounded-full"
+                      style={{
+                        background: `radial-gradient(circle, ${gc.start}33 0%, ${gc.start}15 40%, transparent 70%)`,
+                      }}
+                    />
+                    {/* Top-right triangle */}
+                    <div
+                      className="absolute top-0 right-0"
+                      style={{
+                        width: `${triSize * 4}px`,
+                        height: `${triSize * 4}px`,
+                      }}
                     >
-                      <defs>
-                        <linearGradient
-                          id={`idcard-grad-front-tr-${uid}`}
-                          x1="0"
-                          y1="0"
-                          x2="100"
-                          y2="100"
-                          gradientUnits="userSpaceOnUse"
-                        >
-                          <stop stopColor={gc.start} />
-                          <stop offset="1" stopColor={gc.end} />
-                        </linearGradient>
-                      </defs>
-                      <path
-                        d="M0 0H100V100L50 50L0 0Z"
-                        fill={`url(#idcard-grad-front-tr-${uid})`}
-                        fillOpacity="0.9"
-                      />
-                    </svg>
-                  </div>
-                  {/* Bottom-left gradient blob */}
-                  <div
-                    className="absolute -bottom-14 -left-14 w-56 h-56 rounded-full"
-                    style={{
-                      background: `radial-gradient(circle, ${gc.end}1a 0%, ${gc.end}0d 40%, transparent 70%)`,
-                    }}
-                  />
-                  {/* Bottom-left triangle */}
-                  <div
-                    className="absolute bottom-0 left-0 rotate-180"
-                    style={{
-                      width: `${triSize * 4}px`,
-                      height: `${triSize * 4}px`,
-                    }}
-                  >
-                    <svg
-                      viewBox="0 0 100 100"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
+                      <svg
+                        viewBox="0 0 100 100"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <defs>
+                          <linearGradient
+                            id={`idcard-grad-front-tr-${uid}`}
+                            x1="0"
+                            y1="0"
+                            x2="100"
+                            y2="100"
+                            gradientUnits="userSpaceOnUse"
+                          >
+                            <stop stopColor={gc.start} />
+                            <stop offset="1" stopColor={gc.end} />
+                          </linearGradient>
+                        </defs>
+                        <path
+                          d="M0 0H100V100L50 50L0 0Z"
+                          fill={`url(#idcard-grad-front-tr-${uid})`}
+                          fillOpacity="0.9"
+                        />
+                      </svg>
+                    </div>
+                    {/* Bottom-left gradient blob */}
+                    <div
+                      className="absolute -bottom-14 -left-14 w-56 h-56 rounded-full"
+                      style={{
+                        background: `radial-gradient(circle, ${gc.end}1a 0%, ${gc.end}0d 40%, transparent 70%)`,
+                      }}
+                    />
+                    {/* Bottom-left triangle */}
+                    <div
+                      className="absolute bottom-0 left-0 rotate-180"
+                      style={{
+                        width: `${triSize * 4}px`,
+                        height: `${triSize * 4}px`,
+                      }}
                     >
-                      <defs>
-                        <linearGradient
-                          id={`idcard-grad-front-bl-${uid}`}
-                          x1="0"
-                          y1="0"
-                          x2="100"
-                          y2="100"
-                          gradientUnits="userSpaceOnUse"
-                        >
-                          <stop stopColor={gc.start} />
-                          <stop offset="1" stopColor={gc.end} />
-                        </linearGradient>
-                      </defs>
-                      <path
-                        d="M0 0H100V100L50 50L0 0Z"
-                        fill={`url(#idcard-grad-front-bl-${uid})`}
-                        fillOpacity="0.8"
-                      />
-                    </svg>
-                  </div>
-                </>
-              );
-            })()}
+                      <svg
+                        viewBox="0 0 100 100"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <defs>
+                          <linearGradient
+                            id={`idcard-grad-front-bl-${uid}`}
+                            x1="0"
+                            y1="0"
+                            x2="100"
+                            y2="100"
+                            gradientUnits="userSpaceOnUse"
+                          >
+                            <stop stopColor={gc.start} />
+                            <stop offset="1" stopColor={gc.end} />
+                          </linearGradient>
+                        </defs>
+                        <path
+                          d="M0 0H100V100L50 50L0 0Z"
+                          fill={`url(#idcard-grad-front-bl-${uid})`}
+                          fillOpacity="0.8"
+                        />
+                      </svg>
+                    </div>
+                  </>
+                );
+              })()
+            )}
           </div>
 
           {/* Hologram overlay – no mix-blend-mode (unsupported by html2canvas) */}
@@ -316,7 +364,9 @@ const IDCard = forwardRef(function IDCard(
                     <h3
                       className="font-bold leading-snug"
                       style={{
-                        color: cs.fontColor,
+                        color: fullGradientBg
+                          ? (gradientOpacity > 0.5 ? "#ffffff" : cs.fontColor)
+                          : cs.fontColor,
                         fontSize: `${cs.nameFontSize || 20}px`,
                       }}
                     >
@@ -325,7 +375,9 @@ const IDCard = forwardRef(function IDCard(
                     <p
                       className="font-semibold uppercase tracking-widest mt-0.5"
                       style={{
-                        color: cs.accentColor,
+                        color: fullGradientBg
+                          ? (gradientOpacity > 0.5 ? "rgba(255,255,255,0.8)" : cs.accentColor)
+                          : cs.accentColor,
                         fontSize: `${(cs.labelFontSize || 9) + 1}px`,
                       }}
                     >
@@ -339,13 +391,13 @@ const IDCard = forwardRef(function IDCard(
                       {fv.dob && (
                         <div>
                           <p
-                            className="text-slate-400 uppercase font-semibold"
+                            className={`uppercase font-semibold ${fullGradientBg ? (gradientOpacity > 0.5 ? "text-white/70" : "text-slate-400") : "text-slate-400"}`}
                             style={{ fontSize: `${cs.labelFontSize || 9}px` }}
                           >
                             Date of Birth
                           </p>
                           <p
-                            className="font-semibold text-slate-700"
+                            className={`font-semibold ${fullGradientBg ? (gradientOpacity > 0.5 ? "text-white" : "text-slate-700") : "text-slate-700"}`}
                             style={{ fontSize: `${cs.valueFontSize || 14}px` }}
                           >
                             {dob}
@@ -355,13 +407,13 @@ const IDCard = forwardRef(function IDCard(
                       {fv.gender && (
                         <div>
                           <p
-                            className="text-slate-400 uppercase font-semibold"
+                            className={`uppercase font-semibold ${fullGradientBg ? (gradientOpacity > 0.5 ? "text-white/70" : "text-slate-400") : "text-slate-400"}`}
                             style={{ fontSize: `${cs.labelFontSize || 9}px` }}
                           >
                             Gender
                           </p>
                           <p
-                            className="font-semibold text-slate-700"
+                            className={`font-semibold ${fullGradientBg ? (gradientOpacity > 0.5 ? "text-white" : "text-slate-700") : "text-slate-700"}`}
                             style={{ fontSize: `${cs.valueFontSize || 14}px` }}
                           >
                             {gender}
@@ -374,13 +426,13 @@ const IDCard = forwardRef(function IDCard(
                         {frontFields.map((f) => (
                           <div key={f.label}>
                             <p
-                              className="text-slate-400 uppercase font-semibold"
+                              className={`uppercase font-semibold ${fullGradientBg ? (gradientOpacity > 0.5 ? "text-white/70" : "text-slate-400") : "text-slate-400"}`}
                               style={{ fontSize: `${cs.labelFontSize || 9}px` }}
                             >
                               {f.label}
                             </p>
                             <p
-                              className="font-semibold text-slate-700"
+                              className={`font-semibold ${fullGradientBg ? (gradientOpacity > 0.5 ? "text-white" : "text-slate-700") : "text-slate-700"}`}
                               style={{
                                 fontSize: `${cs.valueFontSize || 14}px`,
                               }}
@@ -391,26 +443,28 @@ const IDCard = forwardRef(function IDCard(
                         ))}
                       </div>
                     )}
-                  </div>
-                </div>
 
-                {/* ── FOOTER (vertical): Membership ID – pinned bottom center ── */}
-                <div className="text-center py-3 mx-5 mt-auto">
-                  <p
-                    className="text-slate-400 uppercase font-bold tracking-widest mb-0.5"
-                    style={{ fontSize: `${cs.labelFontSize || 9}px` }}
-                  >
-                    Membership ID
-                  </p>
-                  <p
-                    className="font-mono font-bold tracking-widest"
-                    style={{
-                      color: gc.start,
-                      fontSize: `${(cs.valueFontSize || 14) + 2}px`,
-                    }}
-                  >
-                    {id_number}
-                  </p>
+                    {/* ── Membership ID – centered below details ── */}
+                    <div className="text-center pt-2">
+                      <p
+                        className={`uppercase font-bold tracking-widest mb-0.5 ${fullGradientBg ? (gradientOpacity > 0.5 ? "text-white/70" : "text-slate-400") : "text-slate-400"}`}
+                        style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                      >
+                        Membership ID
+                      </p>
+                      <p
+                        className="font-mono font-bold tracking-widest"
+                        style={{
+                          color: fullGradientBg
+                            ? (gradientOpacity > 0.5 ? "#ffffff" : gc.start)
+                            : gc.start,
+                          fontSize: `${(cs.valueFontSize || 14) + 2}px`,
+                        }}
+                      >
+                        {id_number}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </>
             ) : (

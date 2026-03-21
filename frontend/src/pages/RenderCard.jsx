@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import jsPDF from "jspdf";
+import PDFDocument from "pdfkit/js/pdfkit.standalone";
+import blobStream from "blob-stream";
 import IDCard from "../components/IDCard";
 import CorporateCard from "../components/CorporateCard";
 import EventCard from "../components/EventCard";
@@ -19,7 +20,7 @@ import StudentCard from "../components/StudentCard";
  *      used in the preview (IDCard, CorporateCard, etc.).
  *   4. Sets data-render-ready="true" once rendered.
  *   5. Puppeteer screenshots #card-front / #card-back elements directly.
- *   6. For PDF, Puppeteer calls window.__generatePDF() which uses jsPDF
+ *   6. For PDF, Puppeteer calls window.__generatePDF() which uses PDFKit
  *      to combine front+back screenshots into a multi-page PDF.
  *
  * IMPORTANT: #card-front and #card-back use display:inline-block so they
@@ -57,50 +58,66 @@ export default function RenderCard() {
           if (!frontEl) return null;
 
           const isVertical = payload.orientation === "vertical";
-          const pageWidth = isVertical ? 63.5 : 85.6;
-          const pageHeight = isVertical ? 88.9 : 53.98;
-          const padding = 2;
-          const pdfOrientation = isVertical ? "portrait" : "landscape";
+          const MM = 2.83465;
+          const pageWidth = isVertical ? 63.5 * MM : 85.6 * MM;
+          const pageHeight = isVertical ? 88.9 * MM : 53.98 * MM;
+          const padding = 2 * MM;
 
-          const pdf = new jsPDF({
-            orientation: pdfOrientation,
-            unit: "mm",
-            format: [pageWidth + padding * 2, pageHeight + padding * 2],
-          });
+          return new Promise(async (resolveOuter) => {
+            try {
+              const doc = new PDFDocument({
+                size: [pageWidth + padding * 2, pageHeight + padding * 2],
+                margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                autoFirstPage: true,
+              });
 
-          // Use canvas from the DOM elements (Puppeteer runs in real Chromium)
-          const frontCanvas = await domToCanvas(frontEl);
-          if (frontCanvas) {
-            pdf.addImage(
-              frontCanvas.toDataURL("image/png"),
-              "PNG",
-              padding,
-              padding,
-              pageWidth,
-              pageHeight,
-            );
-          }
+              const stream = doc.pipe(blobStream());
 
-          if (backEl) {
-            const backCanvas = await domToCanvas(backEl);
-            if (backCanvas) {
-              pdf.addPage(
-                [pageWidth + padding * 2, pageHeight + padding * 2],
-                pdfOrientation,
-              );
-              pdf.addImage(
-                backCanvas.toDataURL("image/png"),
-                "PNG",
-                padding,
-                padding,
-                pageWidth,
-                pageHeight,
-              );
+              // Use canvas from the DOM elements (Puppeteer runs in real Chromium)
+              const frontCanvas = await domToCanvas(frontEl);
+              if (frontCanvas) {
+                const frontPng = frontCanvas.toDataURL("image/png");
+                doc.image(frontPng, padding, padding, {
+                  width: pageWidth,
+                  height: pageHeight,
+                });
+              }
+
+              if (backEl) {
+                const backCanvas = await domToCanvas(backEl);
+                if (backCanvas) {
+                  doc.addPage({
+                    size: [pageWidth + padding * 2, pageHeight + padding * 2],
+                    margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                  });
+                  const backPng = backCanvas.toDataURL("image/png");
+                  doc.image(backPng, padding, padding, {
+                    width: pageWidth,
+                    height: pageHeight,
+                  });
+                }
+              }
+
+              doc.end();
+
+              stream.on("finish", () => {
+                try {
+                  const blob = stream.toBlob("application/pdf");
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    const base64 = reader.result.split(",")[1];
+                    resolveOuter(base64);
+                  };
+                  reader.readAsDataURL(blob);
+                } catch {
+                  resolveOuter(null);
+                }
+              });
+              stream.on("error", () => resolveOuter(null));
+            } catch {
+              resolveOuter(null);
             }
-          }
-
-          const pdfOutput = pdf.output("datauristring");
-          return pdfOutput.split(",")[1]; // base64 only
+          });
         } catch (err) {
           console.error("[RenderCard] PDF generation error:", err);
           return null;

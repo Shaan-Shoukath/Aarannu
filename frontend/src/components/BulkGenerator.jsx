@@ -3,6 +3,7 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { supabase } from "../lib/supabaseClient";
 import { safeFileName } from "../utils/downloadHelpers";
+import { generateCardPdf } from "../utils/pdfCardRenderer";
 
 /** Build a unique storage path – extracted to avoid React compiler purity check */
 function buildFilePath(userId, memberName) {
@@ -26,7 +27,7 @@ const BATCH_SIZE = 50;
  * For each member:
  *   1. Renders FRONT + BACK off-screen via html2canvas
  *   2. Uploads front PNG to Supabase Storage (for Dashboard / signed URLs)
- *   3. Builds a 2-page PDF (front + back) via jsPDF
+ *   3. Builds a 2-page PDF (front + back) via PDFKit
  * After all members are processed the PDFs are bundled into a
  * single ZIP (JSZip + file-saver) and auto-downloaded.
  * Capped at DAILY_LIMIT uploads per user per day.
@@ -70,7 +71,7 @@ export default function BulkGenerator({
   const [error, setError] = useState("");
   const [currentMember, setCurrentMember] = useState(null);
   const cancelRef = useRef(false);
-  const [downloadFormat, setDownloadFormat] = useState("pdf"); // "pdf" | "jpeg" | "png"
+  const downloadFormat = "pdf"; // always PDF (client-side generation)
 
   // Email step state
   const [emailProgress, setEmailProgress] = useState({
@@ -114,11 +115,10 @@ export default function BulkGenerator({
   };
 
   /**
-   * Build the render payload and call the Puppeteer backend.
-   * Returns a Blob of the requested format.
+   * Build the render payload and generate a PDF client-side.
+   * Returns a Blob of the PDF.
    */
-  const renderViaServer = async (memberData, format = "png") => {
-    const backendUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  const renderCardPdf = async (memberData) => {
     const payload = {
       data: memberData,
       template: templateId,
@@ -131,23 +131,8 @@ export default function BulkGenerator({
       validityText,
       watermark,
       customFields,
-      format,
     };
-
-    const res = await fetch(`${backendUrl}/api/render/card`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(
-        errData.error || `Server render failed (HTTP ${res.status})`,
-      );
-    }
-
-    return res.blob();
+    return generateCardPdf(payload);
   };
 
   /** Check how many cards this user uploaded today */
@@ -256,49 +241,26 @@ export default function BulkGenerator({
         const cardStart = Date.now();
 
         try {
-          // Capture front PNG via Puppeteer API (always needed for cloud upload)
-          setProgress((prev) => ({ ...prev, step: "capture" }));
-          const pngBlob = await renderViaServer(member, "png");
+          // Generate PDF client-side
+          setProgress((prev) => ({ ...prev, step: "pdf" }));
+          const pdfBlob = await renderCardPdf(member);
 
-          // Fetch the user-selected download format for ZIP
-          setProgress((prev) => ({
-            ...prev,
-            step: downloadFormat === "pdf" ? "pdf" : "capture",
-          }));
-          const ext = downloadFormat === "jpeg" ? "jpg" : downloadFormat;
-          let downloadBlob;
-          if (downloadFormat === "png") {
-            downloadBlob = pngBlob; // reuse the PNG we already have
-          } else {
-            downloadBlob = await renderViaServer(member, downloadFormat);
-          }
-          pdfFolder.file(safeFileName(member.name, i, ext), downloadBlob);
+          // Add to ZIP
+          pdfFolder.file(safeFileName(member.name, i, "pdf"), pdfBlob);
 
-          // Always generate PDF blob for email attachments
-          if (downloadFormat === "pdf") {
-            pdfBlobsRef.current[i] = { blob: downloadBlob, member };
-          } else {
-            // Generate PDF separately for email (if email is enabled)
-            if (
-              emailAfterGenerate &&
-              member.sendEmail &&
-              member.email?.trim()
-            ) {
-              const emailPdf = await renderViaServer(member, "pdf");
-              pdfBlobsRef.current[i] = { blob: emailPdf, member };
-            }
-          }
+          // Store for email attachments
+          pdfBlobsRef.current[i] = { blob: pdfBlob, member };
 
           // Attempt cloud upload (non-blocking for local download)
           let cloudWarning = "";
           if (uploadToCloud) {
             try {
               setProgress((prev) => ({ ...prev, step: "upload" }));
-              const filePath = buildFilePath(userId, member.name);
+              const filePath = buildFilePath(userId, member.name).replace('.png', '.pdf');
               const { error: uploadError } = await supabase.storage
                 .from("id-cards")
-                .upload(filePath, pngBlob, {
-                  contentType: "image/png",
+                .upload(filePath, pdfBlob, {
+                  contentType: "application/pdf",
                   upsert: false,
                 });
 

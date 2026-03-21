@@ -3,10 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { downloadBlob } from "../utils/downloadHelpers";
 import BulkGenerator from "../components/BulkGenerator";
-import IDCard from "../components/IDCard";
-import CorporateCard from "../components/CorporateCard";
-import EventCard from "../components/EventCard";
-import StudentCard from "../components/StudentCard";
+import { generateCardPdf, clearImageCache } from "../utils/pdfCardRenderer";
 
 /**
  * Generate Page
@@ -94,13 +91,14 @@ export default function Generate() {
 
   // Preview mode
   const [previewData, setPreviewData] = useState(null);
-  const [showBack, setShowBack] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadStatus, setDownloadStatus] = useState(""); // status message for download
 
-  // Refs for client-side card capture (html2canvas)
-  const cardFrontRef = useRef(null);
-  const cardBackRef = useRef(null);
+  // PDF preview state
+  const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
+  const [pdfBlob, setPdfBlob] = useState(null);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+  const prevBlobUrlRef = useRef(null);
 
   // Gradient colors
   const [gradientStart, setGradientStart] = useState(
@@ -136,6 +134,12 @@ export default function Generate() {
 
   // Card orientation: "horizontal" (landscape CR-80) or "vertical" (portrait)
   const [orientation, setOrientation] = useState("horizontal");
+
+  // Full gradient background toggle (vs corner-only triangles)
+  const [fullGradientBg, setFullGradientBg] = useState(false);
+
+  // Gradient background opacity (0 to 1)
+  const [gradientOpacity, setGradientOpacity] = useState(1);
 
   // Whether to upload generated cards to Supabase cloud storage
   const [uploadToCloud, setUploadToCloud] = useState(true);
@@ -290,12 +294,8 @@ export default function Generate() {
     setMembers((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handlePreview = (data) => {
-    setPreviewData(data);
-  };
-
   /**
-   * Build the render payload that matches what the Puppeteer backend expects.
+   * Build the render payload for the client-side PDF generator.
    */
   const buildRenderPayload = (memberData) => ({
     data: memberData,
@@ -310,7 +310,38 @@ export default function Generate() {
     watermark,
     customFields: customFieldDefs,
     signatureUrl,
+    fullGradientBg,
+    gradientOpacity,
   });
+
+  /**
+   * Generate the PDF preview for the given member data.
+   */
+  const regeneratePreview = async (memberData) => {
+    if (!memberData) return;
+    setPdfGenerating(true);
+    try {
+      const payload = buildRenderPayload(memberData);
+      const blob = await generateCardPdf(payload);
+      // Revoke old URL
+      if (prevBlobUrlRef.current) URL.revokeObjectURL(prevBlobUrlRef.current);
+      const url = URL.createObjectURL(blob);
+      prevBlobUrlRef.current = url;
+      setPdfBlobUrl(url);
+      setPdfBlob(blob);
+    } catch (err) {
+      console.error("PDF preview generation failed:", err);
+    } finally {
+      setPdfGenerating(false);
+    }
+  };
+
+  /** Preview a member — generates the PDF immediately */
+  const handlePreview = (data) => {
+    setPreviewData(data);
+    // Generate PDF right away
+    regeneratePreview(data);
+  };
 
   /**
    * Upload a PNG blob to Supabase Storage and insert a
@@ -344,116 +375,52 @@ export default function Generate() {
     }
   };
 
-  /**
-   * Render a card via the backend Puppeteer service.
-   * Returns a Blob of the requested format.
-   */
-  const renderViaServer = async (memberData, format = "png") => {
-    const backendUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
-    const payload = {
-      data: memberData,
-      template: templateId,
-      orgName,
-      logoUrl: effectiveLogoUrl,
-      cardStyles,
-      gradientColors,
-      fieldVisibility,
-      orientation,
-      validityText,
-      watermark,
-      customFields: customFieldDefs,
-      signatureUrl,
-      format,
+  // Cleanup blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (prevBlobUrlRef.current) URL.revokeObjectURL(prevBlobUrlRef.current);
     };
+  }, []);
 
-    const res = await fetch(`${backendUrl}/api/render/card`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(
-        errData.details ||
-          errData.error ||
-          `Server render failed (HTTP ${res.status})`,
-      );
+  // ── Auto-refresh preview when any style setting changes ────
+  useEffect(() => {
+    if (previewData) {
+      const timer = setTimeout(() => {
+        regeneratePreview(previewData);
+      }, 400); // debounce 400ms
+      return () => clearTimeout(timer);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    gradientStart, gradientEnd, fullGradientBg, gradientOpacity,
+    orientation, cardStyles, fieldVisibility, validityText,
+    customFieldDefs, signatureUrl, effectiveLogoUrl,
+  ]);
 
-    return res.blob();
-  };
-
-  /** Download the previewed card as a 2-page PDF via Puppeteer */
+  /** Download the previewed card as a PDF (client-side) */
   const handleDownloadPdf = async () => {
     if (!previewData) return;
     setDownloading(true);
-    setDownloadStatus("Rendering card on server...");
+    setDownloadStatus("Generating PDF...");
     try {
-      const blob = await renderViaServer(previewData, "pdf");
+      // Use existing blob if available, otherwise regenerate
+      let blob = pdfBlob;
+      if (!blob) {
+        const payload = buildRenderPayload(previewData);
+        blob = await generateCardPdf(payload);
+      }
       const safeName = (previewData.name || "id-card").replace(
         /[^a-zA-Z0-9]/g,
         "_",
       );
       downloadBlob(blob, `${safeName}_ID.pdf`);
 
-      setDownloadStatus("Uploading to cloud...");
-      const pngBlob = await renderViaServer(previewData, "png");
-      await uploadCardToSupabase(pngBlob, previewData.name);
-      setDownloadStatus("Done!");
-    } catch (err) {
-      console.error("PDF download failed:", err);
-      setDownloadStatus(`Error: ${err.message}`);
-    } finally {
-      setDownloading(false);
-      setTimeout(() => setDownloadStatus(""), 3000);
-    }
-  };
-
-  /** Download the card as a JPEG via Puppeteer */
-  const handleDownloadJpeg = async () => {
-    if (!previewData) return;
-    setDownloading(true);
-    setDownloadStatus("Rendering card on server...");
-    try {
-      const blob = await renderViaServer(previewData, "jpeg");
-      const safeName = (previewData.name || "id-card").replace(
-        /[^a-zA-Z0-9]/g,
-        "_",
-      );
-      downloadBlob(blob, `${safeName}_front.jpg`);
-
-      setDownloadStatus("Uploading to cloud...");
-      const pngBlob = await renderViaServer(previewData, "png");
-      await uploadCardToSupabase(pngBlob, previewData.name);
-      setDownloadStatus("Done!");
-    } catch (err) {
-      console.error("JPEG download failed:", err);
-      setDownloadStatus(`Error: ${err.message}`);
-    } finally {
-      setDownloading(false);
-      setTimeout(() => setDownloadStatus(""), 3000);
-    }
-  };
-
-  /** Download the card as a PNG via Puppeteer */
-  const handleDownloadPng = async () => {
-    if (!previewData) return;
-    setDownloading(true);
-    setDownloadStatus("Rendering card on server...");
-    try {
-      const blob = await renderViaServer(previewData, "png");
-      const safeName = (previewData.name || "id-card").replace(
-        /[^a-zA-Z0-9]/g,
-        "_",
-      );
-      downloadBlob(blob, `${safeName}_front.png`);
-
+      // Upload to cloud
       setDownloadStatus("Uploading to cloud...");
       await uploadCardToSupabase(blob, previewData.name);
       setDownloadStatus("Done!");
     } catch (err) {
-      console.error("PNG download failed:", err);
+      console.error("PDF download failed:", err);
       setDownloadStatus(`Error: ${err.message}`);
     } finally {
       setDownloading(false);
@@ -701,35 +668,7 @@ export default function Generate() {
     return rows;
   }
 
-  /** Render the correct card component based on selected template */
-  const renderCard = (data, ref = null, back = showBack, side = undefined) => {
-    const props = {
-      data,
-      showBack: back,
-      orgName,
-      logoUrl: effectiveLogoUrl,
-      ref,
-      customFields: customFieldDefs,
-      watermark,
-      gradientColors,
-      renderSide: side,
-      cardStyles,
-      orientation,
-      validityText,
-      fieldVisibility,
-      signatureUrl,
-    };
-    switch (templateId) {
-      case "corporate":
-        return <CorporateCard {...props} />;
-      case "event":
-        return <EventCard {...props} />;
-      case "student":
-        return <StudentCard {...props} />;
-      default:
-        return <IDCard {...props} />;
-    }
-  };
+  /* Card preview is now rendered as a PDF via pdfCardRenderer */
 
   if (loading) {
     return (
@@ -1325,6 +1264,48 @@ export default function Generate() {
                 These colors control the decorative gradients on your ID cards.
                 Click the color swatch or type a hex code.
               </p>
+
+              {/* Full Gradient Background Toggle */}
+              <div className="flex items-center justify-between mt-3 p-3 rounded-lg border border-slate-200 bg-slate-50/50">
+                <div>
+                  <p className="text-xs font-medium text-slate-700">Full Gradient Background</p>
+                  <p className="text-[10px] text-slate-400">Fill entire card with gradient instead of corner accents</p>
+                </div>
+                <button
+                  onClick={() => setFullGradientBg((v) => !v)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    fullGradientBg ? "bg-pink-500" : "bg-slate-300"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                      fullGradientBg ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Gradient Background Opacity Slider */}
+              {fullGradientBg && (
+                <div className="mt-3 p-3 rounded-lg border border-slate-200 bg-slate-50/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-medium text-slate-700">Background Opacity</p>
+                    <span className="text-xs font-mono text-slate-500">{Math.round(gradientOpacity * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={Math.round(gradientOpacity * 100)}
+                    onChange={(e) => setGradientOpacity(parseInt(e.target.value, 10) / 100)}
+                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-pink-500"
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                    <span>Transparent</span>
+                    <span>Full</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <hr className="border-slate-200" />
@@ -1898,27 +1879,14 @@ export default function Generate() {
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Toolbar */}
           <div className="h-12 border-b border-slate-200 bg-white/50 backdrop-blur-sm flex items-center justify-between px-6">
-            <div className="flex bg-slate-100 rounded-lg p-1">
-              <button
-                onClick={() => setShowBack(false)}
-                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                  !showBack
-                    ? "bg-white text-[#2563EB] shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                Front Only
-              </button>
-              <button
-                onClick={() => setShowBack(true)}
-                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                  showBack
-                    ? "bg-white text-[#2563EB] shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                Both Sides
-              </button>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-slate-600">PDF Preview</span>
+              {pdfGenerating && (
+                <svg className="animate-spin h-4 w-4 text-[#2563EB]" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              )}
             </div>
             <span className="text-xs text-slate-400">
               {members.length} member{members.length !== 1 ? "s" : ""} in queue
@@ -1946,65 +1914,52 @@ export default function Generate() {
                 {previewData && (
                   <div className="space-y-4">
                     <h3 className="text-sm font-semibold text-slate-500 text-center uppercase tracking-wider">
-                      Live Preview
+                      PDF Preview
                     </h3>
-                    <div
-                      ref={cardFrontRef}
-                      className="transform transition-transform hover:scale-[1.02] duration-300"
-                    >
-                      {renderCard(previewData)}
-                    </div>
-                    {/* Hidden back card for PDF capture */}
-                    <div
-                      ref={cardBackRef}
-                      style={{ position: "absolute", left: "-9999px", top: 0 }}
-                    >
-                      {renderCard(previewData, null, true, "back")}
-                    </div>
 
-                    {/* Download buttons */}
+                    {/* PDF Preview Iframe */}
+                    {pdfBlobUrl ? (
+                      <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white">
+                        <iframe
+                          src={pdfBlobUrl}
+                          title="Card PDF Preview"
+                          className="w-full border-0"
+                          style={{ height: orientation === "vertical" ? "550px" : "380px" }}
+                        />
+                      </div>
+                    ) : pdfGenerating ? (
+                      <div className="flex items-center justify-center py-16">
+                        <div className="text-center space-y-3">
+                          <svg className="animate-spin h-8 w-8 text-[#2563EB] mx-auto" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          <p className="text-sm text-slate-500">Generating PDF…</p>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {/* Download PDF button */}
                     <div className="flex items-center justify-center gap-3 flex-wrap">
                       <button
                         onClick={handleDownloadPdf}
-                        disabled={downloading}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                        disabled={downloading || pdfGenerating}
+                        className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 shadow-sm"
                       >
-                        <svg
-                          className="w-3.5 h-3.5"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z" />
                         </svg>
                         {downloading ? "Processing…" : "Download PDF"}
                       </button>
                       <button
-                        onClick={handleDownloadJpeg}
-                        disabled={downloading}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                        onClick={() => regeneratePreview(previewData)}
+                        disabled={pdfGenerating}
+                        className="px-4 py-2.5 border border-slate-300 text-slate-600 text-sm font-medium rounded-lg flex items-center gap-2 hover:bg-slate-50 transition-colors disabled:opacity-50"
                       >
-                        <svg
-                          className="w-3.5 h-3.5"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
-                        {downloading ? "Processing…" : "Download JPEG"}
-                      </button>
-                      <button
-                        onClick={handleDownloadPng}
-                        disabled={downloading}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                      >
-                        <svg
-                          className="w-3.5 h-3.5"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
-                        </svg>
-                        {downloading ? "Processing…" : "Download PNG"}
+                        Refresh
                       </button>
                     </div>
                     {/* Download status bar */}
@@ -2027,8 +1982,7 @@ export default function Generate() {
                       </div>
                     )}
                     <p className="text-[10px] text-slate-400 text-center">
-                      PDF includes front &amp; back · JPEG/PNG downloads the
-                      currently visible side
+                      PDF generated client-side (no server needed) · Front + back pages
                     </p>
                   </div>
                 )}
