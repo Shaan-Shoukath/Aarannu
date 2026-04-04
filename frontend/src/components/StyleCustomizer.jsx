@@ -26,7 +26,7 @@ export default function StyleCustomizer({
                 type="color"
                 value={cardStyles.bgColor}
                 onChange={(e) => handleStyleChange("bgColor", e.target.value)}
-                className="w-full h-8 rounded-lg cursor-pointer flex-shrink-0"
+                className="w-full h-8 rounded-lg cursor-pointer shrink-0"
               />
               <span className="text-[10px] text-slate-500 mt-1 block text-center">Base Bg</span>
             </div>
@@ -35,7 +35,7 @@ export default function StyleCustomizer({
                 type="color"
                 value={cardStyles.fontColor}
                 onChange={(e) => handleStyleChange("fontColor", e.target.value)}
-                className="w-full h-8 rounded-lg cursor-pointer flex-shrink-0"
+                className="w-full h-8 rounded-lg cursor-pointer shrink-0"
               />
               <span className="text-[10px] text-slate-500 mt-1 block text-center">Text</span>
             </div>
@@ -44,7 +44,7 @@ export default function StyleCustomizer({
                 type="color"
                 value={cardStyles.accentColor}
                 onChange={(e) => handleStyleChange("accentColor", e.target.value)}
-                className="w-full h-8 rounded-lg cursor-pointer flex-shrink-0"
+                className="w-full h-8 rounded-lg cursor-pointer shrink-0"
               />
               <span className="text-[10px] text-slate-500 mt-1 block text-center">Accent</span>
             </div>

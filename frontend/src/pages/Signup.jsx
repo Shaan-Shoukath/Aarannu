@@ -389,7 +389,7 @@ export default function Signup() {
       <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-slate-900 items-center justify-center">
         <div className="absolute inset-0 z-0">
           <div className="absolute -top-20 -left-20 w-150 h-150 bg-linear-to-br from-[#1152d4] via-blue-600 to-transparent rounded-full blur-[100px] opacity-60" />
-          <div className="absolute -bottom-20 -right-20 w-150 h-150 bg-linear-to-tl from-[#ef4444] via-red-500 to-transparent rounded-full blur-[100px] opacity-40" />
+          <div className="absolute -bottom-20 -right-20 w-150 h-150 bg-linear-to-tl from-red-500 via-red-500 to-transparent rounded-full blur-[100px] opacity-40" />
           <div
             className="absolute inset-0 bg-slate-900/40 z-10"
             style={{

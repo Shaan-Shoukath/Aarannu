@@ -379,10 +379,10 @@ export default function Login() {
               <div className="flex-1 flex flex-col justify-center space-y-2">
                 <div>
                   <h3 className="text-lg font-bold text-slate-800">
-                    Alex Morgan
+                    Shaan Shoukath
                   </h3>
                   <p className="text-[9px] text-slate-500 font-medium uppercase tracking-wide">
-                    Senior Developer
+                    Inventory Manager
                   </p>
                 </div>
                 <div className="space-y-1">
@@ -391,7 +391,7 @@ export default function Login() {
                       EMP ID
                     </span>
                     <span className="text-[10px] font-mono font-bold text-slate-700">
-                      DEV-8842
+                      INV-2026
                     </span>
                   </div>
                   <div className="flex justify-between border-b border-slate-100 pb-1">
@@ -399,7 +399,7 @@ export default function Login() {
                       Join Date
                     </span>
                     <span className="text-[10px] font-semibold text-slate-700">
-                      Oct 2023
+                      Jan 2026
                     </span>
                   </div>
                 </div>
