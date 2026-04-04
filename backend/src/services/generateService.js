@@ -19,23 +19,47 @@ const BATCH_SIZE = 50; // Process 50 members per batch to prevent memory overloa
  * @param {number} expiryDays
  * @returns {Promise<{cards, error}>}
  */
-const createCardRecords = async (orgId, projectId, expiryDays = 365) => {
+const createCardRecords = async (
+  orgId,
+  projectId,
+  expiryDays = 365,
+  memberIds = null,
+) => {
+  const hasTargetMembers = Array.isArray(memberIds);
+  const targetMemberIds = hasTargetMembers ? memberIds.filter(Boolean) : null;
+
+  if (hasTargetMembers && targetMemberIds.length === 0) {
+    return { cards: [], error: null };
+  }
+
   // 1. Fetch approved members who don't yet have active cards
-  const { data: members, error: mErr } = await supabase
+  let membersQuery = supabase
     .from("project_members")
     .select("id, name, email")
     .eq("project_id", projectId)
     .eq("status", "approved");
 
+  if (targetMemberIds) {
+    membersQuery = membersQuery.in("id", targetMemberIds);
+  }
+
+  const { data: members, error: mErr } = await membersQuery;
+
   if (mErr) return { cards: null, error: mErr };
   if (!members || members.length === 0) return { cards: [], error: null };
 
   // 2. Check which members already have active cards
-  const { data: existingCards } = await supabase
+  let existingCardsQuery = supabase
     .from("generated_cards")
     .select("member_id")
     .eq("project_id", projectId)
     .eq("status", "active");
+
+  if (targetMemberIds) {
+    existingCardsQuery = existingCardsQuery.in("member_id", targetMemberIds);
+  }
+
+  const { data: existingCards } = await existingCardsQuery;
 
   const existingMemberIds = new Set(
     (existingCards || []).map((c) => c.member_id),
@@ -77,6 +101,28 @@ const createCardRecords = async (orgId, projectId, expiryDays = 365) => {
   }
 
   return { cards: allCards, error: null };
+};
+
+/**
+ * Get active cards for a specific list of members in a project.
+ */
+const getActiveCardsForMembers = async (projectId, memberIds = []) => {
+  const targetMemberIds = Array.isArray(memberIds)
+    ? memberIds.filter(Boolean)
+    : [];
+
+  if (targetMemberIds.length === 0) {
+    return { cards: [], error: null };
+  }
+
+  const { data, error } = await supabase
+    .from("generated_cards")
+    .select("id, member_id, project_id, status, expires_at, created_at")
+    .eq("project_id", projectId)
+    .eq("status", "active")
+    .in("member_id", targetMemberIds);
+
+  return { cards: data || [], error };
 };
 
 /**
@@ -139,6 +185,7 @@ module.exports = {
   revokeCard,
   getCardForVerification,
   getCardsByProject,
+  getActiveCardsForMembers,
   cleanupExpiredCards,
   BATCH_SIZE,
 };

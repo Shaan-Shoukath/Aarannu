@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
@@ -428,7 +428,13 @@ export default function RegistrationForm() {
           </button>
         </form>
 
-        <p className="text-center text-slate-600 text-xs mt-4">Powered by Community ID Platform</p>
+        <Link
+          to="/"
+          className="mt-4 inline-flex items-center justify-center gap-2 text-slate-500 hover:text-white transition"
+        >
+          <img src="/aarannu.png" alt="" className="h-7 w-auto" />
+          <span className="text-xs font-medium">Powered by Aarannu</span>
+        </Link>
       </div>
     </div>
   );

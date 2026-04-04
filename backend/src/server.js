@@ -79,6 +79,8 @@ const formFieldRoutes = require("./routes/formFieldRoutes");
 const sheetImportRoutes = require("./routes/sheetImportRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const renderRoutes = require("./routes/renderRoutes");
+const cardRoutes = require("./routes/cardRoutes");
+const eventRoutes = require("./routes/eventRoutes");
 
 // Health check (no auth required)
 app.get("/api/health", (_req, res) => {
@@ -105,6 +107,8 @@ app.use("/api/form-fields", formFieldRoutes);
 app.use("/api/sheets", sheetImportRoutes);
 app.use("/api/uploads", uploadRoutes);
 app.use("/api/render", renderRoutes);
+app.use("/api/cards", cardRoutes);
+app.use("/api/events", eventRoutes);
 
 // 404 catch-all for unknown routes
 app.use((_req, res) => {
@@ -126,12 +130,12 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`
-  ╔════════════════════════════════════════════╗
-  ║  Community ID Backend — Running            ║
-  ║  Port : ${String(PORT).padEnd(35)}║
+  ╔══════════════════════════════════════════════════════════════╗
+  ║  Community ID Backend — Running                              ║
+  ║  Port : ${String(PORT).padEnd(35)}                           ║
   ║  Env  : ${(process.env.NODE_ENV || "development").padEnd(35)}║
-  ║  Time : ${new Date().toLocaleTimeString().padEnd(35)}║
-  ╚════════════════════════════════════════════╝
+  ║  Time : ${new Date().toLocaleTimeString().padEnd(35)}        ║
+  ╚══════════════════════════════════════════════════════════════╝
   `);
 });
 

@@ -1,15 +1,26 @@
 import { useState, useRef, useCallback } from "react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import { utils, writeFileXLSX } from "xlsx";
 import { supabase } from "../lib/supabaseClient";
 import { safeFileName } from "../utils/downloadHelpers";
-import { generateCardPdf } from "../utils/pdfCardRenderer";
+import { renderCardPdfWithBestSupport } from "../utils/cardPdfSupport";
 
 /** Build a unique storage path – extracted to avoid React compiler purity check */
 function buildFilePath(userId, memberName) {
   const timestamp = Date.now();
   const safeName = (memberName || "unnamed").replace(/[^a-zA-Z0-9]/g, "_");
   return `${userId}/${safeName}_${timestamp}.png`;
+}
+
+function buildMemberResultKey(member, rowNumber) {
+  return [
+    member?.projectMemberId || "local",
+    member?.id_number || "no-id",
+    (member?.email || "").trim().toLowerCase(),
+    (member?.name || "").trim().toLowerCase(),
+    rowNumber,
+  ].join("::");
 }
 
 /** Daily upload limit per user (configurable via env) */
@@ -35,6 +46,7 @@ const BATCH_SIZE = 50;
 export default function BulkGenerator({
   members = [],
   userId,
+  projectId = null,
   onComplete,
   templateId = "custom",
   orgName = "",
@@ -80,9 +92,9 @@ export default function BulkGenerator({
     total: 0,
     phase: "", // "Sending" | "Done"
   });
-  // Email results keyed by member name for inline display
+  // Email results keyed by a stable per-member row key
   const [emailResults, setEmailResults] = useState({});
-  // Store PDF blobs keyed by member index for email attachments
+  // Store PDF blobs keyed by a stable per-member row key for email attachments
   const pdfBlobsRef = useRef({});
 
   /**
@@ -132,8 +144,39 @@ export default function BulkGenerator({
       watermark,
       customFields,
     };
-    return generateCardPdf(payload);
+    return renderCardPdfWithBestSupport(payload);
   };
+
+  const persistProjectMembershipIds = useCallback(async (processedMembers) => {
+    if (!projectId || processedMembers.length === 0) return { failed: 0 };
+
+    const updates = processedMembers.filter(
+      (member) => member?.projectMemberId && member?.id_number,
+    );
+    if (updates.length === 0) return { failed: 0 };
+
+    const settled = await Promise.allSettled(
+      updates.map((member) =>
+        supabase
+          .from("project_members")
+          .update({
+            custom_fields: {
+              ...(member.projectCustomFields || {}),
+              membership_id: member.id_number,
+            },
+          })
+          .eq("id", member.projectMemberId),
+      ),
+    );
+
+    const failed = settled.filter(
+      (result) =>
+        result.status === "rejected" ||
+        (result.status === "fulfilled" && result.value?.error),
+    ).length;
+
+    return { failed };
+  }, [projectId]);
 
   /** Check how many cards this user uploaded today */
   const checkDailyUsage = async () => {
@@ -216,6 +259,7 @@ export default function BulkGenerator({
       });
 
       const newResults = [];
+      const successfulMembers = [];
       const zip = new JSZip();
       const pdfFolder = zip.folder("id-cards");
 
@@ -235,8 +279,10 @@ export default function BulkGenerator({
         }
 
         const member = filteredMembers[i];
+        const rowNumber = i + 1;
+        const resultKey = buildMemberResultKey(member, rowNumber);
         setCurrentMember(member);
-        setProgress((prev) => ({ ...prev, current: i + 1, step: "capture" }));
+        setProgress((prev) => ({ ...prev, current: rowNumber, step: "capture" }));
 
         const cardStart = Date.now();
 
@@ -249,7 +295,12 @@ export default function BulkGenerator({
           pdfFolder.file(safeFileName(member.name, i, "pdf"), pdfBlob);
 
           // Store for email attachments
-          pdfBlobsRef.current[i] = { blob: pdfBlob, member };
+          pdfBlobsRef.current[resultKey] = {
+            blob: pdfBlob,
+            member,
+            resultKey,
+            rowNumber,
+          };
 
           // Attempt cloud upload (non-blocking for local download)
           let cloudWarning = "";
@@ -303,14 +354,19 @@ export default function BulkGenerator({
 
           const cardTime = ((Date.now() - cardStart) / 1000).toFixed(1);
           newResults.push({
+            resultKey,
+            rowNumber,
             name: member.name,
             id_number: member.id_number,
             success: true,
             cloudWarning,
           });
+          successfulMembers.push(member);
           setLiveLog((prev) => [
             ...prev,
             {
+              resultKey,
+              rowNumber,
               name: member.name,
               status: cloudWarning ? "warn" : "ok",
               detail: cloudWarning || undefined,
@@ -319,6 +375,8 @@ export default function BulkGenerator({
           ]);
         } catch (err) {
           newResults.push({
+            resultKey,
+            rowNumber,
             name: member.name,
             id_number: member.id_number,
             success: false,
@@ -327,6 +385,8 @@ export default function BulkGenerator({
           setLiveLog((prev) => [
             ...prev,
             {
+              resultKey,
+              rowNumber,
               name: member.name,
               status: "failed",
               detail: err.message,
@@ -343,6 +403,16 @@ export default function BulkGenerator({
 
       // ── 3. Compress & download ZIP of PDFs ──
       const okCount = newResults.filter((r) => r.success).length;
+
+      if (!cancelRef.current && successfulMembers.length > 0) {
+        const { failed } = await persistProjectMembershipIds(successfulMembers);
+        if (failed > 0) {
+          setError(
+            "Cards were generated, but some membership IDs could not be written back to the project export.",
+          );
+        }
+      }
+
       if (okCount > 0 && !cancelRef.current) {
         setProgress((prev) => ({
           ...prev,
@@ -396,8 +466,10 @@ export default function BulkGenerator({
     customFields,
     watermark,
     getFilteredMembers,
+    persistProjectMembershipIds,
     emailAfterGenerate,
     downloadFormat,
+    uploadToCloud,
   ]);
 
   /**
@@ -421,10 +493,16 @@ export default function BulkGenerator({
       phase: "Sending",
     });
     const backendUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const authHeader = session?.access_token
+      ? { Authorization: `Bearer ${session.access_token}` }
+      : {};
 
     for (let i = 0; i < entries.length; i++) {
       if (cancelRef.current) break;
-      const { blob, member } = entries[i];
+      const { blob, member, resultKey } = entries[i];
       setEmailProgress((prev) => ({ ...prev, current: i + 1 }));
 
       try {
@@ -439,7 +517,10 @@ export default function BulkGenerator({
 
         const res = await fetch(`${backendUrl}/api/email/send-card`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...authHeader,
+          },
           body: JSON.stringify({
             recipientEmail: member.email.trim(),
             recipientName: member.name,
@@ -456,12 +537,12 @@ export default function BulkGenerator({
 
         setEmailResults((prev) => ({
           ...prev,
-          [member.name]: { status: "ok", detail: member.email },
+          [resultKey]: { status: "ok", detail: member.email },
         }));
       } catch (err) {
         setEmailResults((prev) => ({
           ...prev,
-          [member.name]: { status: "failed", detail: err.message },
+          [resultKey]: { status: "failed", detail: err.message },
         }));
       }
     }
@@ -691,10 +772,10 @@ export default function BulkGenerator({
                         </span>
                       )}
                       {/* Inline email status */}
-                      {emailResults[entry.name] && (
+                      {entry.resultKey && emailResults[entry.resultKey] && (
                         <span
                           className={`ml-2 flex items-center gap-0.5 ${
-                            emailResults[entry.name].status === "ok"
+                            emailResults[entry.resultKey].status === "ok"
                               ? "text-blue-500"
                               : "text-red-400"
                           }`}
@@ -712,9 +793,9 @@ export default function BulkGenerator({
                               d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                             />
                           </svg>
-                          {emailResults[entry.name].status === "ok"
+                          {emailResults[entry.resultKey].status === "ok"
                             ? "Sent"
-                            : emailResults[entry.name].detail}
+                            : emailResults[entry.resultKey].detail}
                         </span>
                       )}
                     </span>
@@ -758,16 +839,17 @@ export default function BulkGenerator({
                 <>
                   <button
                     onClick={() => {
-                      const header = "Name,ID Number,Status,Email Status";
+                      const header =
+                        "Queue Row,Name,ID Number,Status,Email Status";
                       const rows = results.map((r) => {
-                        const emailSt = emailResults[r.name]
-                          ? emailResults[r.name].status === "ok"
+                        const emailSt = r.resultKey && emailResults[r.resultKey]
+                          ? emailResults[r.resultKey].status === "ok"
                             ? "Sent"
                             : "Failed"
                           : "";
-                        return `"${(r.name || "").replace(/"/g, '""')}","${(r.id_number || "").replace(/"/g, '""')}",${r.success ? "Success" : "Failed"},${emailSt}`;
+                        return `${r.rowNumber || ""},"${(r.name || "").replace(/"/g, '""')}","${(r.id_number || "").replace(/"/g, '""')}",${r.success ? "Success" : "Failed"},${emailSt}`;
                       });
-                      const csv = [header, ...rows].join("\n");
+                      const csv = `\uFEFF${[header, ...rows].join("\n")}`;
                       const blob = new Blob([csv], { type: "text/csv" });
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement("a");
@@ -777,16 +859,39 @@ export default function BulkGenerator({
                       URL.revokeObjectURL(url);
                     }}
                     className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded text-[10px] font-medium transition-colors"
-                    title="Download CSV to import back into Google Sheets"
+                    title="Download the generated membership roster as CSV"
                   >
                     ⬇ Download CSV
                   </button>
                   <button
                     onClick={() => {
-                      const header = "Name\tID Number\tStatus";
+                      const rows = results.map((r) => ({
+                        "Queue Row": r.rowNumber || "",
+                        Name: r.name || "",
+                        "Membership ID": r.id_number || "",
+                        Status: r.success ? "Success" : "Failed",
+                        "Email Status": r.resultKey && emailResults[r.resultKey]
+                          ? emailResults[r.resultKey].status === "ok"
+                            ? "Sent"
+                            : "Failed"
+                          : "",
+                      }));
+                      const ws = utils.json_to_sheet(rows);
+                      const wb = utils.book_new();
+                      utils.book_append_sheet(wb, ws, "Membership IDs");
+                      writeFileXLSX(wb, `generated-ids-${Date.now()}.xlsx`);
+                    }}
+                    className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-[10px] font-medium transition-colors"
+                    title="Download the generated membership roster as Excel"
+                  >
+                    ⬇ Download XLSX
+                  </button>
+                  <button
+                    onClick={() => {
+                      const header = "Queue Row\tName\tID Number\tStatus";
                       const rows = results.map(
                         (r) =>
-                          `${r.name || ""}\t${r.id_number || ""}\t${r.success ? "Success" : "Failed"}`,
+                          `${r.rowNumber || ""}\t${r.name || ""}\t${r.id_number || ""}\t${r.success ? "Success" : "Failed"}`,
                       );
                       const tsv = [header, ...rows].join("\n");
                       navigator.clipboard.writeText(tsv).then(
@@ -809,10 +914,13 @@ export default function BulkGenerator({
           <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto">
             {results.slice(0, 200).map((r, i) => (
               <div
-                key={i}
+                key={r.resultKey || i}
                 className="px-4 py-2.5 flex items-center justify-between text-sm"
               >
                 <div className="flex items-center gap-3">
+                  <span className="text-xs font-semibold text-slate-400 tabular-nums">
+                    #{r.rowNumber || i + 1}
+                  </span>
                   <span className="text-slate-700">{r.name}</span>
                   {r.id_number && (
                     <span className="text-xs font-mono text-slate-400">
@@ -822,10 +930,10 @@ export default function BulkGenerator({
                 </div>
                 <div className="flex items-center gap-3">
                   {/* Email status (inline after generation status) */}
-                  {emailResults[r.name] && (
+                  {r.resultKey && emailResults[r.resultKey] && (
                     <span
                       className={`flex items-center gap-1 text-xs font-medium ${
-                        emailResults[r.name].status === "ok"
+                        emailResults[r.resultKey].status === "ok"
                           ? "text-blue-600"
                           : "text-red-500"
                       }`}
@@ -843,9 +951,9 @@ export default function BulkGenerator({
                           d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                         />
                       </svg>
-                      {emailResults[r.name].status === "ok"
+                      {emailResults[r.resultKey].status === "ok"
                         ? "Emailed"
-                        : emailResults[r.name].detail}
+                        : emailResults[r.resultKey].detail}
                     </span>
                   )}
                   {/* Generation status */}

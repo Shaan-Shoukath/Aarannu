@@ -10,6 +10,25 @@ const orgService = require("../services/orgService");
 const formFieldService = require("../services/formFieldService");
 const { supabase } = require("../config/supabaseClient");
 
+const MEMBERSHIP_ID_KEYS = [
+  "membership_id",
+  "membershipId",
+  "Membership ID",
+  "membership id",
+  "id_number",
+  "id number",
+];
+
+const getMembershipId = (customFields = {}) => {
+  for (const key of MEMBERSHIP_ID_KEYS) {
+    const value = customFields?.[key];
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return "—";
+};
+
 const createProject = async (req, res, next) => {
   try {
     const orgId = req.orgId || req.params.orgId;
@@ -248,10 +267,13 @@ const exportMembersCsv = async (req, res, next) => {
         Object.keys(m.custom_fields).forEach((k) => customKeys.add(k));
       }
     });
-    const sortedCustomKeys = [...customKeys].sort();
+    const sortedCustomKeys = [...customKeys]
+      .filter((key) => !MEMBERSHIP_ID_KEYS.includes(key))
+      .sort();
 
     // Build CSV header
     const baseHeaders = [
+      "row_number",
       "id",
       "name",
       "email",
@@ -259,7 +281,12 @@ const exportMembersCsv = async (req, res, next) => {
       "status",
       "created_at",
     ];
-    const cardHeaders = ["card_id_number", "card_status", "card_expires_at"];
+    const cardHeaders = [
+      "membership_id",
+      "card_qr_id",
+      "card_status",
+      "card_expires_at",
+    ];
     const allHeaders = [...baseHeaders, ...sortedCustomKeys, ...cardHeaders];
     const csvRows = [allHeaders.join(",")];
 
@@ -273,9 +300,10 @@ const exportMembersCsv = async (req, res, next) => {
     };
 
     // Build CSV rows
-    members.forEach((m) => {
+    members.forEach((m, index) => {
       const card = cardByMember.get(m.id);
       const row = [
+        csvSafe(index + 1),
         csvSafe(m.id),
         csvSafe(m.name),
         csvSafe(m.email),
@@ -287,13 +315,14 @@ const exportMembersCsv = async (req, res, next) => {
         row.push(csvSafe(m.custom_fields?.[key]));
       });
       // Append card columns
+      row.push(csvSafe(getMembershipId(m.custom_fields)));
       row.push(csvSafe(card?.qr_data || "—"));
       row.push(csvSafe(card?.status || "—"));
       row.push(csvSafe(card?.expires_at || "—"));
       csvRows.push(row.join(","));
     });
 
-    const csvContent = csvRows.join("\n");
+    const csvContent = `\uFEFF${csvRows.join("\n")}`;
 
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader(

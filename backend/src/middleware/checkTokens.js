@@ -15,8 +15,9 @@
  *   • A function            → checkTokens((req) => req.body.members.length)
  *
  * On failure → 402 Payment Required with { error, code, required, available }.
- * On internal error → fail open (log + continue) so service isn't blocked
- *   by a transient DB issue.
+ * On internal error → fail CLOSED (503 Service Unavailable) to prevent
+ *   unpaid usage. The actual deduction in the controller provides a
+ *   secondary check, but the middleware must not silently grant access.
  */
 
 const { getBalance } = require("../services/tokenService");
@@ -76,12 +77,17 @@ function checkTokens(required = 1) {
       const { balance, error } = await getBalance(userId, orgId);
 
       if (error) {
-        // Fail open — don't block the user on a transient DB error
+        // Fail CLOSED — do not grant free access on transient DB errors.
+        // The controller's own deduction provides a secondary check,
+        // but the middleware must block on uncertainty.
         console.error(
-          "[checkTokens] Balance check failed, allowing through:",
+          "[checkTokens] Balance check failed, blocking request:",
           error,
         );
-        return next();
+        return res.status(503).json({
+          error: "Token service temporarily unavailable. Please retry.",
+          code: "TOKEN_SERVICE_ERROR",
+        });
       }
 
       if (balance < needed) {
@@ -98,9 +104,12 @@ function checkTokens(required = 1) {
       req.tokensRequired = needed;
       next();
     } catch (err) {
-      // Fail open on unexpected errors
-      console.error("[checkTokens] Unexpected error, allowing through:", err);
-      next();
+      // Fail CLOSED on unexpected errors — never grant free access
+      console.error("[checkTokens] Unexpected error, blocking request:", err);
+      return res.status(503).json({
+        error: "Token service temporarily unavailable. Please retry.",
+        code: "TOKEN_SERVICE_ERROR",
+      });
     }
   };
 }

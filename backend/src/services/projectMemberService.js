@@ -7,6 +7,24 @@
 
 const { supabase } = require("../config/supabaseClient");
 
+const DELIVERY_PHASES = new Set([
+  "queued",
+  "generating_pdf",
+  "pdf_ready",
+  "sending_email",
+  "sent",
+  "failed_prepare",
+  "failed_generate",
+  "failed_send",
+  "skipped_no_email",
+]);
+
+const makeError = (message) => {
+  const error = new Error(message);
+  error.message = message;
+  return error;
+};
+
 /**
  * Register a new member to a project (public form submission).
  */
@@ -70,6 +88,56 @@ const getMemberById = async (memberId) => {
     .single();
 };
 
+const buildDeliveryPayload = (updates = {}, current = null) => {
+  const payload = {};
+
+  if (Object.prototype.hasOwnProperty.call(updates, "phase")) {
+    const { phase } = updates;
+    if (phase !== null && phase !== undefined && !DELIVERY_PHASES.has(phase)) {
+      return {
+        payload: null,
+        error: makeError(`Invalid delivery phase: ${phase}`),
+      };
+    }
+    payload.delivery_phase = phase || null;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(updates, "error")) {
+    payload.delivery_error = updates.error || "";
+  } else if (updates.clearError) {
+    payload.delivery_error = "";
+  }
+
+  if (Object.prototype.hasOwnProperty.call(updates, "cardId")) {
+    payload.delivery_card_id = updates.cardId || null;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(updates, "verificationUrl")) {
+    payload.delivery_verification_url = updates.verificationUrl || "";
+  }
+
+  if (Object.prototype.hasOwnProperty.call(updates, "messageId")) {
+    payload.delivery_message_id = updates.messageId || "";
+  }
+
+  if (Object.prototype.hasOwnProperty.call(updates, "pdfGeneratedAt")) {
+    payload.pdf_generated_at = updates.pdfGeneratedAt || null;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(updates, "emailSentAt")) {
+    payload.email_sent_at = updates.emailSentAt || null;
+  }
+
+  if (updates.incrementAttempt) {
+    payload.delivery_attempt_count =
+      Number(current?.delivery_attempt_count || 0) + 1;
+  }
+
+  payload.delivery_updated_at = new Date().toISOString();
+
+  return { payload, error: null };
+};
+
 /**
  * Approve a project member.
  */
@@ -106,6 +174,29 @@ const bulkApproveMembers = async (memberIds) => {
 };
 
 /**
+ * Update approval-delivery progress for a member.
+ */
+const updateMemberDelivery = async (memberId, updates = {}) => {
+  let current = null;
+
+  if (updates.incrementAttempt) {
+    const { data, error } = await getMemberById(memberId);
+    if (error) return { data: null, error };
+    current = data;
+  }
+
+  const { payload, error } = buildDeliveryPayload(updates, current);
+  if (error) return { data: null, error };
+
+  return supabase
+    .from("project_members")
+    .update(payload)
+    .eq("id", memberId)
+    .select()
+    .single();
+};
+
+/**
  * Delete a project member.
  */
 const deleteMember = async (memberId) => {
@@ -113,6 +204,7 @@ const deleteMember = async (memberId) => {
 };
 
 module.exports = {
+  DELIVERY_PHASES,
   registerMember,
   bulkInsertMembers,
   getMembersByProject,
@@ -120,5 +212,6 @@ module.exports = {
   approveMember,
   rejectMember,
   bulkApproveMembers,
+  updateMemberDelivery,
   deleteMember,
 };

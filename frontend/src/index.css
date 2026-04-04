@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Malayalam:wght@400;500;600;700&family=Public+Sans:wght@300;400;500;600;700&display=swap");
 @import "tailwindcss";
 
 /*
@@ -314,6 +314,7 @@ body {
   margin: 0;
   font-family:
     "Public Sans",
+    "Noto Sans Malayalam",
     system-ui,
     -apple-system,
     sans-serif;

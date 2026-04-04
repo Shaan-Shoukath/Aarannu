@@ -1,4 +1,4 @@
-# Logs
+# ─── Logs ────────────────────────────────────────────────────
 logs
 *.log
 npm-debug.log*
@@ -7,13 +7,37 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# ─── Dependencies ────────────────────────────────────────────
 node_modules
+
+# ─── Build output ────────────────────────────────────────────
 dist
 dist-ssr
-*.local
-.env
+**/dist/
 
-# Editor directories and files
+# ─── Environment variables (CRITICAL — never commit secrets) ─
+.env
+.env.*
+*.env.local
+*.env.*.local
+*.env.development.local
+*.env.test.local
+*.env.production.local
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
+
+# ─── Sensitive files ─────────────────────────────────────────
+pass.md
+*.pem
+*.key
+
+# ─── Vite cache ──────────────────────────────────────────────
+.vite/
+**/.vite/
+
+# ─── Editor directories and files ────────────────────────────
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -24,7 +48,6 @@ dist-ssr
 *.sln
 *.sw?
 
-pass.md
+# ─── Interview prep (private study materials) ─────────────────
+interview-prep-ara/
 
-# Backend
-backend/.env

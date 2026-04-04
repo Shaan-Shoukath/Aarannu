@@ -1,6 +1,12 @@
 import { forwardRef, useId } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { proxyImageUrl } from "../lib/proxyImage";
+import {
+  DEFAULT_CARD_FONT_FAMILY,
+  getAdaptiveIdFontFamily,
+  uppercaseLatinOnly,
+  withMalayalamFontFallback,
+} from "../utils/textSupport";
 
 /**
  * IDCard Component
@@ -33,7 +39,7 @@ const IDCard = forwardRef(function IDCard(
     cardStyles = {
       bgColor: "#ffffff",
       fontColor: "#1e293b",
-      fontFamily: "'Public Sans', sans-serif",
+      fontFamily: DEFAULT_CARD_FONT_FAMILY,
       accentColor: "#64748b",
       borderRadius: 12,
     },
@@ -47,7 +53,7 @@ const IDCard = forwardRef(function IDCard(
       address: true,
     },
     fullGradientBg = false,
-    gradientOpacity = 1,
+    gradientOpacity = 0.55,
   },
   ref,
 ) {
@@ -72,6 +78,27 @@ const IDCard = forwardRef(function IDCard(
   const isVertical = orientation === "vertical";
   const cs = cardStyles;
   const fv = fieldVisibility;
+  const resolvedFontFamily = withMalayalamFontFallback(
+    cs.fontFamily || DEFAULT_CARD_FONT_FAMILY,
+  );
+  const primaryTextColor = "#111111";
+  const secondaryTextColor = "#1a1a1a";
+  const labelTextColor = "#2f2f2f";
+  const mutedTextColor = "#3f3f46";
+  const orgDisplayName = uppercaseLatinOnly(orgName || "Community ID");
+  const displayName = uppercaseLatinOnly(name);
+  const displayRole = uppercaseLatinOnly(role);
+  const displayDob = uppercaseLatinOnly(dob);
+  const displayGender = uppercaseLatinOnly(gender);
+  const displayMembershipId = uppercaseLatinOnly(id_number);
+  const displayAddress = uppercaseLatinOnly(address || "Address not provided");
+  const displayValidityText = uppercaseLatinOnly(validityText);
+  const getCustomFieldDisplayValue = (label) =>
+    uppercaseLatinOnly(customValues[label] || "—");
+  const membershipIdFontFamily = getAdaptiveIdFontFamily(
+    displayMembershipId,
+    resolvedFontFamily,
+  );
 
   // Unique suffix for SVG gradient IDs – prevents collisions when
   // multiple card instances exist in the DOM simultaneously
@@ -88,7 +115,7 @@ const IDCard = forwardRef(function IDCard(
           style={{
             aspectRatio: isVertical ? "53.98 / 85.6" : "85.6 / 53.98",
             backgroundColor: fullGradientBg ? "#ffffff" : cs.bgColor,
-            fontFamily: cs.fontFamily,
+            fontFamily: resolvedFontFamily,
             borderRadius: `${cs.borderRadius}px`,
           }}
         >
@@ -299,13 +326,19 @@ const IDCard = forwardRef(function IDCard(
               )}
               <div className="flex flex-col leading-tight">
                 <span
-                  className="text-sm font-bold uppercase tracking-wide"
-                  style={{ color: gc.start }}
+                  className="text-sm font-bold"
+                  style={{
+                    color: primaryTextColor,
+                    fontFamily: resolvedFontFamily,
+                  }}
                 >
-                  {orgName || "Community ID"}
+                  {orgDisplayName}
                 </span>
-                <span className="text-[9px] text-slate-400 font-medium tracking-wide">
-                  Digital Identity Card
+                <span
+                  className="text-[9px] font-medium tracking-wide"
+                  style={{ color: mutedTextColor }}
+                >
+                  DIGITAL IDENTITY CARD
                 </span>
               </div>
             </div>
@@ -360,63 +393,94 @@ const IDCard = forwardRef(function IDCard(
                   })()}
 
                   {/* Name & Role – centered */}
-                  <div className="text-center">
+                  <div className="text-center space-y-1">
                     <h3
                       className="font-bold leading-snug"
                       style={{
-                        color: fullGradientBg
-                          ? (gradientOpacity > 0.5 ? "#ffffff" : cs.fontColor)
-                          : cs.fontColor,
+                        color: primaryTextColor,
                         fontSize: `${cs.nameFontSize || 20}px`,
                       }}
                     >
-                      {name}
+                      {displayName}
                     </h3>
-                    <p
-                      className="font-semibold uppercase tracking-widest mt-0.5"
-                      style={{
-                        color: fullGradientBg
-                          ? (gradientOpacity > 0.5 ? "rgba(255,255,255,0.8)" : cs.accentColor)
-                          : cs.accentColor,
-                        fontSize: `${(cs.labelFontSize || 9) + 1}px`,
-                      }}
-                    >
-                      {role}
-                    </p>
+                    {fv.role !== false && template !== "event" && (
+                      <p
+                        className="font-semibold uppercase tracking-widest"
+                        style={{
+                          color: secondaryTextColor,
+                          fontSize: `${(cs.labelFontSize || 9) + 1}px`,
+                        }}
+                      >
+                        {displayRole}
+                      </p>
+                    )}
                   </div>
 
                   {/* Details – centered 2-col grid */}
-                  <div className="w-full max-w-60 space-y-2">
+                  <div className="w-full max-w-60 space-y-3">
+                    <div className="text-center pt-1">
+                      <p
+                        className="uppercase font-bold tracking-[0.28em] mb-1"
+                        style={{
+                          color: labelTextColor,
+                          fontSize: `${cs.labelFontSize || 9}px`,
+                        }}
+                      >
+                        Membership ID
+                      </p>
+                      <p
+                        className="font-black tracking-[0.18em]"
+                        style={{
+                          color: primaryTextColor,
+                          fontSize: `${(cs.valueFontSize || 14) + 3}px`,
+                          fontFamily: membershipIdFontFamily,
+                        }}
+                      >
+                        {displayMembershipId}
+                      </p>
+                    </div>
                     <div className="grid grid-cols-2 gap-y-1.5 gap-x-4 text-center">
                       {fv.dob && (
                         <div>
                           <p
-                            className={`uppercase font-semibold ${fullGradientBg ? (gradientOpacity > 0.5 ? "text-white/70" : "text-slate-400") : "text-slate-400"}`}
-                            style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                            className="uppercase font-semibold"
+                            style={{
+                              color: labelTextColor,
+                              fontSize: `${cs.labelFontSize || 9}px`,
+                            }}
                           >
                             Date of Birth
                           </p>
                           <p
-                            className={`font-semibold ${fullGradientBg ? (gradientOpacity > 0.5 ? "text-white" : "text-slate-700") : "text-slate-700"}`}
-                            style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                            className="font-semibold"
+                            style={{
+                              color: secondaryTextColor,
+                              fontSize: `${cs.valueFontSize || 14}px`,
+                            }}
                           >
-                            {dob}
+                            {displayDob}
                           </p>
                         </div>
                       )}
                       {fv.gender && (
                         <div>
                           <p
-                            className={`uppercase font-semibold ${fullGradientBg ? (gradientOpacity > 0.5 ? "text-white/70" : "text-slate-400") : "text-slate-400"}`}
-                            style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                            className="uppercase font-semibold"
+                            style={{
+                              color: labelTextColor,
+                              fontSize: `${cs.labelFontSize || 9}px`,
+                            }}
                           >
                             Gender
                           </p>
                           <p
-                            className={`font-semibold ${fullGradientBg ? (gradientOpacity > 0.5 ? "text-white" : "text-slate-700") : "text-slate-700"}`}
-                            style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                            className="font-semibold"
+                            style={{
+                              color: secondaryTextColor,
+                              fontSize: `${cs.valueFontSize || 14}px`,
+                            }}
                           >
-                            {gender}
+                            {displayGender}
                           </p>
                         </div>
                       )}
@@ -426,44 +490,28 @@ const IDCard = forwardRef(function IDCard(
                         {frontFields.map((f) => (
                           <div key={f.label}>
                             <p
-                              className={`uppercase font-semibold ${fullGradientBg ? (gradientOpacity > 0.5 ? "text-white/70" : "text-slate-400") : "text-slate-400"}`}
-                              style={{ fontSize: `${cs.labelFontSize || 9}px` }}
+                              className="uppercase font-semibold"
+                              style={{
+                                color: labelTextColor,
+                                fontSize: `${cs.labelFontSize || 9}px`,
+                              }}
                             >
-                              {f.label}
+                              {uppercaseLatinOnly(f.label)}
                             </p>
                             <p
-                              className={`font-semibold ${fullGradientBg ? (gradientOpacity > 0.5 ? "text-white" : "text-slate-700") : "text-slate-700"}`}
+                              className="font-semibold"
                               style={{
+                                color: secondaryTextColor,
                                 fontSize: `${cs.valueFontSize || 14}px`,
                               }}
                             >
-                              {customValues[f.label] || "—"}
+                              {getCustomFieldDisplayValue(f.label)}
                             </p>
                           </div>
                         ))}
                       </div>
                     )}
 
-                    {/* ── Membership ID – centered below details ── */}
-                    <div className="text-center pt-2">
-                      <p
-                        className={`uppercase font-bold tracking-widest mb-0.5 ${fullGradientBg ? (gradientOpacity > 0.5 ? "text-white/70" : "text-slate-400") : "text-slate-400"}`}
-                        style={{ fontSize: `${cs.labelFontSize || 9}px` }}
-                      >
-                        Membership ID
-                      </p>
-                      <p
-                        className="font-mono font-bold tracking-widest"
-                        style={{
-                          color: fullGradientBg
-                            ? (gradientOpacity > 0.5 ? "#ffffff" : gc.start)
-                            : gc.start,
-                          fontSize: `${(cs.valueFontSize || 14) + 2}px`,
-                        }}
-                      >
-                        {id_number}
-                      </p>
-                    </div>
                   </div>
                 </div>
               </>
@@ -511,86 +559,143 @@ const IDCard = forwardRef(function IDCard(
                   })()}
 
                   {/* Details – stacked vertically on the right */}
-                  <div className="flex-1 flex flex-col justify-center space-y-1.5 min-w-0">
-                    <h3
-                      className="font-bold leading-snug"
-                      style={{
-                        color: cs.fontColor,
-                        fontSize: `${cs.nameFontSize || 20}px`,
-                      }}
-                    >
-                      {name}
-                    </h3>
-                    {fv.dob && (
+                  <div className="flex-1 flex flex-col justify-center gap-3 min-w-0">
+                    <div className="space-y-1 min-w-0">
                       <p
-                        className="text-slate-700"
-                        style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                        className="uppercase font-semibold tracking-[0.24em]"
+                        style={{
+                          color: labelTextColor,
+                          fontSize: `${cs.labelFontSize || 9}px`,
+                        }}
                       >
-                        <span
-                          className="text-slate-400 uppercase font-semibold"
-                          style={{ fontSize: `${cs.labelFontSize || 9}px` }}
-                        >
-                          Date of Birth:{" "}
-                        </span>
-                        <span className="font-semibold">{dob}</span>
+                        Full Name
                       </p>
+                      <h3
+                        className="font-bold leading-snug break-words"
+                        style={{
+                          color: primaryTextColor,
+                          fontSize: `${cs.nameFontSize || 20}px`,
+                        }}
+                      >
+                        {displayName}
+                      </h3>
+                      {fv.role !== false && template !== "event" && (
+                        <div>
+                          <p
+                            className="uppercase font-semibold tracking-[0.24em]"
+                            style={{
+                              color: labelTextColor,
+                              fontSize: `${cs.labelFontSize || 9}px`,
+                            }}
+                          >
+                            Role
+                          </p>
+                          <p
+                            className="font-semibold"
+                            style={{
+                              color: secondaryTextColor,
+                              fontSize: `${cs.valueFontSize || 14}px`,
+                            }}
+                          >
+                            {displayRole}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-center py-1">
+                      <p
+                        className="uppercase font-bold tracking-[0.28em] mb-1"
+                        style={{
+                          color: labelTextColor,
+                          fontSize: `${cs.labelFontSize || 9}px`,
+                        }}
+                      >
+                        Membership ID
+                      </p>
+                      <p
+                        className="font-black tracking-[0.18em]"
+                        style={{
+                          color: primaryTextColor,
+                          fontSize: `${(cs.valueFontSize || 14) + 5}px`,
+                          fontFamily: membershipIdFontFamily,
+                        }}
+                      >
+                        {displayMembershipId}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-y-2 gap-x-4">
+                    {fv.dob && (
+                      <div>
+                        <p
+                          className="uppercase font-semibold"
+                          style={{
+                            color: labelTextColor,
+                            fontSize: `${cs.labelFontSize || 9}px`,
+                          }}
+                        >
+                          Date of Birth
+                        </p>
+                        <p
+                          className="font-semibold"
+                          style={{
+                            color: secondaryTextColor,
+                            fontSize: `${cs.valueFontSize || 14}px`,
+                          }}
+                        >
+                          {displayDob}
+                        </p>
+                      </div>
                     )}
                     {fv.gender && (
-                      <p
-                        className="text-slate-700"
-                        style={{ fontSize: `${cs.valueFontSize || 14}px` }}
-                      >
-                        <span
-                          className="text-slate-400 uppercase font-semibold"
-                          style={{ fontSize: `${cs.labelFontSize || 9}px` }}
-                        >
-                          Gender:{" "}
-                        </span>
-                        <span className="font-semibold uppercase">
-                          {gender}
-                        </span>
-                      </p>
-                    )}
-                    {frontFields.length > 0 &&
-                      frontFields.map((f) => (
+                      <div>
                         <p
-                          key={f.label}
-                          className="text-slate-700"
-                          style={{ fontSize: `${cs.valueFontSize || 14}px` }}
+                          className="uppercase font-semibold"
+                          style={{
+                            color: labelTextColor,
+                            fontSize: `${cs.labelFontSize || 9}px`,
+                          }}
                         >
-                          <span
-                            className="text-slate-400 uppercase font-semibold"
-                            style={{ fontSize: `${cs.labelFontSize || 9}px` }}
-                          >
-                            {f.label}:{" "}
-                          </span>
-                          <span className="font-semibold">
-                            {customValues[f.label] || "—"}
-                          </span>
+                          Gender
                         </p>
+                        <p
+                          className="font-semibold"
+                          style={{
+                            color: secondaryTextColor,
+                            fontSize: `${cs.valueFontSize || 14}px`,
+                          }}
+                        >
+                          {displayGender}
+                        </p>
+                      </div>
+                    )}
+                    {frontFields.map((f) => (
+                        <div key={f.label}>
+                          <p
+                            className="uppercase font-semibold"
+                            style={{
+                              color: labelTextColor,
+                              fontSize: `${cs.labelFontSize || 9}px`,
+                            }}
+                          >
+                            {uppercaseLatinOnly(f.label)}
+                          </p>
+                          <p
+                            className="font-semibold"
+                            style={{
+                              color: secondaryTextColor,
+                              fontSize: `${cs.valueFontSize || 14}px`,
+                            }}
+                          >
+                            {getCustomFieldDisplayValue(f.label)}
+                          </p>
+                        </div>
                       ))}
                   </div>
                 </div>
 
-                {/* ── FOOTER (horizontal): Membership ID – bottom center ── */}
-                <div className="text-center mt-auto py-3 mx-6">
-                  <p
-                    className="text-slate-400 uppercase font-bold tracking-widest mb-0.5"
-                    style={{ fontSize: `${cs.labelFontSize || 9}px` }}
-                  >
-                    Membership ID
-                  </p>
-                  <p
-                    className="font-mono font-bold tracking-widest"
-                    style={{
-                      color: gc.start,
-                      fontSize: `${(cs.valueFontSize || 14) + 6}px`,
-                    }}
-                  >
-                    {id_number}
-                  </p>
-                </div>
-              </>
+              </div>
+            </>
             )}
           </div>
         </div>
@@ -605,7 +710,7 @@ const IDCard = forwardRef(function IDCard(
           style={{
             aspectRatio: isVertical ? "53.98 / 85.6" : "85.6 / 53.98",
             backgroundColor: cs.bgColor,
-            fontFamily: cs.fontFamily,
+            fontFamily: resolvedFontFamily,
             borderRadius: `${cs.borderRadius}px`,
           }}
         >
@@ -653,20 +758,32 @@ const IDCard = forwardRef(function IDCard(
               <div className={`${isVertical ? "" : "flex-1"} space-y-4`}>
                 {fv.address && (
                   <div>
-                    <h4 className="text-xs font-bold text-slate-800 mb-1 uppercase tracking-wide border-b border-[#2563EB]/20 pb-1 inline-block">
+                    <h4
+                      className="text-xs font-bold mb-1 uppercase tracking-wide border-b pb-1 inline-block"
+                      style={{ color: primaryTextColor, borderColor: `${gc.start}33` }}
+                    >
                       Address
                     </h4>
-                    <p className="text-[11px] leading-relaxed text-slate-600 font-medium">
-                      {address || "Address not provided"}
+                    <p
+                      className="text-[11px] leading-relaxed font-medium"
+                      style={{ color: secondaryTextColor }}
+                    >
+                      {displayAddress}
                     </p>
                   </div>
                 )}
                 <div className="pt-2">
-                  <h4 className="text-xs font-bold text-slate-800 mb-1 uppercase tracking-wide border-b border-[#2563EB]/20 pb-1 inline-block">
+                  <h4
+                    className="text-xs font-bold mb-1 uppercase tracking-wide border-b pb-1 inline-block"
+                    style={{ color: primaryTextColor, borderColor: `${gc.start}33` }}
+                  >
                     Issuing Authority
                   </h4>
-                  <p className="text-[11px] leading-relaxed text-slate-600 font-medium">
-                    {orgName || "Community ID Platform"}
+                  <p
+                    className="text-[11px] leading-relaxed font-medium"
+                    style={{ color: secondaryTextColor }}
+                  >
+                    {uppercaseLatinOnly(orgName || "Community ID Platform")}
                   </p>
                 </div>
                 {/* Back custom fields */}
@@ -674,11 +791,17 @@ const IDCard = forwardRef(function IDCard(
                   <div className="grid grid-cols-2 gap-y-1 gap-x-4 pt-1">
                     {backFields.map((f) => (
                       <div key={f.label}>
-                        <p className="text-[8px] text-slate-400 uppercase font-semibold">
-                          {f.label}
+                        <p
+                          className="text-[8px] uppercase font-semibold"
+                          style={{ color: labelTextColor }}
+                        >
+                          {uppercaseLatinOnly(f.label)}
                         </p>
-                        <p className="text-[11px] font-semibold text-slate-700">
-                          {customValues[f.label] || "—"}
+                        <p
+                          className="text-[11px] font-semibold"
+                          style={{ color: secondaryTextColor }}
+                        >
+                          {getCustomFieldDisplayValue(f.label)}
                         </p>
                       </div>
                     ))}
@@ -693,16 +816,23 @@ const IDCard = forwardRef(function IDCard(
                 <div className="w-28 h-28 bg-white p-2 rounded-lg border border-slate-200 shadow-sm flex items-center justify-center">
                   <QRCodeCanvas value={id_number} size={96} level="M" />
                 </div>
-                <span className="text-[9px] text-slate-400 mt-2 text-center">
-                  Scan for verification
+                <span
+                  className="text-[9px] mt-2 text-center"
+                  style={{ color: mutedTextColor }}
+                >
+                  SCAN FOR VERIFICATION
                 </span>
               </div>
             </div>
 
             {/* Footer */}
             <div className="h-6 border-t border-slate-100 flex items-center justify-between mt-auto">
-              <span className="text-[8px] text-slate-400">aarannu</span>
-              <span className="text-[8px] text-slate-400">{validityText}</span>
+              <span className="text-[8px]" style={{ color: mutedTextColor }}>
+                {uppercaseLatinOnly(orgName || "aarannu")}
+              </span>
+              <span className="text-[8px]" style={{ color: mutedTextColor }}>
+                {displayValidityText}
+              </span>
             </div>
           </div>
 

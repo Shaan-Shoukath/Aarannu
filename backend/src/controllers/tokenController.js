@@ -22,6 +22,7 @@ const getBalance = async (req, res, next) => {
   try {
     const userId = req.user.id || req.user.sub;
     const orgId = req.query.orgId || null;
+    const contactEmail = process.env.CONTACT_EMAIL || "";
 
     // Admin users get unlimited balance
     if (isAdmin(userId)) {
@@ -31,6 +32,7 @@ const getBalance = async (req, res, next) => {
         lifetime_used: 0,
         wallet_id: null,
         is_unlimited: true,
+        contact_email: contactEmail,
       });
     }
 
@@ -46,6 +48,7 @@ const getBalance = async (req, res, next) => {
       lifetime_used: wallet?.lifetime_used || 0,
       wallet_id: wallet?.id,
       is_unlimited: false,
+      contact_email: contactEmail,
     });
   } catch (err) {
     next(err);
@@ -105,77 +108,6 @@ const getAnalytics = async (req, res, next) => {
 };
 
 /* ----------------------------------------------------------------
-   GET /api/tokens/packages
-   ---------------------------------------------------------------- */
-const getPackages = async (_req, res, next) => {
-  try {
-    const { packages, error } = await tokenService.getPackages();
-    if (error) return res.status(500).json({ error: error.message });
-
-    res.json({ packages });
-  } catch (err) {
-    next(err);
-  }
-};
-
-/* ----------------------------------------------------------------
-   POST /api/tokens/purchase
-   Body: { packageId: UUID }
-   Design-phase placeholder — returns a mock payment intent.
-   In production, integrate Stripe / Razorpay / LemonSqueezy here.
-   ---------------------------------------------------------------- */
-const purchaseTokens = async (req, res, next) => {
-  try {
-    const userId = req.user.id || req.user.sub;
-    const { packageId } = req.body;
-    const orgId = req.body.orgId || null;
-
-    if (!packageId) {
-      return res.status(400).json({ error: "packageId is required" });
-    }
-
-    // Fetch the package details
-    const { packages, error: pkgErr } = await tokenService.getPackages();
-    if (pkgErr) return res.status(500).json({ error: pkgErr.message });
-
-    const pkg = (packages || []).find((p) => p.id === packageId);
-    if (!pkg) {
-      return res.status(404).json({ error: "Package not found or inactive" });
-    }
-
-    // ── In production, create a Stripe Checkout Session here ──
-    // For now, directly credit the tokens (simulating completed payment)
-    const { wallet, transaction, error } = await tokenService.addTokens(
-      userId,
-      pkg.tokens,
-      "purchase",
-      `Purchased "${pkg.name}" package (${pkg.tokens} tokens)`,
-      `pkg_${pkg.id}`,
-      orgId,
-    );
-
-    if (error) return res.status(500).json({ error: error.message });
-
-    res.status(201).json({
-      message: `${pkg.tokens} tokens added successfully`,
-      new_balance: wallet.balance,
-      transaction_id: transaction?.id,
-      package: {
-        name: pkg.name,
-        tokens: pkg.tokens,
-        price_cents: pkg.price_cents,
-        currency: pkg.currency,
-      },
-      // In production, return: payment_url, session_id, client_secret
-      _note:
-        "Payment gateway integration pending – tokens credited directly for now",
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-/* ----------------------------------------------------------------
    POST /api/tokens/add   (admin-only manual credit)
    Body: { userId, amount, description, type? }
    ---------------------------------------------------------------- */
@@ -225,7 +157,5 @@ module.exports = {
   getBalance,
   getTransactions,
   getAnalytics,
-  getPackages,
-  purchaseTokens,
   addTokensManual,
 };

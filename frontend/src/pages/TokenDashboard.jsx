@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import BrandLogoLink from "../components/BrandLogoLink";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -441,9 +442,10 @@ export default function TokenDashboard() {
       <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#2563EB] rounded-lg flex items-center justify-center text-white font-bold text-sm">
-              A
-            </div>
+            <BrandLogoLink
+              imageClassName="h-9 w-auto"
+              showText={false}
+            />
             <div>
               <h1 className="text-xl font-bold text-slate-900">Tokens</h1>
               <p className="text-sm text-slate-500">
@@ -466,10 +468,10 @@ export default function TokenDashboard() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M12 4v16m8-8H4"
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                 />
               </svg>
-              Buy Tokens
+              Get More Tokens
             </button>
             <button
               onClick={() => navigate("/dashboard")}

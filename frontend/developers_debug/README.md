@@ -1,59 +1,79 @@
-# Developers Debug – Internal Documentation
+# Developers Debug - Internal Documentation
 
-This folder contains **advanced internal documentation** for the Aarannu Community ID Platform (frontend). It is intended for developers, interviewers, and future maintainers.
+This folder contains internal frontend-facing documentation for the Aarannu Community ID Platform.
+
+It is written for:
+
+- maintainers onboarding into the codebase
+- reviewers trying to understand architectural intent
+- future contributors debugging complex product behavior
+
+---
 
 ## Documents
 
-| File                                                               | Topic                                                                 |
-| ------------------------------------------------------------------ | --------------------------------------------------------------------- |
-| [01_ARCHITECTURE.md](./01_ARCHITECTURE.md)                         | System design, data flow, hybrid architecture, component tree         |
-| [02_DATABASE_SCHEMA.md](./02_DATABASE_SCHEMA.md)                   | Full SQL definitions, column rationale                                |
-| [03_RLS_POLICIES.md](./03_RLS_POLICIES.md)                         | Row Level Security policies with reasoning                            |
-| [04_AUTH_FLOW.md](./04_AUTH_FLOW.md)                               | Signup, login (password + OTP), session, approval gating              |
-| [05_STORAGE_FLOW.md](./05_STORAGE_FLOW.md)                         | Bucket config, signed URLs, PDF/ZIP delivery, downloadHelpers         |
-| [06_EXPIRY_LOGIC.md](./06_EXPIRY_LOGIC.md)                         | 15-day expiry, daily limit (200/day), filtering, cleanup              |
-| [07_LIBRARIES_USED.md](./07_LIBRARIES_USED.md)                     | All dependencies: Supabase, jsPDF, JSZip, file-saver, qrcode.react    |
-| [08_PRODUCTION_HARDENING.md](./08_PRODUCTION_HARDENING.md)         | Security, deployment, hardening checklist                             |
-| [09_CARD_CUSTOMIZATION.md](./09_CARD_CUSTOMIZATION.md)             | Card styling (bg, font, accent, radius), orientation (H/V), data flow |
-| [10_TOKEN_SYSTEM.md](./10_TOKEN_SYSTEM.md)                         | Token/credit system: balance, purchase, analytics, 402 handling       |
-| [11_CUSTOM_FORM_SYSTEM.md](./11_CUSTOM_FORM_SYSTEM.md)             | Custom registration forms, project dashboards, approval flow          |
-| [12_FORM_BUILDER_AND_IMPORTS.md](./12_FORM_BUILDER_AND_IMPORTS.md) | Dynamic form builder, file uploads, Google Sheets import              |
+| File | Topic |
+| --- | --- |
+| [01_ARCHITECTURE.md](./01_ARCHITECTURE.md) | Frontend system design, component responsibilities, high-level data flow |
+| [02_DATABASE_SCHEMA.md](./02_DATABASE_SCHEMA.md) | Database structures the frontend relies on |
+| [03_RLS_POLICIES.md](./03_RLS_POLICIES.md) | RLS assumptions that shape frontend query behavior |
+| [04_AUTH_FLOW.md](./04_AUTH_FLOW.md) | Auth, sessions, OTP, approval gating |
+| [05_STORAGE_FLOW.md](./05_STORAGE_FLOW.md) | Storage access, downloads, signed URL behavior |
+| [06_EXPIRY_LOGIC.md](./06_EXPIRY_LOGIC.md) | Expiry handling and client-side filtering expectations |
+| [07_LIBRARIES_USED.md](./07_LIBRARIES_USED.md) | Frontend dependency rationale |
+| [08_PRODUCTION_HARDENING.md](./08_PRODUCTION_HARDENING.md) | Frontend security and deployment hardening |
+| [09_CARD_CUSTOMIZATION.md](./09_CARD_CUSTOMIZATION.md) | Card style system, orientation, theme controls |
+| [10_MULTI_TENANT.md](./10_MULTI_TENANT.md) | Multi-tenant organization/project isolation model |
+| [10_TOKEN_SYSTEM.md](./10_TOKEN_SYSTEM.md) | Token/credit UX and billing-related frontend flows |
+| [11_CUSTOM_FORM_SYSTEM.md](./11_CUSTOM_FORM_SYSTEM.md) | Public registration forms and project dashboards |
+| [11_SUBSCRIPTION_PLANS.md](./11_SUBSCRIPTION_PLANS.md) | Plan-related UI assumptions and limits |
+| [12_BULK_GENERATION.md](./12_BULK_GENERATION.md) | Current browser-driven bulk generation pipeline |
+| [12_FORM_BUILDER_AND_IMPORTS.md](./12_FORM_BUILDER_AND_IMPORTS.md) | Dynamic form builder, file uploads, Google Sheets imports |
+| [13_QR_VERIFICATION.md](./13_QR_VERIFICATION.md) | QR scanning and verification UX |
+| [14_FORM_SYSTEM.md](./14_FORM_SYSTEM.md) | Supplemental dynamic form system details |
+| [15_EMAIL_QUEUE.md](./15_EMAIL_QUEUE.md) | Browser-orchestrated email delivery via backend Brevo handoff |
+| [16_APPROVAL_AND_CLIENT_DELIVERY.md](./16_APPROVAL_AND_CLIENT_DELIVERY.md) | Approval split, access gating, and client-side card delivery architecture |
 
-## Key Concepts
+---
 
-| Concept                  | Where documented                   |
-| ------------------------ | ---------------------------------- |
-| Template system          | 01_ARCHITECTURE (Frontend Arch)    |
-| Custom fields            | 01_ARCHITECTURE (Design Decisions) |
-| Card styling/colors      | 09_CARD_CUSTOMIZATION              |
-| Card orientation (H/V)   | 09_CARD_CUSTOMIZATION              |
-| Google Drive proxy       | 01_ARCHITECTURE + 05_STORAGE_FLOW  |
-| PDF generation (jsPDF)   | 05_STORAGE_FLOW + 07_LIBRARIES     |
-| ZIP bundling (JSZip)     | 05_STORAGE_FLOW + 07_LIBRARIES     |
-| Watermarks               | 01_ARCHITECTURE (Design Decisions) |
-| QR codes                 | 07_LIBRARIES (qrcode.react)        |
-| Token / credit system    | 10_TOKEN_SYSTEM                    |
-| Token purchase flow      | 10_TOKEN_SYSTEM (TokenPurchase)    |
-| 402 insufficient funds   | 10_TOKEN_SYSTEM (Error Handling)   |
-| Custom form system       | 11_CUSTOM_FORM_SYSTEM              |
-| Registration form        | 11_CUSTOM_FORM_SYSTEM              |
-| form_schema builder      | 11_CUSTOM_FORM_SYSTEM              |
-| Project dashboards       | 11_CUSTOM_FORM_SYSTEM              |
-| CSV export               | 11_CUSTOM_FORM_SYSTEM              |
-| Renewal (continue/reset) | 11_CUSTOM_FORM_SYSTEM              |
-| Email on approval        | 11_CUSTOM_FORM_SYSTEM              |
-| Dynamic form builder     | 12_FORM_BUILDER_AND_IMPORTS        |
-| 11 field types           | 12_FORM_BUILDER_AND_IMPORTS        |
-| File/photo uploads       | 12_FORM_BUILDER_AND_IMPORTS        |
-| Google Sheets import     | 12_FORM_BUILDER_AND_IMPORTS        |
-| Bulk member import       | 12_FORM_BUILDER_AND_IMPORTS        |
+## Best reading order for the current product
 
-## Why This Exists
+If you are new to the codebase, read these first:
 
-Most beginner projects lack internal documentation. This folder separates this project from typical bootcamp work by demonstrating:
+1. [01_ARCHITECTURE.md](./01_ARCHITECTURE.md)
+2. [04_AUTH_FLOW.md](./04_AUTH_FLOW.md)
+3. [11_CUSTOM_FORM_SYSTEM.md](./11_CUSTOM_FORM_SYSTEM.md)
+4. [12_BULK_GENERATION.md](./12_BULK_GENERATION.md)
+5. [15_EMAIL_QUEUE.md](./15_EMAIL_QUEUE.md)
+6. [16_APPROVAL_AND_CLIENT_DELIVERY.md](./16_APPROVAL_AND_CLIENT_DELIVERY.md)
 
-- **Architectural thinking** — understanding _why_ decisions were made, not just _what_ was built.
-- **Security awareness** — documenting RLS, validation, and access control.
-- **Professional practices** — structured knowledge that aids onboarding and debugging.
+That sequence gives the clearest view of how signup, approval, generation, and delivery connect.
 
-> This is documentation you'd find in a real production codebase. It's not academic — it's practical.
+---
+
+## Key concepts
+
+| Concept | Best document |
+| --- | --- |
+| Self-serve Aarannu signup | [16_APPROVAL_AND_CLIENT_DELIVERY.md](./16_APPROVAL_AND_CLIENT_DELIVERY.md) |
+| Org-admin approval flow | [11_CUSTOM_FORM_SYSTEM.md](./11_CUSTOM_FORM_SYSTEM.md) |
+| Protected route approval gating | [16_APPROVAL_AND_CLIENT_DELIVERY.md](./16_APPROVAL_AND_CLIENT_DELIVERY.md) |
+| Bulk generation job runner | [12_BULK_GENERATION.md](./12_BULK_GENERATION.md) |
+| Client-first PDF generation | [12_BULK_GENERATION.md](./12_BULK_GENERATION.md) |
+| Browser -> backend email handoff | [15_EMAIL_QUEUE.md](./15_EMAIL_QUEUE.md) |
+| Card customization | [09_CARD_CUSTOMIZATION.md](./09_CARD_CUSTOMIZATION.md) |
+| Google Sheets import | [12_FORM_BUILDER_AND_IMPORTS.md](./12_FORM_BUILDER_AND_IMPORTS.md) |
+| QR verification | [13_QR_VERIFICATION.md](./13_QR_VERIFICATION.md) |
+| Token UX | [10_TOKEN_SYSTEM.md](./10_TOKEN_SYSTEM.md) |
+
+---
+
+## Why these docs exist
+
+The frontend contains several flows that look similar in the UI but operate under different trust and execution models:
+
+- direct product signup vs organization membership approval
+- local rendering vs backend-assisted fallback rendering
+- UI-triggered delivery vs unattended backend automation
+
+Without explicit docs, those differences are easy to blur together. This folder exists to preserve the reasoning, not just the behavior.

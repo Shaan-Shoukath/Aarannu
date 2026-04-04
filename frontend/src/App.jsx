@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
@@ -17,6 +18,8 @@ import ProjectDashboard from "./pages/ProjectDashboard";
 import RegistrationForm from "./pages/RegistrationForm";
 import VerifyCard from "./pages/VerifyCard";
 import BulkDashboard from "./pages/BulkDashboard";
+import EventsDashboard from "./pages/EventsDashboard";
+import EventDetail from "./pages/EventDetail";
 
 /**
  * App – Root Component
@@ -133,8 +136,26 @@ export default function App() {
           }
         />
 
+        <Route
+          path="/org/:slug/events"
+          element={
+            <ProtectedRoute>
+              <EventsDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/org/:slug/events/:eventId"
+          element={
+            <ProtectedRoute>
+              <EventDetail />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ── Public landing page ───────────── */}
+        <Route path="/" element={<LandingPage />} />
         {/* ── Catch-all redirect ──────────────── */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>

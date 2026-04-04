@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import BrandLogoLink from "../components/BrandLogoLink";
+import { ensureStarterTokens } from "../lib/starterTokens";
 
 /**
  * Signup Page
@@ -11,10 +13,9 @@ import { supabase } from "../lib/supabaseClient";
  *  3. An OTP is sent to the user's email for verification.
  *  4. User enters the 6-digit code.
  *  5. On successful verification, a row is inserted into `members` with approved = true.
- *  6. User is redirected to dashboard.
+ *  6. The user can access Aarannu immediately and receives 50 free starter tokens.
  */
 export default function Signup() {
-  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
   const [email, setEmail] = useState("");
@@ -92,6 +93,7 @@ export default function Signup() {
           return;
         }
 
+        await ensureStarterTokens(authData.session.access_token);
         setSuccess(true);
         return;
       }
@@ -143,7 +145,7 @@ export default function Signup() {
       // Use the verified user's ID
       const userId = verifyData?.user?.id || signupUserId;
 
-      // Insert member record with auto-approval
+      // Insert member record with immediate access to the Aarannu trial
       const { error: memberError } = await supabase.from("members").insert({
         user_id: userId,
         name: name.trim(),
@@ -172,6 +174,10 @@ export default function Signup() {
         }
       }
 
+      const accessToken =
+        verifyData?.session?.access_token ||
+        (await supabase.auth.getSession()).data.session?.access_token;
+      await ensureStarterTokens(accessToken);
       setSuccess(true);
     } catch {
       setError("An unexpected error occurred. Please try again.");
@@ -207,11 +213,16 @@ export default function Signup() {
   // ── Success state ──
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white font-['Public_Sans',sans-serif] p-8">
+      <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8] font-['Public_Sans',sans-serif] p-8">
         <div className="max-w-md text-center space-y-6">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+          <BrandLogoLink
+            className="justify-center"
+            imageClassName="h-14 w-auto"
+            showText={false}
+          />
+          <div className="w-16 h-16 bg-[#1152d4]/10 rounded-full flex items-center justify-center mx-auto">
             <svg
-              className="w-8 h-8 text-green-600"
+              className="w-8 h-8 text-[#1152d4]"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -220,23 +231,20 @@ export default function Signup() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M5 13l4 4L19 7"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-slate-900">
-            You&apos;re All Set!
-          </h2>
+          <h2 className="text-2xl font-bold text-slate-900">Account Ready</h2>
           <p className="text-slate-500">
-            Your email has been verified and your account is approved. You can
-            now access the dashboard and generate ID cards.
+            Your Aarannu workspace is ready. You can start exploring immediately, and your 50 free starter tokens have been added to your account.
           </p>
-          <button
-            onClick={() => navigate("/dashboard", { replace: true })}
-            className="inline-flex items-center px-6 py-2.5 bg-[#2563EB] text-white text-sm font-medium rounded-lg hover:bg-[#2563EB]/90 transition-colors shadow-lg shadow-[#2563EB]/25"
+          <Link
+            to="/dashboard"
+            className="inline-flex items-center px-6 py-2.5 bg-[#1152d4] text-white text-sm font-medium rounded-lg hover:bg-[#1152d4]/90 transition-colors shadow-lg shadow-[#1152d4]/25"
           >
             Go to Dashboard
-          </button>
+          </Link>
         </div>
       </div>
     );
@@ -245,17 +253,13 @@ export default function Signup() {
   // ── OTP Verification step ──
   if (otpStep) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white font-['Public_Sans',sans-serif] p-8">
+      <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8] font-['Public_Sans',sans-serif] p-8">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
-            <div className="inline-flex items-center justify-center gap-2 mb-6">
-              <div className="w-10 h-10 bg-[#2563EB] rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-[#2563EB]/30">
-                A
-              </div>
-              <span className="text-2xl font-bold text-slate-900 tracking-tight">
-                Aarannu
-              </span>
-            </div>
+            <BrandLogoLink
+              className="justify-center mb-6"
+              imageClassName="h-12 w-auto"
+            />
             <h1 className="text-2xl font-bold text-slate-900 mb-2">
               Verify your email
             </h1>
@@ -312,7 +316,7 @@ export default function Signup() {
                     setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))
                   }
                   placeholder="Enter 6-digit code"
-                  className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#2563EB] focus:ring-[#2563EB] sm:text-sm py-2.5 outline-none tracking-widest text-center font-mono text-lg"
+                  className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none tracking-widest text-center font-mono text-lg"
                 />
               </div>
             </div>
@@ -323,7 +327,7 @@ export default function Signup() {
                 type="button"
                 onClick={handleResendOtp}
                 disabled={loading}
-                className="text-[#2563EB] hover:underline font-medium"
+                className="text-[#1152d4] hover:underline font-medium"
               >
                 Resend code
               </button>
@@ -332,7 +336,7 @@ export default function Signup() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#2563EB] hover:bg-[#2563EB]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2563EB] transition-all duration-200 shadow-lg shadow-[#2563EB]/25 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#1152d4] hover:bg-[#1152d4]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1152d4] transition-all duration-200 shadow-lg shadow-[#1152d4]/25 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <svg
@@ -369,7 +373,7 @@ export default function Signup() {
                 setError("");
                 setOtpMessage("");
               }}
-              className="text-[#2563EB] hover:underline font-medium"
+              className="text-[#1152d4] hover:underline font-medium"
             >
               &larr; Back to signup form
             </button>
@@ -384,7 +388,7 @@ export default function Signup() {
       {/* ─── Left Panel: Decorative ─── */}
       <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-slate-900 items-center justify-center">
         <div className="absolute inset-0 z-0">
-          <div className="absolute -top-20 -left-20 w-150 h-150 bg-linear-to-br from-[#2563EB] via-blue-600 to-transparent rounded-full blur-[100px] opacity-60" />
+          <div className="absolute -top-20 -left-20 w-150 h-150 bg-linear-to-br from-[#1152d4] via-blue-600 to-transparent rounded-full blur-[100px] opacity-60" />
           <div className="absolute -bottom-20 -right-20 w-150 h-150 bg-linear-to-tl from-[#ef4444] via-red-500 to-transparent rounded-full blur-[100px] opacity-40" />
           <div
             className="absolute inset-0 bg-slate-900/40 z-10"
@@ -407,11 +411,10 @@ export default function Signup() {
             </svg>
           </div>
           <h2 className="text-3xl font-bold text-white mb-3">
-            Join Your Community
+            Try Aarannu Instantly
           </h2>
           <p className="text-slate-300 text-sm leading-relaxed max-w-sm">
-            Create your account to request access to the digital ID card
-            platform. An admin will review and approve your membership.
+            Create your account to explore the digital ID card platform right away with 50 free starter tokens.
           </p>
         </div>
 
@@ -423,23 +426,24 @@ export default function Signup() {
       </div>
 
       {/* ─── Right Panel: Signup Form ─── */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 lg:p-12 bg-white">
+      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 lg:p-12 bg-white relative">
+        {/* Mobile back to home */}
+        <a href="/" className="lg:hidden absolute top-4 left-4 flex items-center gap-1 text-slate-500 hover:text-[#1152d4] text-sm font-medium transition-colors">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+          Home
+        </a>
         <div className="w-full max-w-110 space-y-8">
           {/* Brand */}
           <div className="text-center lg:text-left">
-            <div className="inline-flex items-center justify-center lg:justify-start gap-2 mb-6">
-              <div className="w-10 h-10 bg-[#2563EB] rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-[#2563EB]/30">
-                A
-              </div>
-              <span className="text-2xl font-bold text-slate-900 tracking-tight">
-                Aarannu
-              </span>
-            </div>
+            <BrandLogoLink
+              className="justify-center lg:justify-start mb-6"
+              imageClassName="h-12 w-auto"
+            />
             <h1 className="text-3xl font-bold text-slate-900 mb-2">
               Create your account
             </h1>
             <p className="text-slate-500">
-              Fill in your details to request community membership.
+              Fill in your details to start your Aarannu trial.
             </p>
           </div>
 
@@ -483,7 +487,7 @@ export default function Signup() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Alex Morgan"
-                    className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#2563EB] focus:ring-[#2563EB] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
                   />
                 </div>
               </div>
@@ -518,7 +522,7 @@ export default function Signup() {
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
                     placeholder="Member (default)"
-                    className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#2563EB] focus:ring-[#2563EB] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
                   />
                 </div>
               </div>
@@ -555,7 +559,7 @@ export default function Signup() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@company.com"
-                    className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#2563EB] focus:ring-[#2563EB] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
                   />
                 </div>
               </div>
@@ -591,7 +595,7 @@ export default function Signup() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Min. 8 characters"
-                    className="pl-10 pr-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#2563EB] focus:ring-[#2563EB] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 pr-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
                   />
                   <button
                     type="button"
@@ -668,7 +672,7 @@ export default function Signup() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Re-enter password"
-                    className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#2563EB] focus:ring-[#2563EB] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
                   />
                 </div>
               </div>
@@ -678,7 +682,7 @@ export default function Signup() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#2563EB] hover:bg-[#2563EB]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2563EB] transition-all duration-200 shadow-lg shadow-[#2563EB]/25 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#1152d4] hover:bg-[#1152d4]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1152d4] transition-all duration-200 shadow-lg shadow-[#1152d4]/25 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <svg
@@ -711,7 +715,7 @@ export default function Signup() {
             Already have an account?{" "}
             <Link
               to="/login"
-              className="font-medium text-[#2563EB] hover:text-[#2563EB]/80 transition-colors"
+              className="font-medium text-[#1152d4] hover:text-[#1152d4]/80 transition-colors"
             >
               Sign in
             </Link>

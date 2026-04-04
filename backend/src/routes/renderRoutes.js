@@ -6,7 +6,7 @@
  * POST /api/render/card
  *   Body: { data, template, orgName, logoUrl, cardStyles, gradientColors,
  *           fieldVisibility, orientation, validityText, watermark,
- *           customFields, signatureUrl, format }
+ *           customFields, signatureUrl, fullGradientBg, gradientOpacity, format }
  *   format: "png" | "jpeg" | "pdf"  (default: "png")
  *   Returns: binary image/pdf with correct Content-Type
  */
@@ -38,6 +38,8 @@ router.post("/card", apiLimiter, async (req, res) => {
       watermark,
       customFields,
       signatureUrl,
+      fullGradientBg,
+      gradientOpacity,
       format = "png",
     } = req.body;
 
@@ -60,6 +62,9 @@ router.post("/card", apiLimiter, async (req, res) => {
       watermark: watermark || {},
       customFields: customFields || [],
       signatureUrl: signatureUrl || "",
+      fullGradientBg: Boolean(fullGradientBg),
+      gradientOpacity:
+        typeof gradientOpacity === "number" ? gradientOpacity : 0.55,
     });
 
     if (format === "pdf") {

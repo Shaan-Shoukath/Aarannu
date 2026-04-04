@@ -1,0 +1,72 @@
+PASS src/__tests__/validators.test.js
+  validateMember
+    √ accepts valid member with required fields (2 ms)
+    √ rejects null input
+    √ rejects non-object input
+    √ rejects missing name
+    √ rejects empty name
+    √ rejects name over 120 characters
+    √ rejects missing role
+    √ rejects role over 60 characters
+    √ accepts valid optional id_number
+    √ rejects id_number with special chars (1 ms)
+    √ rejects id_number over 40 characters
+    √ accepts valid DOB
+    √ rejects invalid DOB
+    √ accepts valid gender values (1 ms)
+    √ rejects invalid gender
+    √ accepts valid photo URL
+    √ rejects invalid photo URL (1 ms)
+    √ accepts valid address
+    √ rejects address over 300 characters
+    √ skips validation for empty optional fields
+  validateBulkPayload
+    √ accepts valid bulk payload (1 ms)
+    √ rejects missing members array
+    √ rejects empty members array
+    √ rejects batch over limit (1 ms)
+    √ reports invalid member with index
+  isValidUUID
+    √ accepts valid v4 UUID (1 ms)
+    √ rejects non-v4 UUID
+    √ rejects non-string
+    √ rejects empty string
+    √ rejects malformed UUID
+
+FAIL src/__tests__/tokenService.test.js
+  ● Test suite failed to run
+
+    Cannot find module '../../config/supabaseClient' from 'src/__tests__/tokenService.test.js'
+
+    [0m [90m  9 |[39m
+     [90m 10 |[39m [90m// Setup mocks without out-of-scope references[39m
+    [31m[1m>[22m[39m[90m 11 |[39m jest[33m.[39mmock([32m"../../config/supabaseClient"[39m[33m,[39m () [33m=>[39m {
+     [90m    |[39m      [31m[1m^[22m[39m
+     [90m 12 |[39m   [36mconst[39m mockQuery [33m=[39m () [33m=>[39m ({
+     [90m 13 |[39m     select[33m:[39m jest[33m.[39mfn()[33m.[39mmockReturnThis()[33m,[39m
+     [90m 14 |[39m     insert[33m:[39m jest[33m.[39mfn()[33m.[39mmockReturnThis()[33m,[39m[0m
+
+      at Resolver._throwModNotFoundError (node_modules/jest-resolve/build/resolver.js:427:11)
+      at Object.mock (src/__tests__/tokenService.test.js:11:6)
+
+FAIL src/__tests__/checkTokens.test.js
+  ● Test suite failed to run
+
+    Cannot find module '../../services/tokenService' from 'src/__tests__/checkTokens.test.js'
+
+    [0m [90m  6 |[39m [90m */[39m
+     [90m  7 |[39m
+    [31m[1m>[22m[39m[90m  8 |[39m jest[33m.[39mmock([32m"../../services/tokenService"[39m[33m,[39m () [33m=>[39m ({
+     [90m    |[39m      [31m[1m^[22m[39m
+     [90m  9 |[39m   getBalance[33m:[39m jest[33m.[39mfn()[33m,[39m
+     [90m 10 |[39m }))[33m;[39m
+     [90m 11 |[39m[0m
+
+      at Resolver._throwModNotFoundError (node_modules/jest-resolve/build/resolver.js:427:11)
+      at Object.mock (src/__tests__/checkTokens.test.js:8:6)
+
+Test Suites: 2 failed, 1 passed, 3 total
+Tests:       30 passed, 30 total
+Snapshots:   0 total
+Time:        0.443 s, estimated 1 s
+Ran all test suites.

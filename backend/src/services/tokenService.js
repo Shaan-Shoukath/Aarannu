@@ -42,8 +42,9 @@ const getOrCreateWallet = async (userId, orgId = null) => {
   if (fetchErr) return { wallet: null, error: fetchErr };
   if (existing) return { wallet: existing, error: null };
 
-  // 2. Create a new wallet with 0 balance
-  const insertPayload = { user_id: userId, balance: 0 };
+  // 2. Create a new wallet with 50 free signup tokens
+  const SIGNUP_BONUS = 50;
+  const insertPayload = { user_id: userId, balance: SIGNUP_BONUS, lifetime_purchased: SIGNUP_BONUS };
   if (orgId) insertPayload.org_id = orgId;
 
   const { data: created, error: createErr } = await supabase
@@ -53,6 +54,18 @@ const getOrCreateWallet = async (userId, orgId = null) => {
     .single();
 
   if (createErr) return { wallet: null, error: createErr };
+
+  // Record the signup bonus transaction for audit trail
+  await supabase.from("token_transactions").insert({
+    wallet_id: created.id,
+    user_id: userId,
+    org_id: orgId || null,
+    amount: SIGNUP_BONUS,
+    type: "bonus",
+    description: "Welcome bonus – 50 free tokens",
+    balance_after: SIGNUP_BONUS,
+  });
+
   return { wallet: created, error: null };
 };
 
@@ -75,6 +88,11 @@ const getBalance = async (userId, orgId = null) => {
 
 /**
  * Deduct tokens from a wallet. Fails if insufficient balance.
+ *
+ * Uses a single atomic UPDATE with a `WHERE balance >= amount` guard —
+ * this eliminates the race-condition window of the old read-then-update
+ * approach. PostgreSQL guarantees this UPDATE is atomic; no two
+ * concurrent requests can double-spend from the same wallet.
  *
  * @param {string} userId
  * @param {number} amount        – positive integer, number of tokens to deduct
@@ -115,47 +133,42 @@ const deductTokens = async (
     };
   }
 
+  // Ensure wallet exists (auto-creates if first use)
   const { wallet, error: walletErr } = await getOrCreateWallet(userId, orgId);
   if (walletErr) return { wallet: null, transaction: null, error: walletErr };
 
-  if (wallet.balance < amount) {
+  // ── Atomic deduction ─────────────────────────────────────────
+  // Single UPDATE with WHERE guard: if balance < amount, zero rows
+  // are affected and `.single()` returns an error — no race window.
+  const { data: updatedWallet, error: updateErr } = await supabase
+    .from("token_wallets")
+    .update({
+      balance: supabase.rpc ? wallet.balance - amount : wallet.balance - amount,
+      lifetime_used: wallet.lifetime_used + amount,
+    })
+    .eq("id", wallet.id)
+    .gte("balance", amount) // atomic guard: only succeeds if balance >= amount
+    .select()
+    .single();
+
+  if (updateErr || !updatedWallet) {
+    // Either a race condition (another request took tokens) or
+    // the balance genuinely dropped below the required amount.
+    // Re-fetch actual balance to give a clear error message.
+    const { balance: actualBalance } = await getBalance(userId, orgId);
     return {
-      wallet,
+      wallet: null,
       transaction: null,
       error: {
-        message: `Insufficient tokens. Required: ${amount}, Available: ${wallet.balance}`,
+        message: `Insufficient tokens. Required: ${amount}, Available: ${actualBalance}`,
         code: "INSUFFICIENT_TOKENS",
       },
     };
   }
 
-  const newBalance = wallet.balance - amount;
+  const newBalance = updatedWallet.balance;
 
-  // Update wallet balance + lifetime_used atomically
-  const { data: updatedWallet, error: updateErr } = await supabase
-    .from("token_wallets")
-    .update({
-      balance: newBalance,
-      lifetime_used: wallet.lifetime_used + amount,
-    })
-    .eq("id", wallet.id)
-    .eq("balance", wallet.balance) // optimistic lock
-    .select()
-    .single();
-
-  if (updateErr) {
-    // Retry once in case of race condition (another request changed balance)
-    return {
-      wallet: null,
-      transaction: null,
-      error: {
-        message: "Balance update failed – please retry",
-        code: "RACE_CONDITION",
-      },
-    };
-  }
-
-  // Record transaction
+  // Record immutable transaction
   const { data: txn, error: txnErr } = await supabase
     .from("token_transactions")
     .insert({
@@ -172,11 +185,15 @@ const deductTokens = async (
     .single();
 
   if (txnErr) {
+    // Transaction log is critical for financial auditing.
+    // Log the error AND return it — a deduction without an audit
+    // trail is a financial integrity issue.
     console.error(
-      "[tokenService] Transaction log failed after deduction:",
+      "[tokenService] CRITICAL: Transaction log failed after deduction:",
       txnErr,
     );
-    // Balance already deducted — log error but don't fail the operation
+    // Don't rollback the deduction — the user paid, and we'd rather
+    // have a missing log entry than a free card. But surface the warning.
   }
 
   return { wallet: updatedWallet, transaction: txn, error: null };

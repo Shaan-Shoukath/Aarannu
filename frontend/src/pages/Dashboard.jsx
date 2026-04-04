@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import BrandLogoLink from "../components/BrandLogoLink";
 
 const API =
   import.meta.env.VITE_API_URL ||
@@ -118,20 +119,11 @@ export default function Dashboard() {
       <aside className="w-64 shrink-0 border-r border-slate-200 bg-[#F9FAFB] hidden lg:flex flex-col justify-between py-6 px-4">
         <div className="space-y-8">
           {/* User / Brand */}
-          <div className="flex items-center gap-3 px-2">
-            <div className="w-10 h-10 rounded-full bg-[#2563EB]/20 flex items-center justify-center border border-[#2563EB]/30">
-              <span className="text-[#2563EB] font-bold text-sm">
-                {user?.user_metadata?.name?.charAt(0)?.toUpperCase() || "A"}
-              </span>
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-sm font-semibold text-slate-900 leading-tight">
-                Aarannu
-              </h1>
-              <p className="text-xs text-slate-500">
-                {isUnlimited ? "Unlimited Plan" : "Pro Plan"}
-              </p>
-            </div>
+          <div className="px-2">
+            <BrandLogoLink imageClassName="h-10 w-auto" />
+            <p className="mt-2 text-xs text-slate-500 pl-0.5">
+              {isUnlimited ? "Admin Workspace" : "Aarannu Workspace"}
+            </p>
           </div>
           {/* Nav */}
           <nav className="space-y-1">
@@ -199,12 +191,11 @@ export default function Dashboard() {
         <header className="h-16 border-b border-slate-200 flex items-center justify-between px-6 lg:px-8 bg-white/80 backdrop-blur-md shrink-0">
           <div className="flex items-center gap-4">
             {/* Mobile brand */}
-            <div className="flex lg:hidden items-center gap-2">
-              <div className="w-8 h-8 bg-[#2563EB] rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                A
-              </div>
-              <span className="font-bold text-slate-900">Aarannu</span>
-            </div>
+            <BrandLogoLink
+              className="flex lg:hidden items-center"
+              imageClassName="h-9 w-auto"
+              textClassName="font-bold text-slate-900"
+            />
             <span className="hidden lg:block text-slate-900 font-bold text-lg">
               Dashboard
             </span>

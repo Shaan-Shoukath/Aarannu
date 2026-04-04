@@ -80,6 +80,8 @@ const getBrowser = async () => {
  * @param {object} params.watermark       – Watermark config
  * @param {Array}  params.customFields    – Custom field definitions [{label, side}]
  * @param {string} params.signatureUrl    – Registrar signature image URL
+ * @param {boolean} params.fullGradientBg – Whether the full card uses the gradient
+ * @param {number} params.gradientOpacity – Gradient overlay opacity
  * @returns {Promise<{ frontPng: Buffer, frontJpeg: Buffer, backPng: Buffer, pdfBuffer: Buffer, pdfBase64: string }>}
  */
 const renderCard = async (params) => {
@@ -102,6 +104,9 @@ const renderCard = async (params) => {
     watermark: params.watermark || {},
     customFields: params.customFields || [],
     signatureUrl: params.signatureUrl || "",
+    fullGradientBg: Boolean(params.fullGradientBg),
+    gradientOpacity:
+      typeof params.gradientOpacity === "number" ? params.gradientOpacity : 0.55,
   };
 
   const encodedPayload = encodeURIComponent(JSON.stringify(payload));

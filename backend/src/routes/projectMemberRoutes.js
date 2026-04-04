@@ -13,6 +13,8 @@ const {
   approve,
   reject,
   bulkApprove,
+  queueDelivery,
+  updateDeliveryStatus,
   removeMember,
 } = require("../controllers/projectMemberController");
 
@@ -32,6 +34,12 @@ router.patch("/:id/reject", verifyToken, reject);
 
 // Bulk approve
 router.post("/bulk-approve", verifyToken, bulkApprove);
+
+// Re-queue delivery for an approved member
+router.post("/:id/queue-delivery", verifyToken, queueDelivery);
+
+// Persist client-side delivery progress
+router.patch("/:id/delivery-status", verifyToken, updateDeliveryStatus);
 
 // Delete a member
 router.delete("/:id", verifyToken, removeMember);

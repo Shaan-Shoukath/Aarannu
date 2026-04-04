@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import BrandLogoLink from "../components/BrandLogoLink";
 
 /**
  * Templates Page
@@ -139,9 +140,10 @@ export default function Templates() {
       {/* ─── Header ─── */}
       <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-40">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-[#2563EB] rounded-lg flex items-center justify-center text-white font-bold text-lg">
-            A
-          </div>
+          <BrandLogoLink
+            imageClassName="h-9 w-auto"
+            showText={false}
+          />
           <h1 className="font-bold text-lg text-slate-900">
             Aarannu
             <span className="text-slate-400 font-normal ml-2 text-sm">
@@ -290,10 +292,10 @@ export default function Templates() {
       <footer className="border-t border-slate-200 bg-white py-6 px-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-[#2563EB] rounded-md flex items-center justify-center text-white font-bold text-xs">
-              A
-            </div>
-            <span className="text-sm font-medium text-slate-600">Aarannu</span>
+            <BrandLogoLink
+              imageClassName="h-7 w-auto"
+              textClassName="text-sm font-medium text-slate-600"
+            />
             <span className="text-xs text-slate-400">
               &copy; {new Date().getFullYear()} All rights reserved.
             </span>

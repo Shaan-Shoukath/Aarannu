@@ -1,72 +1,181 @@
 /**
  * Project Member Controller
- * ─────────────────────────
+ * --------------------------------------------------
  * HTTP handlers for member registration, approval, and management.
- * Sends email notification on approval via Brevo.
+ *
+ * Approval is backend-authoritative, but the PDF/email delivery work is
+ * tracked as a resumable client-side queue. The backend prepares card records,
+ * stores the last known delivery phase on `project_members`, and lets the
+ * dashboard advance that state as the admin keeps the page open.
  */
 
 const memberService = require("../services/projectMemberService");
 const projectService = require("../services/projectService");
-const orgService = require("../services/orgService");
+const generateService = require("../services/generateService");
 
-// ── Email notification helper ──────────────────────────────────
-const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+const FRONTEND_URL = (
+  process.env.FRONTEND_URL || "http://localhost:5173"
+).replace(/\/+$/, "");
 
-/**
- * Fire-and-forget approval email to member.
- * Fails silently — approval itself still succeeds even if email fails.
- */
-const sendApprovalEmail = async (member, project, orgName) => {
-  try {
-    if (!member.email || !process.env.BREVO_API_KEY) return;
+const buildVerificationUrl = (cardId) => `${FRONTEND_URL}/verify/${cardId}`;
 
-    const senderEmail =
-      process.env.BREVO_SENDER_EMAIL || "noreply@communityid.app";
-    const senderName =
-      process.env.BREVO_SENDER_NAME || orgName || "Community ID";
-    const safeName = member.name || "Member";
-    const safeOrg = orgName || "Community ID";
-    const projectName = project?.name || "the project";
-
-    const payload = {
-      sender: { name: senderName, email: senderEmail },
-      to: [{ email: member.email, name: safeName }],
-      subject: `Your registration for ${projectName} has been approved!`,
-      htmlContent: `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-          <h2 style="color: #1e293b; margin-bottom: 8px;">Hello ${safeName},</h2>
-          <p style="color: #475569; line-height: 1.6;">
-            Great news! Your registration for <strong>${projectName}</strong>
-            at <strong>${safeOrg}</strong> has been <span style="color: #16a34a; font-weight: 600;">approved</span>.
-          </p>
-          <p style="color: #475569; line-height: 1.6;">
-            Your ID card will be generated shortly. You'll receive another email
-            with your digital ID card attached once it's ready.
-          </p>
-          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-          <p style="color: #94a3b8; font-size: 12px;">
-            This is an automated email from ${safeOrg}'s Community ID Platform.
-          </p>
-        </div>
-      `,
+const buildDeliveryState = (member, card) => {
+  if (!card?.id) {
+    return {
+      phase: "failed_prepare",
+      error:
+        "Approved, but the ID card record could not be prepared automatically.",
+      cardId: null,
+      verificationUrl: "",
     };
-
-    await fetch(BREVO_API_URL, {
-      method: "POST",
-      headers: {
-        accept: "application/json",
-        "content-type": "application/json",
-        "api-key": process.env.BREVO_API_KEY,
-      },
-      body: JSON.stringify(payload),
-    });
-  } catch (err) {
-    console.warn("[approval-email] Failed to send:", err.message);
   }
+
+  if (!member?.email) {
+    return {
+      phase: "skipped_no_email",
+      error: "No email address is available for automatic delivery.",
+      cardId: card.id,
+      verificationUrl: card.verificationUrl,
+    };
+  }
+
+  return {
+    phase: "queued",
+    error: "",
+    cardId: card.id,
+    verificationUrl: card.verificationUrl,
+  };
+};
+
+const withDeliveryState = (member, deliveryState) => ({
+  ...member,
+  delivery_phase: deliveryState.phase || null,
+  delivery_error: deliveryState.error || "",
+  delivery_card_id: deliveryState.cardId || null,
+  delivery_verification_url: deliveryState.verificationUrl || "",
+});
+
+const getProjectContext = async (projectId) => {
+  const { data: project } = await projectService.getProjectById(projectId);
+  return project || null;
+};
+
+const getCardMapForMembers = async (project, memberIds = []) => {
+  const targetMemberIds = Array.isArray(memberIds)
+    ? memberIds.filter(Boolean)
+    : [];
+
+  if (!project?.id || !project?.org_id || targetMemberIds.length === 0) {
+    return { cardMap: new Map(), warning: null };
+  }
+
+  let warning = null;
+
+  const { error: generationError } = await generateService.createCardRecords(
+    project.org_id,
+    project.id,
+    project.expiry_days || 365,
+    targetMemberIds,
+  );
+
+  if (generationError) {
+    warning =
+      "Member approved, but the card record could not be prepared automatically.";
+    console.warn("[approval-card] Generation failed:", generationError.message);
+  }
+
+  const { cards, error: lookupError } =
+    await generateService.getActiveCardsForMembers(project.id, targetMemberIds);
+
+  if (lookupError) {
+    warning =
+      warning ||
+      "Member approved, but the generated card link could not be loaded.";
+    console.warn("[approval-card] Lookup failed:", lookupError.message);
+    return { cardMap: new Map(), warning };
+  }
+
+  const cardMap = new Map(
+    (cards || []).map((card) => [
+      card.member_id,
+      {
+        ...card,
+        verificationUrl: buildVerificationUrl(card.id),
+      },
+    ]),
+  );
+
+  return { cardMap, warning };
+};
+
+const prepareMembersForDelivery = async (members = []) => {
+  let warning = null;
+  const preparedMembers = [];
+  const membersByProject = new Map();
+
+  for (const member of members) {
+    if (!member?.project_id) continue;
+    if (!membersByProject.has(member.project_id)) {
+      membersByProject.set(member.project_id, []);
+    }
+    membersByProject.get(member.project_id).push(member);
+  }
+
+  for (const [projectId, projectMembers] of membersByProject.entries()) {
+    const project = await getProjectContext(projectId);
+
+    if (!project) {
+      warning =
+        warning ||
+        "Some approved members could not be queued because the project was missing.";
+
+      for (const member of projectMembers) {
+        const deliveryState = buildDeliveryState(member, null);
+        const { data: updatedMember } = await memberService.updateMemberDelivery(
+          member.id,
+          deliveryState,
+        );
+        preparedMembers.push(updatedMember || withDeliveryState(member, deliveryState));
+      }
+      continue;
+    }
+
+    const { cardMap, warning: cardWarning } = await getCardMapForMembers(
+      project,
+      projectMembers.map((member) => member.id),
+    );
+
+    if (cardWarning && !warning) {
+      warning = cardWarning;
+    }
+
+    for (const member of projectMembers) {
+      const deliveryState = buildDeliveryState(member, cardMap.get(member.id));
+
+      if (deliveryState.phase === "skipped_no_email" && !warning) {
+        warning =
+          "Some approved members have no email address, so delivery was skipped for them.";
+      }
+
+      const { data: updatedMember, error } = await memberService.updateMemberDelivery(
+        member.id,
+        deliveryState,
+      );
+
+      if (error && !warning) {
+        warning =
+          "Approval succeeded, but the delivery status could not be stored.";
+      }
+
+      preparedMembers.push(updatedMember || withDeliveryState(member, deliveryState));
+    }
+  }
+
+  return { members: preparedMembers, warning };
 };
 
 /**
- * POST /api/members/register/:projectId — Public registration
+ * POST /api/members/register/:projectId - Public registration
  */
 const registerMember = async (req, res, next) => {
   try {
@@ -75,22 +184,22 @@ const registerMember = async (req, res, next) => {
 
     if (!name) return res.status(400).json({ error: "Name is required." });
 
-    // Fetch project to get org_id and check member limit
     const { data: project, error: pErr } =
       await projectService.getProjectById(projectId);
-    if (pErr || !project)
+    if (pErr || !project) {
       return res.status(404).json({ error: "Project not found." });
-    if (project.status !== "active")
+    }
+    if (project.status !== "active") {
       return res
         .status(400)
         .json({ error: "This project is no longer accepting registrations." });
+    }
 
-    // Check member limit — only pending + approved count against the limit
     if (project.member_limit) {
       const { data: existing } =
         await memberService.getMembersByProject(projectId);
       const activeCount = (existing || []).filter(
-        (m) => m.status === "pending" || m.status === "approved",
+        (member) => member.status === "pending" || member.status === "approved",
       ).length;
       if (activeCount >= project.member_limit) {
         return res
@@ -106,7 +215,7 @@ const registerMember = async (req, res, next) => {
       email,
       photoUrl,
       customFields,
-      submittedBy: null, // public registration
+      submittedBy: null,
     });
 
     if (error) return res.status(500).json({ error: error.message });
@@ -117,7 +226,7 @@ const registerMember = async (req, res, next) => {
 };
 
 /**
- * GET /api/members/:projectId — List members (admin)
+ * GET /api/members/:projectId - List members (admin)
  */
 const listMembers = async (req, res, next) => {
   try {
@@ -142,20 +251,9 @@ const approve = async (req, res, next) => {
     const { data, error } = await memberService.approveMember(req.params.id);
     if (error) return res.status(500).json({ error: error.message });
 
-    // Fire-and-forget approval email
-    if (data?.email && data?.project_id) {
-      const { data: project } = await projectService.getProjectById(
-        data.project_id,
-      );
-      let orgName = "";
-      if (project?.org_id) {
-        const { data: org } = await orgService.getOrgById(project.org_id);
-        orgName = org?.name || "";
-      }
-      sendApprovalEmail(data, project, orgName);
-    }
+    const { members, warning } = await prepareMembersForDelivery(data ? [data] : []);
 
-    res.json({ member: data });
+    res.json({ member: members[0] || data, warning });
   } catch (err) {
     next(err);
   }
@@ -183,28 +281,77 @@ const bulkApprove = async (req, res, next) => {
     if (!memberIds || !Array.isArray(memberIds) || memberIds.length === 0) {
       return res.status(400).json({ error: "memberIds array is required." });
     }
+
     const { data, error } = await memberService.bulkApproveMembers(memberIds);
     if (error) return res.status(500).json({ error: error.message });
 
-    // Fire-and-forget approval emails for all approved members
-    if (data && data.length > 0) {
-      const firstMember = data[0];
-      if (firstMember.project_id) {
-        const { data: project } = await projectService.getProjectById(
-          firstMember.project_id,
-        );
-        let orgName = "";
-        if (project?.org_id) {
-          const { data: org } = await orgService.getOrgById(project.org_id);
-          orgName = org?.name || "";
-        }
-        data.forEach((m) => {
-          if (m.email) sendApprovalEmail(m, project, orgName);
-        });
-      }
+    const { members, warning } = await prepareMembersForDelivery(data || []);
+
+    res.json({ approved: members, warning });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /api/members/:id/queue-delivery
+ * Re-prepare the approved member for client-side PDF/email delivery.
+ */
+const queueDelivery = async (req, res, next) => {
+  try {
+    const { data: member, error } = await memberService.getMemberById(
+      req.params.id,
+    );
+
+    if (error) return res.status(500).json({ error: error.message });
+    if (!member) return res.status(404).json({ error: "Member not found." });
+    if (member.status !== "approved") {
+      return res.status(400).json({
+        error: "Only approved members can be queued for delivery.",
+      });
     }
 
-    res.json({ approved: data });
+    const { members, warning } = await prepareMembersForDelivery([member]);
+
+    res.json({ member: members[0] || member, warning });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * PATCH /api/members/:id/delivery-status
+ * Store the last known client-side delivery phase for the admin dashboard.
+ */
+const updateDeliveryStatus = async (req, res, next) => {
+  try {
+    const { phase } = req.body || {};
+
+    if (
+      phase !== undefined &&
+      phase !== null &&
+      !memberService.DELIVERY_PHASES.has(phase)
+    ) {
+      return res.status(400).json({ error: "Invalid delivery phase." });
+    }
+
+    const { data, error } = await memberService.updateMemberDelivery(
+      req.params.id,
+      {
+        phase,
+        error: req.body?.error,
+        cardId: req.body?.cardId,
+        verificationUrl: req.body?.verificationUrl,
+        messageId: req.body?.messageId,
+        pdfGeneratedAt: req.body?.pdfGeneratedAt,
+        emailSentAt: req.body?.emailSentAt,
+        clearError: Boolean(req.body?.clearError),
+        incrementAttempt: Boolean(req.body?.incrementAttempt),
+      },
+    );
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ member: data });
   } catch (err) {
     next(err);
   }
@@ -229,5 +376,7 @@ module.exports = {
   approve,
   reject,
   bulkApprove,
+  queueDelivery,
+  updateDeliveryStatus,
   removeMember,
 };

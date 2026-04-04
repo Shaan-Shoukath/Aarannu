@@ -53,7 +53,7 @@ const validateMember = (member) => {
         message: "ID number must not exceed 40 characters.",
       };
     }
-    if (!/^[a-zA-Z0-9\-_]+$/.test(member.id_number)) {
+    if (!/^[\p{L}\p{N}\-_]+$/u.test(member.id_number)) {
       return {
         valid: false,
         message:

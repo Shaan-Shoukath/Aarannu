@@ -10,6 +10,7 @@
 
 const express = require("express");
 const rateLimit = require("express-rate-limit");
+const verifyToken = require("../middleware/verifyToken");
 const { sendCard } = require("../controllers/emailController");
 
 const router = express.Router();
@@ -27,6 +28,6 @@ const emailLimiter = rateLimit({
   },
 });
 
-router.post("/send-card", emailLimiter, sendCard);
+router.post("/send-card", verifyToken, emailLimiter, sendCard);
 
 module.exports = router;

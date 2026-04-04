@@ -3,7 +3,13 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { downloadBlob } from "../utils/downloadHelpers";
 import BulkGenerator from "../components/BulkGenerator";
-import { generateCardPdf, clearImageCache } from "../utils/pdfCardRenderer";
+import { renderCardPdfWithBestSupport } from "../utils/cardPdfSupport";
+import {
+  extractMembershipId,
+  filterCustomMemberFields,
+  generateMembershipId,
+} from "../utils/membershipId";
+import { DEFAULT_CARD_FONT_FAMILY } from "../utils/textSupport";
 
 /**
  * Generate Page
@@ -27,23 +33,7 @@ export default function Generate() {
   const templateId = location.state?.template || "custom";
   const orgName = location.state?.orgName || "";
 
-  /**
-   * Generate a membership ID in the pattern: ORG-YYMM-NNNNN
-   * e.g. "NAV-2603-00001" for org "Navodaya", March 2026, row 1.
-   * @param {number} rowNum - 1-based row/sequence number
-   */
-  const generateMemberId = (rowNum) => {
-    const prefix =
-      (orgName || "ORG")
-        .replace(/[^A-Za-z]/g, "")
-        .slice(0, 3)
-        .toUpperCase() || "ORG";
-    const now = new Date();
-    const yy = String(now.getFullYear()).slice(-2);
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const seq = String(rowNum).padStart(5, "0");
-    return `${prefix}-${yy}${mm}-${seq}`;
-  };
+  const generateMemberId = (rowNum) => generateMembershipId(orgName, rowNum);
   const logoUrl = location.state?.logoUrl || "";
   const watermark = location.state?.watermark || {
     text: "",
@@ -121,7 +111,7 @@ export default function Generate() {
   const [cardStyles, setCardStyles] = useState({
     bgColor: templateId === "event" ? "#1e1b4b" : "#ffffff",
     fontColor: templateId === "event" ? "#e0e7ff" : "#1e293b",
-    fontFamily: "'Public Sans', sans-serif",
+    fontFamily: DEFAULT_CARD_FONT_FAMILY,
     accentColor: templateId === "event" ? "#818cf8" : "#64748b",
     borderRadius: 12,
     nameFontSize: 20, // px – name / heading
@@ -136,13 +126,13 @@ export default function Generate() {
   const [orientation, setOrientation] = useState("horizontal");
 
   // Full gradient background toggle (vs corner-only triangles)
-  const [fullGradientBg, setFullGradientBg] = useState(false);
+  const [fullGradientBg, setFullGradientBg] = useState(true);
 
   // Gradient background opacity (0 to 1)
-  const [gradientOpacity, setGradientOpacity] = useState(1);
+  const [gradientOpacity, setGradientOpacity] = useState(0.55);
 
   // Whether to upload generated cards to Supabase cloud storage
-  const [uploadToCloud, setUploadToCloud] = useState(true);
+  const [uploadToCloud, setUploadToCloud] = useState(false);
 
   // Local file uploads for logos/signatures (base64 data URLs)
   const [localLogoUrl, setLocalLogoUrl] = useState("");
@@ -173,6 +163,7 @@ export default function Generate() {
 
   // Ref to the bulk generator section so we can scroll to it after import
   const generatorSectionRef = useRef(null);
+  const importedProjectMembersRef = useRef(false);
 
   // Google Sheets import
   const [sheetsUrl, setSheetsUrl] = useState("");
@@ -208,7 +199,7 @@ export default function Generate() {
 
   /** Available font families for card styling */
   const FONT_FAMILIES = [
-    { value: "'Public Sans', sans-serif", label: "Public Sans" },
+    { value: DEFAULT_CARD_FONT_FAMILY, label: "Public Sans" },
     { value: "Inter, sans-serif", label: "Inter" },
     { value: "Arial, sans-serif", label: "Arial" },
     { value: "Georgia, serif", label: "Georgia" },
@@ -250,6 +241,75 @@ export default function Generate() {
     checkAccess();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const incomingMembers = location.state?.members;
+    if (
+      importedProjectMembersRef.current ||
+      !Array.isArray(incomingMembers) ||
+      incomingMembers.length === 0
+    ) {
+      return;
+    }
+
+    const normalizedMembers = incomingMembers
+      .filter((member) => member?.name?.trim?.())
+      .map((member, index) => {
+        const customFields = member?.custom_fields || {};
+        const customValues = filterCustomMemberFields(customFields);
+
+        return {
+          projectMemberId: member?.id || null,
+          projectCustomFields: customFields,
+          name: member?.name?.trim?.() || "",
+          email: member?.email?.trim?.() || "",
+          role: member?.role || customFields.role || "Member",
+          id_number:
+            extractMembershipId(member) || generateMemberId(index + 1),
+          dob: member?.dob || customFields.dob || "",
+          gender: member?.gender || customFields.gender || "N/A",
+          blood_group:
+            member?.blood_group ||
+            customFields.blood_group ||
+            customFields["blood group"] ||
+            "",
+          photo_url: member?.photo_url || member?.photo || "",
+          address: member?.address || customFields.address || "",
+          customValues,
+          sendEmail: false,
+        };
+      });
+
+    if (normalizedMembers.length === 0) return;
+
+    const derivedFieldLabels = new Set();
+    normalizedMembers.forEach((member) => {
+      Object.keys(member.customValues || {}).forEach((key) =>
+        derivedFieldLabels.add(key),
+      );
+    });
+
+    if (derivedFieldLabels.size > 0) {
+      setCustomFieldDefs((prev) => {
+        const existing = new Set(prev.map((field) => field.label.toLowerCase()));
+        const nextFields = [...prev];
+
+        derivedFieldLabels.forEach((label) => {
+          if (!existing.has(label.toLowerCase())) {
+            nextFields.push({ label, side: "front" });
+          }
+        });
+
+        return nextFields;
+      });
+    }
+
+    setMembers(normalizedMembers);
+    setSheetsSuccess(
+      `Loaded ${normalizedMembers.length} approved project member(s) into the queue.`,
+    );
+    importedProjectMembersRef.current = true;
+  }, [location.state, orgName]);
 
   // Keep rangeEnd clamped when members change
   useEffect(() => {
@@ -322,7 +382,7 @@ export default function Generate() {
     setPdfGenerating(true);
     try {
       const payload = buildRenderPayload(memberData);
-      const blob = await generateCardPdf(payload);
+      const blob = await renderCardPdfWithBestSupport(payload);
       // Revoke old URL
       if (prevBlobUrlRef.current) URL.revokeObjectURL(prevBlobUrlRef.current);
       const url = URL.createObjectURL(blob);
@@ -344,32 +404,43 @@ export default function Generate() {
   };
 
   /**
-   * Upload a PNG blob to Supabase Storage and insert a
-   * `generated_ids` row so the card appears on the Dashboard.
+   * Upload a rendered card to the backend API.
+   * This routes through authentication, rate limiting, and the
+   * middleware pipeline — instead of calling Supabase directly.
    */
-  const uploadCardToSupabase = async (pngBlob, memberName) => {
-    if (!user?.id || !pngBlob) return;
+  const uploadCardToBackend = async (pngBlob, memberName) => {
+    if (!pngBlob) return;
     try {
-      const safeName = (memberName || "card").replace(/[^a-zA-Z0-9]/g, "_");
-      const filePath = `${user.id}/${safeName}_${Date.now()}.png`;
-
-      const { error: uploadErr } = await supabase.storage
-        .from("id-cards")
-        .upload(filePath, pngBlob, { contentType: "image/png", upsert: false });
-
-      if (uploadErr) {
-        console.warn("Upload failed:", uploadErr.message);
-        return;
-      }
-
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 365);
-
-      await supabase.from("generated_ids").insert({
-        user_id: user.id,
-        file_url: filePath,
-        expires_at: expiresAt.toISOString(),
+      // Convert blob to base64
+      const reader = new FileReader();
+      const base64 = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(pngBlob);
       });
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const API = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+      const res = await fetch(`${API}/api/cards/upload`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          image: base64,
+          memberName: memberName || "card",
+          expiryDays: 365,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.warn("Cloud save failed:", err.error || res.statusText);
+      }
     } catch (err) {
       console.warn("Cloud save failed (card still downloaded locally):", err);
     }
@@ -403,12 +474,8 @@ export default function Generate() {
     setDownloading(true);
     setDownloadStatus("Generating PDF...");
     try {
-      // Use existing blob if available, otherwise regenerate
-      let blob = pdfBlob;
-      if (!blob) {
-        const payload = buildRenderPayload(previewData);
-        blob = await generateCardPdf(payload);
-      }
+      const payload = buildRenderPayload(previewData);
+      const blob = await renderCardPdfWithBestSupport(payload);
       const safeName = (previewData.name || "id-card").replace(
         /[^a-zA-Z0-9]/g,
         "_",
@@ -417,7 +484,7 @@ export default function Generate() {
 
       // Upload to cloud
       setDownloadStatus("Uploading to cloud...");
-      await uploadCardToSupabase(blob, previewData.name);
+      await uploadCardToBackend(blob, previewData.name);
       setDownloadStatus("Done!");
     } catch (err) {
       console.error("PDF download failed:", err);
@@ -2318,6 +2385,7 @@ export default function Generate() {
                     <BulkGenerator
                       members={members}
                       userId={user?.id}
+                      projectId={location.state?.projectId || null}
                       onComplete={handleGenerationComplete}
                       templateId={templateId}
                       orgName={orgName}

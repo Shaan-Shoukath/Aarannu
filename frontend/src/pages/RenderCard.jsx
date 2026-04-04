@@ -5,6 +5,10 @@ import IDCard from "../components/IDCard";
 import CorporateCard from "../components/CorporateCard";
 import EventCard from "../components/EventCard";
 import StudentCard from "../components/StudentCard";
+import {
+  DEFAULT_CARD_FONT_FAMILY,
+  withMalayalamFontFallback,
+} from "../utils/textSupport";
 
 /**
  * RenderCard Page — Headless Card Renderer
@@ -47,87 +51,106 @@ export default function RenderCard() {
   useEffect(() => {
     if (!payload) return;
 
-    // Give card components time to render (fonts, images, SVGs)
-    const timer = setTimeout(() => {
-      // Expose __generatePDF for the backend cardRenderer to call via Puppeteer
-      // This creates a 2-page PDF from screenshots of #card-front and #card-back
-      window.__generatePDF = async () => {
-        try {
-          const frontEl = document.querySelector("#card-front");
-          const backEl = document.querySelector("#card-back");
-          if (!frontEl) return null;
+    let cancelled = false;
+    let timerId = null;
 
-          const isVertical = payload.orientation === "vertical";
-          const MM = 2.83465;
-          const pageWidth = isVertical ? 63.5 * MM : 85.6 * MM;
-          const pageHeight = isVertical ? 88.9 * MM : 53.98 * MM;
-          const padding = 2 * MM;
+    const markReady = async () => {
+      try {
+        if (document.fonts?.ready) {
+          await document.fonts.ready;
+        }
+      } catch {
+        // Ignore font readiness errors and continue with a timed fallback.
+      }
 
-          return new Promise(async (resolveOuter) => {
-            try {
-              const doc = new PDFDocument({
-                size: [pageWidth + padding * 2, pageHeight + padding * 2],
-                margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                autoFirstPage: true,
-              });
+      timerId = window.setTimeout(() => {
+        if (cancelled) return;
 
-              const stream = doc.pipe(blobStream());
+        // Expose __generatePDF for the backend cardRenderer to call via Puppeteer
+        // This creates a 2-page PDF from screenshots of #card-front and #card-back
+        window.__generatePDF = async () => {
+          try {
+            const frontEl = document.querySelector("#card-front");
+            const backEl = document.querySelector("#card-back");
+            if (!frontEl) return null;
 
-              // Use canvas from the DOM elements (Puppeteer runs in real Chromium)
-              const frontCanvas = await domToCanvas(frontEl);
-              if (frontCanvas) {
-                const frontPng = frontCanvas.toDataURL("image/png");
-                doc.image(frontPng, padding, padding, {
-                  width: pageWidth,
-                  height: pageHeight,
+            const isVertical = payload.orientation === "vertical";
+            const MM = 2.83465;
+            const pageWidth = isVertical ? 63.5 * MM : 85.6 * MM;
+            const pageHeight = isVertical ? 88.9 * MM : 53.98 * MM;
+            const padding = 2 * MM;
+
+            return new Promise(async (resolveOuter) => {
+              try {
+                const doc = new PDFDocument({
+                  size: [pageWidth + padding * 2, pageHeight + padding * 2],
+                  margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                  autoFirstPage: true,
                 });
-              }
 
-              if (backEl) {
-                const backCanvas = await domToCanvas(backEl);
-                if (backCanvas) {
-                  doc.addPage({
-                    size: [pageWidth + padding * 2, pageHeight + padding * 2],
-                    margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                  });
-                  const backPng = backCanvas.toDataURL("image/png");
-                  doc.image(backPng, padding, padding, {
+                const stream = doc.pipe(blobStream());
+
+                // Use canvas from the DOM elements (Puppeteer runs in real Chromium)
+                const frontCanvas = await domToCanvas(frontEl);
+                if (frontCanvas) {
+                  const frontPng = frontCanvas.toDataURL("image/png");
+                  doc.image(frontPng, padding, padding, {
                     width: pageWidth,
                     height: pageHeight,
                   });
                 }
-              }
 
-              doc.end();
-
-              stream.on("finish", () => {
-                try {
-                  const blob = stream.toBlob("application/pdf");
-                  const reader = new FileReader();
-                  reader.onloadend = () => {
-                    const base64 = reader.result.split(",")[1];
-                    resolveOuter(base64);
-                  };
-                  reader.readAsDataURL(blob);
-                } catch {
-                  resolveOuter(null);
+                if (backEl) {
+                  const backCanvas = await domToCanvas(backEl);
+                  if (backCanvas) {
+                    doc.addPage({
+                      size: [pageWidth + padding * 2, pageHeight + padding * 2],
+                      margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                    });
+                    const backPng = backCanvas.toDataURL("image/png");
+                    doc.image(backPng, padding, padding, {
+                      width: pageWidth,
+                      height: pageHeight,
+                    });
+                  }
                 }
-              });
-              stream.on("error", () => resolveOuter(null));
-            } catch {
-              resolveOuter(null);
-            }
-          });
-        } catch (err) {
-          console.error("[RenderCard] PDF generation error:", err);
-          return null;
-        }
-      };
 
-      setReady(true);
-    }, 1500);
+                doc.end();
 
-    return () => clearTimeout(timer);
+                stream.on("finish", () => {
+                  try {
+                    const blob = stream.toBlob("application/pdf");
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      const base64 = reader.result.split(",")[1];
+                      resolveOuter(base64);
+                    };
+                    reader.readAsDataURL(blob);
+                  } catch {
+                    resolveOuter(null);
+                  }
+                });
+                stream.on("error", () => resolveOuter(null));
+              } catch {
+                resolveOuter(null);
+              }
+            });
+          } catch (err) {
+            console.error("[RenderCard] PDF generation error:", err);
+            return null;
+          }
+        };
+
+        setReady(true);
+      }, 350);
+    };
+
+    markReady();
+
+    return () => {
+      cancelled = true;
+      if (timerId) window.clearTimeout(timerId);
+    };
   }, [payload]);
 
   if (!payload) {
@@ -151,7 +174,16 @@ export default function RenderCard() {
     watermark = {},
     customFields = [],
     signatureUrl = "",
+    fullGradientBg = false,
+    gradientOpacity = 0.55,
   } = payload;
+
+  const resolvedCardStyles = {
+    ...cardStyles,
+    fontFamily: withMalayalamFontFallback(
+      cardStyles.fontFamily || DEFAULT_CARD_FONT_FAMILY,
+    ),
+  };
 
   const templateMap = {
     custom: IDCard,
@@ -178,7 +210,7 @@ export default function RenderCard() {
     <div
       data-render-ready={ready ? "true" : "false"}
       className="min-h-screen"
-      style={{ fontFamily: "'Public Sans', sans-serif" }}
+      style={{ fontFamily: resolvedCardStyles.fontFamily }}
     >
       {/* FRONT — Puppeteer screenshots this element directly */}
       <div
@@ -200,10 +232,12 @@ export default function RenderCard() {
           signatureUrl={signatureUrl}
           watermark={watermark}
           gradientColors={gradientColors}
-          cardStyles={cardStyles}
+          cardStyles={resolvedCardStyles}
           orientation={orientation}
           validityText={validityText}
           fieldVisibility={fieldVisibility}
+          fullGradientBg={fullGradientBg}
+          gradientOpacity={gradientOpacity}
         />
       </div>
 
@@ -228,10 +262,12 @@ export default function RenderCard() {
           signatureUrl={signatureUrl}
           watermark={watermark}
           gradientColors={gradientColors}
-          cardStyles={cardStyles}
+          cardStyles={resolvedCardStyles}
           orientation={orientation}
           validityText={validityText}
           fieldVisibility={fieldVisibility}
+          fullGradientBg={fullGradientBg}
+          gradientOpacity={gradientOpacity}
         />
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import BrandLogoLink from "../components/BrandLogoLink";
 
 /**
  * OrgOnboarding — Create or select an organization
@@ -135,9 +136,11 @@ export default function OrgOnboarding() {
       <div className="w-full max-w-lg">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-[#2563EB] rounded-xl flex items-center justify-center text-white font-bold text-xl mx-auto mb-3 shadow-lg shadow-[#2563EB]/20">
-            A
-          </div>
+          <BrandLogoLink
+            className="justify-center mb-3"
+            imageClassName="h-14 w-auto"
+            showText={false}
+          />
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
             Aarannu Platform
           </h1>
