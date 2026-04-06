@@ -354,17 +354,17 @@ export default function RegistrationForm() {
     <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         {/* Org branding */}
-        <div className="text-center mb-6">
-          {org?.logo_url && <img src={org.logo_url} alt={org.name} className="w-14 h-14 rounded-xl object-cover mx-auto mb-3 ring-2 ring-slate-700" />}
-          {org?.name && <p className="text-slate-400 text-sm mb-1">{org.name}</p>}
-          <h1 className="text-2xl font-bold text-white tracking-tight">{project?.name || "Registration"}</h1>
+        <div className="text-center mb-5 sm:mb-6">
+          {org?.logo_url && <img src={org.logo_url} alt={org.name} className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover mx-auto mb-3 ring-2 ring-slate-700" />}
+          {org?.name && <p className="text-slate-400 text-xs sm:text-sm mb-1">{org.name}</p>}
+          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">{project?.name || "Registration"}</h1>
           {project?.spots_remaining != null && (
             <p className="text-xs text-slate-500 mt-1">{project.spots_remaining} spot{project.spots_remaining !== 1 ? "s" : ""} remaining</p>
           )}
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-slate-800/60 backdrop-blur border border-slate-700/50 rounded-2xl p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="bg-slate-800/60 backdrop-blur border border-slate-700/50 rounded-2xl p-4 sm:p-6 space-y-4 sm:space-y-5">
           {/* System: Name */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1.5">Full Name <span className="text-red-400">*</span></label>

@@ -213,7 +213,7 @@ export default function Signup() {
   // ── Success state ──
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8] font-['Public_Sans',sans-serif] p-8">
+      <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8] font-['Public_Sans',sans-serif] px-4 py-8 sm:p-8">
         <div className="max-w-md text-center space-y-6">
           <BrandLogoLink
             className="justify-center"
@@ -253,8 +253,8 @@ export default function Signup() {
   // ── OTP Verification step ──
   if (otpStep) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8] font-['Public_Sans',sans-serif] p-8">
-        <div className="w-full max-w-md space-y-8">
+      <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8] font-['Public_Sans',sans-serif] px-4 py-8 sm:p-8">
+        <div className="w-full max-w-md space-y-6 sm:space-y-8">
           <div className="text-center">
             <BrandLogoLink
               className="justify-center mb-6"
@@ -426,13 +426,13 @@ export default function Signup() {
       </div>
 
       {/* ─── Right Panel: Signup Form ─── */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 lg:p-12 bg-white relative">
+      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center px-4 py-6 sm:p-8 lg:p-12 bg-white relative overflow-y-auto">
         {/* Mobile back to home */}
-        <a href="/" className="lg:hidden absolute top-4 left-4 flex items-center gap-1 text-slate-500 hover:text-[#1152d4] text-sm font-medium transition-colors">
+        <a href="/" className="lg:hidden absolute top-4 left-4 flex items-center gap-1 text-slate-500 hover:text-[#1152d4] text-sm font-medium transition-colors z-10">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
           Home
         </a>
-        <div className="w-full max-w-110 space-y-8">
+        <div className="w-full max-w-md lg:max-w-110 space-y-6 sm:space-y-8 mt-8 lg:mt-0">
           {/* Brand */}
           <div className="text-center lg:text-left">
             <BrandLogoLink

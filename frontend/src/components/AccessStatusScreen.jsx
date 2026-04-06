@@ -100,25 +100,25 @@ export default function AccessStatusScreen({
   const primaryClassName = styles.primary;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white font-['Public_Sans',sans-serif] p-8">
-      <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xl shadow-slate-200/60">
+    <div className="min-h-screen flex items-center justify-center bg-white font-['Public_Sans',sans-serif] px-4 py-8 sm:p-8">
+      <div className="w-full max-w-md rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 text-center shadow-xl shadow-slate-200/60">
         <BrandLogoLink
-          className="mx-auto mb-8"
-          imageClassName="h-14 w-auto"
+          className="mx-auto mb-6 sm:mb-8"
+          imageClassName="h-12 sm:h-14 w-auto"
           showText={false}
         />
 
         <div
-          className={`mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full ${styles.iconBg} ${styles.iconFg}`}
+          className={`mx-auto mb-4 sm:mb-5 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full ${styles.iconBg} ${styles.iconFg}`}
         >
           <StatusIcon tone={tone} />
         </div>
 
-        <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{title}</h1>
         <p className="mt-3 text-sm leading-6 text-slate-500">{message}</p>
         {details && <p className="mt-3 text-xs leading-5 text-slate-400">{details}</p>}
 
-        <div className="mt-8 flex flex-col gap-3">
+        <div className="mt-6 sm:mt-8 flex flex-col gap-3">
           <Action
             label={primaryLabel}
             to={primaryTo}

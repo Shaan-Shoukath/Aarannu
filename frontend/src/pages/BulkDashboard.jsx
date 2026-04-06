@@ -224,28 +224,28 @@ export default function BulkDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 p-6">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 p-4 sm:p-6">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
           <button
             onClick={() => navigate(`/org/${slug}/project/${projectId}`)}
-            className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 hover:text-white text-sm transition cursor-pointer"
+            className="px-2.5 sm:px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 hover:text-white text-xs sm:text-sm transition cursor-pointer shrink-0"
           >
             {"\u2190"} Back
           </button>
-          <div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
               Google Sheets Import
             </h1>
-            <p className="text-sm text-slate-400">
+            <p className="text-xs sm:text-sm text-slate-400 truncate">
               {project?.name || "Project"}
             </p>
           </div>
         </div>
 
         {/* Steps indicator */}
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6 overflow-x-auto pb-1">
           {[
             { n: 1, label: "Paste URL" },
             { n: 2, label: "Map Columns" },
@@ -253,10 +253,10 @@ export default function BulkDashboard() {
           ].map(({ n, label }) => (
             <div
               key={n}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm ${step >= n ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/30" : "bg-slate-800/50 text-slate-500 border border-slate-700/30"}`}
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm whitespace-nowrap ${step >= n ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/30" : "bg-slate-800/50 text-slate-500 border border-slate-700/30"}`}
             >
               <span
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${step > n ? "bg-emerald-500 text-white" : step === n ? "bg-indigo-500 text-white" : "bg-slate-700 text-slate-500"}`}
+                className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold ${step > n ? "bg-emerald-500 text-white" : step === n ? "bg-indigo-500 text-white" : "bg-slate-700 text-slate-500"}`}
               >
                 {step > n ? "\u2713" : n}
               </span>

@@ -114,7 +114,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="flex h-screen overflow-hidden bg-white font-['Public_Sans',sans-serif]">
+    <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-white font-['Public_Sans',sans-serif]">
       {/* ─── Sidebar ─── */}
       <aside className="w-64 shrink-0 border-r border-slate-200 bg-[#F9FAFB] hidden lg:flex flex-col justify-between py-6 px-4">
         <div className="space-y-8">
@@ -188,19 +188,19 @@ export default function Dashboard() {
       {/* ─── Main Content Wrapper ─── */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* ─── Top Header ─── */}
-        <header className="h-16 border-b border-slate-200 flex items-center justify-between px-6 lg:px-8 bg-white/80 backdrop-blur-md shrink-0">
-          <div className="flex items-center gap-4">
+        <header className="h-14 sm:h-16 border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 bg-white/80 backdrop-blur-md shrink-0">
+          <div className="flex items-center gap-3 sm:gap-4">
             {/* Mobile brand */}
             <BrandLogoLink
               className="flex lg:hidden items-center"
-              imageClassName="h-9 w-auto"
+              imageClassName="h-8 sm:h-9 w-auto"
               textClassName="font-bold text-slate-900"
             />
             <span className="hidden lg:block text-slate-900 font-bold text-lg">
               Dashboard
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Token Badge */}
             <button
               onClick={() => navigate("/tokens")}
@@ -244,11 +244,11 @@ export default function Dashboard() {
         </header>
 
         {/* ─── Scrollable Content ─── */}
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8 bg-white">
-          <div className="max-w-7xl mx-auto space-y-8">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8 bg-white">
+          <div className="max-w-7xl mx-auto space-y-5 sm:space-y-6 lg:space-y-8">
             {/* ─── Welcome Header ─── */}
             <div>
-              <h2 className="text-3xl font-bold text-slate-900">
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
                 Welcome back
                 {user?.user_metadata?.name
                   ? `, ${user.user_metadata.name}`
@@ -261,7 +261,7 @@ export default function Dashboard() {
             </div>
 
             {/* ─── Action Cards Grid ─── */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
               {/* Card 1: Organization Manager */}
               <div
                 onClick={() => navigate("/org/new")}
@@ -449,15 +449,15 @@ export default function Dashboard() {
             </div>
 
             {/* ─── Bottom Grid ─── */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
               {/* Quick Links */}
               <div className="lg:col-span-2 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-slate-900">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900">
                     Quick Actions
                   </h3>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                   <button
                     onClick={() => navigate("/tokens")}
                     className="bg-white border border-slate-200 hover:border-[#2563EB]/30 hover:shadow-sm rounded-xl p-4 text-left transition-all cursor-pointer group"
@@ -647,6 +647,36 @@ export default function Dashboard() {
           </div>
         </main>
       </div>
+
+      {/* ─── Mobile Bottom Nav ─── */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 flex items-center justify-around px-2 py-1.5 safe-area-pb">
+        {sidebarLinks.map((link) => (
+          <button
+            key={link.label}
+            onClick={link.onClick}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer min-w-15 ${
+              link.active
+                ? "text-[#2563EB]"
+                : "text-slate-400 hover:text-slate-600"
+            }`}
+          >
+            <svg
+              className="w-5 h-5 shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d={link.icon}
+              />
+            </svg>
+            <span className="text-[10px] font-medium">{link.label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }

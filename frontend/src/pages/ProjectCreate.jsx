@@ -252,7 +252,7 @@ export default function ProjectCreate() {
     <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 text-white">
       {/* Header */}
       <div className="sticky top-0 z-50 backdrop-blur bg-slate-950/80 border-b border-white/10">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
           <button onClick={() => navigate(`/org/${slug}/dashboard`)}
             className="text-sm text-indigo-300 hover:text-white transition cursor-pointer">
             {"\u2190"} {org?.name || slug}
@@ -265,7 +265,7 @@ export default function ProjectCreate() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-8">
         <div className={`grid gap-6 ${showPreview ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 max-w-4xl mx-auto"}`}>
           {/* LEFT: Form Builder */}
           <form onSubmit={handleCreate} className="space-y-8">

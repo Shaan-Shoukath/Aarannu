@@ -766,30 +766,32 @@ export default function Generate() {
   return (
     <div className="min-h-screen bg-[#f6f6f8] font-['Public_Sans',sans-serif] flex flex-col">
       {/* ─── Header ─── */}
-      <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-40">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+      <header className="h-14 sm:h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-40">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 bg-green-600 rounded-lg flex items-center justify-center text-white font-bold shrink-0">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z" />
             </svg>
           </div>
-          <h1 className="font-bold text-lg text-slate-900">
-            Bulk ID Generator{" "}
-            <span className="text-slate-400 font-normal ml-2 text-sm">
-              | {TEMPLATE_LABELS[templateId]} Template
+          <h1 className="font-bold text-sm sm:text-lg text-slate-900 truncate">
+            <span className="hidden sm:inline">Bulk ID Generator </span>
+            <span className="sm:hidden">ID Generator </span>
+            <span className="text-slate-400 font-normal ml-1 sm:ml-2 text-xs sm:text-sm">
+              | {TEMPLATE_LABELS[templateId]}
             </span>
           </h1>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           <button
             onClick={() => navigate("/templates")}
-            className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-[#2563EB] transition-colors border border-slate-300 rounded-lg"
+            className="px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-600 hover:text-[#2563EB] transition-colors border border-slate-300 rounded-lg cursor-pointer"
           >
-            ← Change Template
+            <span className="hidden sm:inline">← Change Template</span>
+            <span className="sm:hidden">← Template</span>
           </button>
           <button
             onClick={() => navigate("/dashboard")}
-            className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-[#2563EB] transition-colors border border-slate-300 rounded-lg"
+            className="px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-600 hover:text-[#2563EB] transition-colors border border-slate-300 rounded-lg cursor-pointer"
           >
             Dashboard
           </button>
@@ -797,9 +799,9 @@ export default function Generate() {
       </header>
 
       {/* ─── Main Content ─── */}
-      <main className="flex-1 flex overflow-hidden">
+      <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* ─── Left Sidebar: Data Entry ─── */}
-        <aside className="w-100 shrink-0 bg-white border-r border-slate-200 overflow-y-auto">
+        <aside className="w-full lg:w-100 shrink-0 bg-white border-b lg:border-b-0 lg:border-r border-slate-200 overflow-y-auto lg:max-h-full max-h-[50vh]">
           <div className="p-6 space-y-8">
             {/* Google Sheets Import */}
             <div className="space-y-3">
@@ -1943,9 +1945,9 @@ export default function Generate() {
         </aside>
 
         {/* ─── Right Side: Preview + Queue ─── */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden min-h-[50vh] lg:min-h-0">
           {/* Toolbar */}
-          <div className="h-12 border-b border-slate-200 bg-white/50 backdrop-blur-sm flex items-center justify-between px-6">
+          <div className="h-12 border-b border-slate-200 bg-white/50 backdrop-blur-sm flex items-center justify-between px-4 sm:px-6">
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-slate-600">PDF Preview</span>
               {pdfGenerating && (
@@ -1962,19 +1964,19 @@ export default function Generate() {
 
           {/* Canvas area */}
           <div
-            className="flex-1 overflow-auto p-6"
+            className="flex-1 overflow-auto p-4 sm:p-6"
             style={{
               backgroundImage:
                 "radial-gradient(rgba(0,0,0,0.05) 1px, transparent 1px)",
               backgroundSize: "20px 20px",
             }}
           >
-            <div className="flex gap-6 items-start">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start">
               {/* ── Sticky Card Preview Column ── */}
               <div
-                className="sticky top-0 shrink-0 self-start pt-6 flex flex-col items-center"
+                className="sm:sticky sm:top-0 shrink-0 self-start pt-2 sm:pt-6 flex flex-col items-center w-full sm:w-auto"
                 style={{
-                  minWidth: orientation === "vertical" ? "260px" : "380px",
+                  minWidth: orientation === "vertical" ? "260px" : "min(380px, 100%)",
                 }}
               >
                 {/* Live Preview */}

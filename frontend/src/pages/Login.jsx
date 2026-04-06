@@ -195,8 +195,8 @@ export default function Login() {
 
   if (otpStep) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8] font-['Public_Sans',sans-serif] p-8">
-        <div className="w-full max-w-md space-y-8">
+      <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8] font-['Public_Sans',sans-serif] px-4 py-8 sm:p-8">
+        <div className="w-full max-w-md space-y-6 sm:space-y-8">
           <div className="text-center">
             <BrandLogoLink
               className="justify-center mb-6"
@@ -443,13 +443,13 @@ export default function Login() {
         </div>
       </div>
 
-      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 lg:p-12 bg-white relative">
+      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center px-4 py-6 sm:p-8 lg:p-12 bg-white relative">
         {/* Mobile back to home */}
         <a href="/" className="lg:hidden absolute top-4 left-4 flex items-center gap-1 text-slate-500 hover:text-[#1152d4] text-sm font-medium transition-colors">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
           Home
         </a>
-        <div className="w-full max-w-110 space-y-8">
+        <div className="w-full max-w-md lg:max-w-110 space-y-6 sm:space-y-8 mt-8 lg:mt-0">
           <div className="text-center lg:text-left">
             <BrandLogoLink
               className="justify-center lg:justify-start mb-6"
@@ -585,7 +585,7 @@ export default function Login() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-2">
               <div className="flex items-center">
                 <input
                   id="remember-me"
@@ -601,7 +601,7 @@ export default function Login() {
               </div>
               <button
                 type="button"
-                className="text-sm font-medium text-[#1152d4] hover:text-[#1152d4]/80 transition-colors"
+                className="text-sm font-medium text-[#1152d4] hover:text-[#1152d4]/80 transition-colors text-left sm:text-right"
               >
                 Forgot password?
               </button>

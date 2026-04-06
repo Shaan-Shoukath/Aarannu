@@ -138,34 +138,34 @@ export default function Templates() {
   return (
     <div className="min-h-screen bg-[#f6f6f8] font-['Public_Sans',sans-serif] flex flex-col">
       {/* ─── Header ─── */}
-      <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-40">
-        <div className="flex items-center gap-3">
+      <header className="h-14 sm:h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-40">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <BrandLogoLink
-            imageClassName="h-9 w-auto"
+            imageClassName="h-8 sm:h-9 w-auto"
             showText={false}
           />
-          <h1 className="font-bold text-lg text-slate-900">
+          <h1 className="font-bold text-base sm:text-lg text-slate-900 truncate">
             Aarannu
-            <span className="text-slate-400 font-normal ml-2 text-sm">
+            <span className="text-slate-400 font-normal ml-1 sm:ml-2 text-xs sm:text-sm">
               | Templates
             </span>
           </h1>
         </div>
         <button
           onClick={() => navigate("/dashboard")}
-          className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-[#2563EB] transition-colors border border-slate-200 rounded-lg hover:border-[#2563EB]/30 cursor-pointer"
+          className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-600 hover:text-[#2563EB] transition-colors border border-slate-200 rounded-lg hover:border-[#2563EB]/30 cursor-pointer shrink-0"
         >
-          &larr; Back to Dashboard
+          &larr; <span className="hidden sm:inline">Back to </span>Dashboard
         </button>
       </header>
 
       {/* ─── Main ─── */}
-      <main className="max-w-6xl mx-auto px-6 py-10 flex-1">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-slate-900">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 md:py-10 flex-1">
+        <div className="mb-5 sm:mb-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
             Select a Template
           </h2>
-          <p className="text-slate-500 mt-2 max-w-xl">
+          <p className="text-sm sm:text-base text-slate-500 mt-2 max-w-xl">
             Start creating professional ID cards in minutes. Choose from our
             expertly designed templates or build a custom layout from the ground
             up.
@@ -173,7 +173,7 @@ export default function Templates() {
         </div>
 
         {/* ─── Filter Tags ─── */}
-        <div className="flex flex-wrap gap-2 mb-8">
+        <div className="flex gap-2 mb-5 sm:mb-8 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
           {[
             { key: "all", label: "All Templates" },
             { key: "professional", label: "Professional" },
@@ -185,7 +185,7 @@ export default function Templates() {
             <button
               key={tag.key}
               onClick={() => setTemplateFilter(tag.key)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all cursor-pointer ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
                 templateFilter === tag.key
                   ? "bg-[#2563EB] text-white shadow-lg shadow-[#2563EB]/20"
                   : "bg-white text-slate-600 border border-slate-200 hover:border-[#2563EB]/30 hover:text-[#2563EB]"
@@ -197,7 +197,7 @@ export default function Templates() {
         </div>
 
         {/* ─── Template Grid ─── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-10 sm:mb-16">
           {TEMPLATES.map((t) => (
             <button
               key={t.id}
@@ -289,7 +289,7 @@ export default function Templates() {
       </main>
 
       {/* ─── Footer ─── */}
-      <footer className="border-t border-slate-200 bg-white py-6 px-6">
+      <footer className="border-t border-slate-200 bg-white py-4 sm:py-6 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BrandLogoLink
@@ -305,8 +305,8 @@ export default function Templates() {
 
       {/* ─── Organization Config Modal ─── */}
       {showOrgModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md sm:mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-slate-200">
               <h3 className="text-lg font-bold text-slate-900">
                 Organization Details

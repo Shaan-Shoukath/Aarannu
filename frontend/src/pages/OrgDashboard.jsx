@@ -140,39 +140,39 @@ export default function OrgDashboard() {
     <div className="min-h-screen bg-[#f6f6f8] font-['Public_Sans',sans-serif]">
       {/* ── Header */}
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3">
-          <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
             <BrandLogoLink
               className="shrink-0"
-              imageClassName="h-9 w-auto"
+              imageClassName="h-8 sm:h-9 w-auto"
               showText={false}
             />
-            <div className="w-px h-8 bg-slate-200" />
-            <div>
-              <h1 className="text-lg font-semibold text-slate-900">
+            <div className="w-px h-8 bg-slate-200 hidden sm:block" />
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-lg font-semibold text-slate-900 truncate">
                 {org?.name}
               </h1>
-              <p className="text-xs text-slate-400">
+              <p className="text-[10px] sm:text-xs text-slate-400 truncate">
                 /{org?.slug} · {userRole}
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-1 sm:gap-2 shrink-0">
             <button
               onClick={() => navigate(`/org/${slug}/events`)}
-              className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition cursor-pointer"
+              className="px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition cursor-pointer"
             >
               Events
             </button>
             <button
               onClick={() => navigate("/org/new")}
-              className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition cursor-pointer"
+              className="px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition cursor-pointer hidden sm:block"
             >
               Switch Org
             </button>
             <button
               onClick={handleSignOut}
-              className="px-3 py-1.5 text-xs text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
+              className="px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
             >
               Sign Out
             </button>
@@ -180,7 +180,7 @@ export default function OrgDashboard() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-8 space-y-4 sm:space-y-6">
         {success && (
           <div className="px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
             {success}
@@ -188,7 +188,7 @@ export default function OrgDashboard() {
         )}
 
         {/* ── Stats cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
           {[
             {
               label: "Projects",
@@ -218,15 +218,15 @@ export default function OrgDashboard() {
           ].map((s) => (
             <div
               key={s.label}
-              className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow"
+              className="bg-white border border-slate-200 rounded-xl p-3 sm:p-5 hover:shadow-md transition-shadow"
             >
               <div
-                className={`inline-flex items-center justify-center w-10 h-10 rounded-lg ${s.color} mb-3`}
+                className={`inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg ${s.color} mb-2 sm:mb-3`}
               >
-                <span className="text-lg font-bold">{s.value}</span>
+                <span className="text-sm sm:text-lg font-bold">{s.value}</span>
               </div>
-              <p className="text-2xl font-bold text-slate-900">{s.value}</p>
-              <p className="text-xs text-slate-500 mt-1">{s.label}</p>
+              <p className="text-xl sm:text-2xl font-bold text-slate-900">{s.value}</p>
+              <p className="text-[10px] sm:text-xs text-slate-500 mt-1">{s.label}</p>
             </div>
           ))}
         </div>
@@ -279,12 +279,12 @@ export default function OrgDashboard() {
             {projects.map((p) => (
               <div
                 key={p.id}
-                className="bg-white border border-slate-200 rounded-xl p-5 hover:border-[#2563EB]/30 hover:shadow-md transition group"
+                className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 hover:border-[#2563EB]/30 hover:shadow-md transition group"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-slate-900 font-semibold truncate">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <h3 className="text-sm sm:text-base text-slate-900 font-semibold truncate">
                         {p.name}
                       </h3>
                       <span
@@ -296,7 +296,7 @@ export default function OrgDashboard() {
                         {p.type}
                       </span>
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-slate-500">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] sm:text-xs text-slate-500">
                       <span>Template: {p.template}</span>
                       {p.member_limit && <span>Limit: {p.member_limit}</span>}
                       <span>Expiry: {p.expiry_days}d</span>
@@ -305,22 +305,22 @@ export default function OrgDashboard() {
                       </span>
                     </div>
                   </div>
-                  <div className="flex gap-2 ml-4 shrink-0">
+                  <div className="flex gap-2 shrink-0">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         copyFormLink(p.id);
                       }}
-                      className="px-3 py-1.5 bg-slate-50 hover:bg-blue-50 text-slate-500 hover:text-[#2563EB] border border-slate-200 rounded-lg text-xs transition cursor-pointer"
+                      className="px-3 py-1.5 bg-slate-50 hover:bg-blue-50 text-slate-500 hover:text-[#2563EB] border border-slate-200 rounded-lg text-xs transition cursor-pointer flex-1 sm:flex-none"
                       title="Copy form link"
                     >
-                      🔗 Link
+                      Link
                     </button>
                     <button
                       onClick={() => navigate(`/org/${slug}/project/${p.id}`)}
-                      className="px-3 py-1.5 bg-[#2563EB] hover:bg-[#2563EB]/90 rounded-lg text-xs font-medium text-white transition cursor-pointer shadow-sm"
+                      className="px-3 py-1.5 bg-[#2563EB] hover:bg-[#2563EB]/90 rounded-lg text-xs font-medium text-white transition cursor-pointer shadow-sm flex-1 sm:flex-none"
                     >
-                      Open →
+                      Open
                     </button>
                   </div>
                 </div>

@@ -770,22 +770,22 @@ export default function ProjectDashboard() {
   return (
     <div className="min-h-screen bg-[#f6f6f8] text-slate-900 font-['Public_Sans',sans-serif]">
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3">
-          <div className="flex items-center gap-3 text-sm min-w-0">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-2 sm:py-3 gap-2 sm:gap-0">
+          <div className="flex items-center gap-2 sm:gap-3 text-sm min-w-0">
             <BrandLogoLink
               className="shrink-0"
-              imageClassName="h-8 w-auto"
+              imageClassName="h-7 sm:h-8 w-auto"
               showText={false}
             />
-            <div className="w-px h-6 bg-slate-200 shrink-0" />
+            <div className="w-px h-6 bg-slate-200 shrink-0 hidden sm:block" />
             <button
               onClick={() => navigate(`/org/${slug}/dashboard`)}
-              className="text-[#2563EB] hover:underline transition cursor-pointer font-medium"
+              className="text-[#2563EB] hover:underline transition cursor-pointer font-medium text-xs sm:text-sm"
             >
               {slug}
             </button>
             <svg
-              className="w-4 h-4 text-slate-400"
+              className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -797,20 +797,20 @@ export default function ProjectDashboard() {
                 d="M9 5l7 7-7 7"
               />
             </svg>
-            <span className="font-bold text-slate-900 truncate max-w-xs">
+            <span className="font-bold text-slate-900 truncate max-w-32 sm:max-w-xs text-xs sm:text-sm">
               {project?.name || "Project"}
             </span>
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-1.5 sm:gap-2 flex-wrap">
             <button
               onClick={copyFormLink}
-              className="px-3 py-1.5 bg-[#2563EB] hover:bg-[#2563EB]/90 text-white rounded-lg text-xs font-medium transition cursor-pointer shadow-sm"
+              className="px-2 sm:px-3 py-1 sm:py-1.5 bg-[#2563EB] hover:bg-[#2563EB]/90 text-white rounded-lg text-[10px] sm:text-xs font-medium transition cursor-pointer shadow-sm"
             >
-              Copy Form Link
+              Copy Link
             </button>
             <button
               onClick={() => navigate(`/org/${slug}/bulk/${projectId}`)}
-              className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-medium transition cursor-pointer shadow-sm"
+              className="px-2 sm:px-3 py-1 sm:py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] sm:text-xs font-medium transition cursor-pointer shadow-sm"
             >
               Bulk Import
             </button>
@@ -834,20 +834,20 @@ export default function ProjectDashboard() {
                   },
                 });
               }}
-              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-medium transition cursor-pointer shadow-sm"
+              className="px-2 sm:px-3 py-1 sm:py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] sm:text-xs font-medium transition cursor-pointer shadow-sm"
             >
-              Generate Cards
+              Generate
             </button>
             <button
               onClick={handleExportCsv}
-              className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-lg text-xs font-medium transition cursor-pointer"
+              className="px-2 sm:px-3 py-1 sm:py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-lg text-[10px] sm:text-xs font-medium transition cursor-pointer"
             >
-              CSV Export
+              CSV
             </button>
           </div>
         </div>
       </div>
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 md:py-8 space-y-4 sm:space-y-6">
         {error && (
           <div className="px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
             {error}
@@ -872,7 +872,7 @@ export default function ProjectDashboard() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
           {[
             {
               label: "Total",
@@ -917,17 +917,17 @@ export default function ProjectDashboard() {
           ].map((stat) => (
             <div
               key={stat.label}
-              className={`${stat.bg} border border-slate-200 rounded-xl p-5`}
+              className={`${stat.bg} border border-slate-200 rounded-xl p-3 sm:p-5`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <div
-                  className={`w-10 h-10 ${stat.iconBg} rounded-lg flex items-center justify-center`}
+                  className={`w-8 h-8 sm:w-10 sm:h-10 ${stat.iconBg} rounded-lg flex items-center justify-center`}
                 >
-                  <span className={`text-lg font-bold ${stat.iconColor}`}>#</span>
+                  <span className={`text-sm sm:text-lg font-bold ${stat.iconColor}`}>#</span>
                 </div>
                 <div>
-                  <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-                  <p className="text-xs text-slate-500">{stat.label}</p>
+                  <p className={`text-xl sm:text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                  <p className="text-[10px] sm:text-xs text-slate-500">{stat.label}</p>
                 </div>
               </div>
             </div>
@@ -961,7 +961,7 @@ export default function ProjectDashboard() {
             )}
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-2 sm:gap-3">
             {[
               { label: "Queued", value: deliveryCounts.queued, color: "text-sky-600" },
               { label: "Generating", value: deliveryCounts.generating, color: "text-violet-600" },
@@ -1021,8 +1021,8 @@ export default function ProjectDashboard() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex gap-1 bg-white border border-slate-200 rounded-lg p-1">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3">
+          <div className="flex gap-1 bg-white border border-slate-200 rounded-lg p-1 overflow-x-auto">
             {["all", "pending", "approved", "rejected"].map((nextFilter) => (
               <button
                 key={nextFilter}
@@ -1030,7 +1030,7 @@ export default function ProjectDashboard() {
                   setFilter(nextFilter);
                   setSelected(new Set());
                 }}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${
+                className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer whitespace-nowrap ${
                   filter === nextFilter
                     ? "bg-[#2563EB] text-white shadow-sm"
                     : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"

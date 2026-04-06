@@ -135,7 +135,7 @@ export default function TokenPurchase() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-slate-950 px-4 py-10 flex items-center justify-center">
+    <div className="min-h-screen relative overflow-hidden bg-slate-950 px-3 sm:px-4 py-6 sm:py-10 flex items-center justify-center">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.35),_transparent_40%),radial-gradient(circle_at_bottom,_rgba(239,68,68,0.2),_transparent_35%)]" />
 
       <div className="relative w-full max-w-xl rounded-[28px] border border-white/15 bg-white shadow-2xl overflow-hidden">

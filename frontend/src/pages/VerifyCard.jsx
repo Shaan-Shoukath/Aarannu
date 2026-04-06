@@ -91,8 +91,8 @@ export default function VerifyCard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] font-['Public_Sans',sans-serif] p-6 flex items-center justify-center">
-      <div className="max-w-md w-full space-y-6">
+    <div className="min-h-screen bg-[#F9FAFB] font-['Public_Sans',sans-serif] p-4 sm:p-6 flex items-center justify-center">
+      <div className="max-w-md w-full space-y-5 sm:space-y-6">
         {/* ── Status badge ──────────────────────────────── */}
         <div className="text-center space-y-4">
           <div

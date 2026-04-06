@@ -135,16 +135,16 @@ export default function OrgOnboarding() {
     <div className="min-h-screen bg-[#f6f6f8] font-['Public_Sans',sans-serif] flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 sm:mb-8">
           <BrandLogoLink
             className="justify-center mb-3"
-            imageClassName="h-14 w-auto"
+            imageClassName="h-12 sm:h-14 w-auto"
             showText={false}
           />
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
             Aarannu Platform
           </h1>
-          <p className="text-slate-500 mt-2">
+          <p className="text-sm sm:text-base text-slate-500 mt-2">
             {step === "select"
               ? "Select an organization or create a new one"
               : "Create your organization to get started"}
