@@ -80,6 +80,7 @@ export default function RenderCard() {
             const pageHeight = isVertical ? 88.9 * MM : 53.98 * MM;
             const padding = 2 * MM;
 
+            // eslint-disable-next-line no-async-promise-executor
             return new Promise(async (resolveOuter) => {
               try {
                 const doc = new PDFDocument({

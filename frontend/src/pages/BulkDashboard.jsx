@@ -62,6 +62,7 @@ export default function BulkDashboard() {
   const [step, setStep] = useState(1); // 1=URL, 2=map, 3=result
 
   // Load project + form fields
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!token) return;
     (async () => {

@@ -24,11 +24,23 @@ export default function Login() {
   const [otpStep, setOtpStep] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [otpMessage, setOtpMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [approvalScreen, setApprovalScreen] = useState(null);
+
+  // forgotStep: false | 'email' | 'otp' | 'newpass'
+  const [forgotStep, setForgotStep] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotOtp, setForgotOtp] = useState("");
+  const [forgotOtpMessage, setForgotOtpMessage] = useState("");
+  const [forgotPassword, setForgotPassword] = useState("");
+  const [forgotConfirm, setForgotConfirm] = useState("");
+  const [forgotShowPass, setForgotShowPass] = useState(false);
+  const [forgotShowConfirm, setForgotShowConfirm] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setSuccessMessage("");
     setApprovalScreen(null);
 
     if (!email.trim() || !password.trim()) {
@@ -163,6 +175,113 @@ export default function Login() {
     }
   };
 
+  const handleForgotSendOtp = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (!forgotEmail.trim()) {
+      setError("Please enter your email address.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email: forgotEmail.trim(),
+      });
+      if (otpError) {
+        setError("Failed to send verification code. Please try again.");
+        return;
+      }
+      setForgotOtpMessage("A 6-digit code has been sent to your email.");
+      setForgotStep("otp");
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotVerifyOtp = async (e) => {
+    e.preventDefault();
+    setError("");
+    setForgotOtpMessage("");
+    if (!forgotOtp.trim() || forgotOtp.trim().length !== 6) {
+      setError("Please enter the 6-digit code from your email.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email: forgotEmail.trim(),
+        token: forgotOtp.trim(),
+        type: "email",
+      });
+      if (verifyError) {
+        setError("Invalid or expired code. Please try again.");
+        return;
+      }
+      setForgotStep("newpass");
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotResendOtp = async () => {
+    setError("");
+    setForgotOtpMessage("");
+    setLoading(true);
+    try {
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email: forgotEmail.trim(),
+      });
+      if (otpError) {
+        setError(otpError.message || "Failed to resend code.");
+      } else {
+        setForgotOtpMessage("A new code has been sent to your email.");
+      }
+    } catch {
+      setError("Failed to resend code.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotSetPassword = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (forgotPassword.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+    if (forgotPassword !== forgotConfirm) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: forgotPassword,
+      });
+      if (updateError) {
+        setError(updateError.message || "Failed to update password. Please try again.");
+        return;
+      }
+      await supabase.auth.signOut();
+      setForgotStep(false);
+      setForgotEmail("");
+      setForgotOtp("");
+      setForgotPassword("");
+      setForgotConfirm("");
+      setError("");
+      setSuccessMessage("Password updated successfully. Please sign in with your new password.");
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (approvalScreen === "pending") {
     return (
       <AccessStatusScreen
@@ -190,6 +309,287 @@ export default function Login() {
         secondaryLabel="Go Home"
         secondaryTo="/"
       />
+    );
+  }
+
+  const forgotBackToLogin = () => {
+    setForgotStep(false);
+    setForgotEmail("");
+    setForgotOtp("");
+    setForgotOtpMessage("");
+    setForgotPassword("");
+    setForgotConfirm("");
+    setError("");
+    setSuccessMessage("");
+  };
+
+  // ── Step 1: enter email ──────────────────────────────────────────────────
+  if (forgotStep === "email") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8] font-['Public_Sans',sans-serif] px-4 py-8 sm:p-8">
+        <div className="w-full max-w-md space-y-6 sm:space-y-8">
+          <div className="text-center">
+            <BrandLogoLink className="justify-center mb-6" imageClassName="h-12 w-auto" />
+            <div className="w-14 h-14 bg-[#1152d4]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-[#1152d4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">Reset your password</h1>
+            <p className="text-slate-500 text-sm">Enter your email and we&apos;ll send you a verification code.</p>
+          </div>
+
+          <form onSubmit={handleForgotSendOtp} className="space-y-5">
+            {error && (
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
+            )}
+            <div>
+              <label htmlFor="forgot-email" className="block text-sm font-medium text-slate-700 mb-1">
+                Email address
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </span>
+                <input
+                  id="forgot-email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="name@company.com"
+                  className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] sm:text-sm py-2.5 outline-none"
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#1152d4] hover:bg-[#1152d4]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1152d4] transition-all duration-200 shadow-lg shadow-[#1152d4]/25 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : (
+                "Send verification code"
+              )}
+            </button>
+          </form>
+
+          <p className="text-center text-sm text-slate-500">
+            <button type="button" onClick={forgotBackToLogin} className="text-[#1152d4] hover:underline font-medium">
+              Back to login
+            </button>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Step 2: enter OTP ────────────────────────────────────────────────────
+  if (forgotStep === "otp") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8] font-['Public_Sans',sans-serif] px-4 py-8 sm:p-8">
+        <div className="w-full max-w-md space-y-6 sm:space-y-8">
+          <div className="text-center">
+            <BrandLogoLink className="justify-center mb-6" imageClassName="h-12 w-auto" />
+            <div className="w-14 h-14 bg-[#1152d4]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-[#1152d4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">Check your email</h1>
+            <p className="text-slate-500 text-sm">
+              Enter the 6-digit code sent to{" "}
+              <span className="font-medium text-slate-700">{forgotEmail}</span>
+            </p>
+          </div>
+
+          <form onSubmit={handleForgotVerifyOtp} className="space-y-5">
+            {error && (
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
+            )}
+            {forgotOtpMessage && (
+              <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm">{forgotOtpMessage}</div>
+            )}
+            <div>
+              <label htmlFor="forgot-otp" className="block text-sm font-medium text-slate-700 mb-1">
+                Verification Code
+              </label>
+              <input
+                id="forgot-otp"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]{6}"
+                maxLength={6}
+                required
+                value={forgotOtp}
+                onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="000000"
+                className="block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] sm:text-sm py-3 outline-none tracking-[0.5em] text-center font-mono text-xl"
+              />
+            </div>
+            <p className="text-xs text-slate-500 text-center">
+              Didn&apos;t receive the code?{" "}
+              <button
+                type="button"
+                onClick={handleForgotResendOtp}
+                disabled={loading}
+                className="text-[#1152d4] hover:underline font-medium"
+              >
+                Resend code
+              </button>
+            </p>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#1152d4] hover:bg-[#1152d4]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1152d4] transition-all duration-200 shadow-lg shadow-[#1152d4]/25 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : (
+                "Verify code"
+              )}
+            </button>
+          </form>
+
+          <p className="text-center text-sm text-slate-500">
+            <button
+              type="button"
+              onClick={() => { setForgotStep("email"); setForgotOtp(""); setError(""); setForgotOtpMessage(""); }}
+              className="text-[#1152d4] hover:underline font-medium"
+            >
+              Back
+            </button>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Step 3: set new password ─────────────────────────────────────────────
+  if (forgotStep === "newpass") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8] font-['Public_Sans',sans-serif] px-4 py-8 sm:p-8">
+        <div className="w-full max-w-md space-y-6 sm:space-y-8">
+          <div className="text-center">
+            <BrandLogoLink className="justify-center mb-6" imageClassName="h-12 w-auto" />
+            <div className="w-14 h-14 bg-[#1152d4]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-[#1152d4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">Set new password</h1>
+            <p className="text-slate-500 text-sm">Choose a strong password for your account.</p>
+          </div>
+
+          <form onSubmit={handleForgotSetPassword} className="space-y-5">
+            {error && (
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
+            )}
+            <div>
+              <label htmlFor="new-password" className="block text-sm font-medium text-slate-700 mb-1">
+                New password
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </span>
+                <input
+                  id="new-password"
+                  type={forgotShowPass ? "text" : "password"}
+                  autoComplete="new-password"
+                  required
+                  value={forgotPassword}
+                  onChange={(e) => setForgotPassword(e.target.value)}
+                  placeholder="Min 8 characters"
+                  className="pl-10 pr-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] sm:text-sm py-2.5 outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setForgotShowPass(!forgotShowPass)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                >
+                  {forgotShowPass ? (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="confirm-password" className="block text-sm font-medium text-slate-700 mb-1">
+                Confirm password
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </span>
+                <input
+                  id="confirm-password"
+                  type={forgotShowConfirm ? "text" : "password"}
+                  autoComplete="new-password"
+                  required
+                  value={forgotConfirm}
+                  onChange={(e) => setForgotConfirm(e.target.value)}
+                  placeholder="Repeat your password"
+                  className="pl-10 pr-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] sm:text-sm py-2.5 outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setForgotShowConfirm(!forgotShowConfirm)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                >
+                  {forgotShowConfirm ? (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#1152d4] hover:bg-[#1152d4]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1152d4] transition-all duration-200 shadow-lg shadow-[#1152d4]/25 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : (
+                "Update password"
+              )}
+            </button>
+          </form>
+        </div>
+      </div>
     );
   }
 
@@ -464,6 +864,11 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
+            {successMessage && (
+              <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm">
+                {successMessage}
+              </div>
+            )}
             {error && (
               <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
                 {error}
@@ -601,7 +1006,13 @@ export default function Login() {
               </div>
               <button
                 type="button"
-                className="text-sm font-medium text-[#1152d4] hover:text-[#1152d4]/80 transition-colors text-left sm:text-right"
+                onClick={() => {
+                  setForgotEmail(email);
+                  setError("");
+                  setSuccessMessage("");
+                  setForgotStep("email");
+                }}
+                className="text-sm font-medium text-[#1152d4] hover:text-[#1152d4]/80 transition-colors text-left sm:text-right py-2 px-1"
               >
                 Forgot password?
               </button>

@@ -83,7 +83,7 @@ export default function BulkGenerator({
   const [error, setError] = useState("");
   const [currentMember, setCurrentMember] = useState(null);
   const cancelRef = useRef(false);
-  const downloadFormat = "pdf"; // always PDF (client-side generation)
+  const [downloadFormat, setDownloadFormat] = useState("pdf");
 
   // Email step state
   const [emailProgress, setEmailProgress] = useState({

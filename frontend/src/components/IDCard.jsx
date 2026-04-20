@@ -54,6 +54,7 @@ const IDCard = forwardRef(function IDCard(
     },
     fullGradientBg = false,
     gradientOpacity = 0.55,
+    template = "",
   },
   ref,
 ) {

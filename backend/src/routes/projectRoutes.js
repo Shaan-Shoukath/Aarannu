@@ -43,11 +43,33 @@ router.get("/org/:id", verifyToken, checkOrgRole("member"), listProjects);
 // Get single project
 router.get("/:projectId", verifyToken, getProject);
 
-// Update project (admin)
-router.put("/:projectId", verifyToken, updateProject);
+// ─── Shared helper: resolve project → org_id → checkOrgRole ────────────────
+// Many project routes need to gate on org membership but only have a projectId
+// in the URL (not an orgId). This inline middleware looks up the project first,
+// then injects its org_id into req.params.id so checkOrgRole can read it.
+const resolveProjectOrg = (minRole) => [
+  verifyToken,
+  async (req, res, next) => {
+    try {
+      const { data: project } = await projectService.getProjectById(
+        req.params.projectId,
+      );
+      if (!project)
+        return res.status(404).json({ error: "Project not found." });
+      req.params.id = project.org_id; // checkOrgRole reads req.params.id
+      next();
+    } catch (err) {
+      next(err);
+    }
+  },
+  checkOrgRole(minRole),
+];
 
-// Get project stats
-router.get("/:projectId/stats", verifyToken, getProjectStats);
+// Update project — requires admin role in the project's org
+router.put("/:projectId", ...resolveProjectOrg("admin"), updateProject);
+
+// Get project stats — requires at least member role in the project's org
+router.get("/:projectId/stats", ...resolveProjectOrg("member"), getProjectStats);
 
 // Export members as CSV (auth + org membership check)
 router.get(

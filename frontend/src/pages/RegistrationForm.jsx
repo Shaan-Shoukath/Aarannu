@@ -45,6 +45,7 @@ export default function RegistrationForm() {
   const [uploadingField, setUploadingField] = useState(null);
 
   // Load project info + form fields
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadProject(); }, [projectId]);
 
   const loadProject = async () => {

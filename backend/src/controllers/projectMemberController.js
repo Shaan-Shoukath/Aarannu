@@ -248,7 +248,9 @@ const listMembers = async (req, res, next) => {
  */
 const approve = async (req, res, next) => {
   try {
-    const { data, error } = await memberService.approveMember(req.params.id);
+    // req.targetMemberId is set by resolveMemberOrg in the router
+    const memberId = req.targetMemberId || req.params.id;
+    const { data, error } = await memberService.approveMember(memberId);
     if (error) return res.status(500).json({ error: error.message });
 
     const { members, warning } = await prepareMembersForDelivery(data ? [data] : []);
@@ -264,7 +266,8 @@ const approve = async (req, res, next) => {
  */
 const reject = async (req, res, next) => {
   try {
-    const { data, error } = await memberService.rejectMember(req.params.id);
+    const memberId = req.targetMemberId || req.params.id;
+    const { data, error } = await memberService.rejectMember(memberId);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ member: data });
   } catch (err) {
@@ -300,7 +303,7 @@ const bulkApprove = async (req, res, next) => {
 const queueDelivery = async (req, res, next) => {
   try {
     const { data: member, error } = await memberService.getMemberById(
-      req.params.id,
+      req.targetMemberId || req.params.id,
     );
 
     if (error) return res.status(500).json({ error: error.message });
@@ -336,7 +339,7 @@ const updateDeliveryStatus = async (req, res, next) => {
     }
 
     const { data, error } = await memberService.updateMemberDelivery(
-      req.params.id,
+      req.targetMemberId || req.params.id,
       {
         phase,
         error: req.body?.error,
@@ -362,7 +365,8 @@ const updateDeliveryStatus = async (req, res, next) => {
  */
 const removeMember = async (req, res, next) => {
   try {
-    const { error } = await memberService.deleteMember(req.params.id);
+    const memberId = req.targetMemberId || req.params.id;
+    const { error } = await memberService.deleteMember(memberId);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ success: true });
   } catch (err) {

@@ -55,6 +55,7 @@ export default function ProjectCreate() {
   ];
 
   // Load org
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadOrg(); }, [slug]);
 
   const loadOrg = async () => {

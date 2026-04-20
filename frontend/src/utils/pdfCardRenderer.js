@@ -1,3 +1,4 @@
+/* global Buffer */
 /**
  * pdfCardRenderer.js — Premium Client-Side PDF Card Generator (PDFKit)
  * =====================================================================
@@ -172,11 +173,6 @@ function lerpColor(c1, c2, t) {
   ];
 }
 
-function lerpHex(hex1, hex2, t) {
-  return rgbToHex(lerpColor(hexToRgb(hex1), hexToRgb(hex2), t));
-}
-
-
 // ── Gradient Drawing ─────────────────────────────────
 function drawDiagonalGradient(doc, x, y, w, h, startHex, endHex) {
   if (typeof doc.linearGradient === "function") {
@@ -199,21 +195,6 @@ function drawGradientH(doc, x, y, w, h, startHex, endHex, steps = 40) {
     doc.rect(x + i * sw, y, sw + 0.3, h).fill(rgbToHex(c));
     doc.restore();
   }
-}
-
-// ── Geometric Mesh Grid ──────────────────────────────
-function drawMeshGrid(doc, x, y, w, h, _colorHex, opacity) {
-  doc.save();
-  doc.strokeColor("#ffffff").strokeOpacity(opacity).lineWidth(0.2);
-
-  const gridSize = 3.5 * MM;
-  for (let gx = x; gx <= x + w; gx += gridSize) {
-    doc.moveTo(gx, y).lineTo(gx, y + h).stroke();
-  }
-  for (let gy = y; gy <= y + h; gy += gridSize) {
-    doc.moveTo(x, gy).lineTo(x + w, gy).stroke();
-  }
-  doc.restore();
 }
 
 // ── Image / QR Utilities ─────────────────────────────
@@ -804,7 +785,7 @@ function drawBack(doc, params, images, fonts) {
 
   const labels = TEMPLATE_BACK_LABELS[template] || TEMPLATE_BACK_LABELS.custom;
   const backFields = (customFields || []).filter((f) => f.side === "back");
-  const { address = "", id_number = "0000", dob = "", customValues = {} } = data;
+  const { address = "", dob = "", customValues = {} } = data;
   const displayAddress = uppercaseLatinOnly(address || "Address not provided");
   const displayOrgName = uppercaseLatinOnly(orgName || "Community ID Platform");
   const displayValidityText = uppercaseLatinOnly(validityText);

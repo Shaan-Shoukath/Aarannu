@@ -26,10 +26,6 @@ export default function OrgOnboarding() {
   const [slugChecking, setSlugChecking] = useState(false);
 
   // Load user's organizations
-  useEffect(() => {
-    loadOrgs();
-  }, []);
-
   const loadOrgs = async () => {
     try {
       const {
@@ -52,6 +48,11 @@ export default function OrgOnboarding() {
       setStep("create");
     }
   };
+
+  useEffect(() => {
+    loadOrgs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-generate slug from name
   const handleNameChange = (val) => {
@@ -110,7 +111,7 @@ export default function OrgOnboarding() {
       }
 
       navigate(`/org/${json.org.slug}/dashboard`);
-    } catch (err) {
+    } catch {
       setError("Network error. Please try again.");
       setLoading(false);
     }

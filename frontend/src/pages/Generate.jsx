@@ -86,7 +86,6 @@ export default function Generate() {
 
   // PDF preview state
   const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
-  const [pdfBlob, setPdfBlob] = useState(null);
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const prevBlobUrlRef = useRef(null);
 
@@ -309,6 +308,7 @@ export default function Generate() {
       `Loaded ${normalizedMembers.length} approved project member(s) into the queue.`,
     );
     importedProjectMembersRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state, orgName]);
 
   // Keep rangeEnd clamped when members change
@@ -388,7 +388,6 @@ export default function Generate() {
       const url = URL.createObjectURL(blob);
       prevBlobUrlRef.current = url;
       setPdfBlobUrl(url);
-      setPdfBlob(blob);
     } catch (err) {
       console.error("PDF preview generation failed:", err);
     } finally {
