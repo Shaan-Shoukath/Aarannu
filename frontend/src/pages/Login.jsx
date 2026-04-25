@@ -739,7 +739,16 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex bg-[#f6f6f8] font-['Public_Sans',sans-serif]">
+    <>
+    <style>{`
+    @keyframes cardFloat {
+      0%, 100% { transform: rotate(-5deg) translateY(0px); }
+      50% { transform: rotate(-3deg) translateY(-12px); }
+    }
+    .card-float { animation: cardFloat 7s ease-in-out infinite; transition: transform 2.5s ease-in-out; }
+    .card-float:hover { animation: none; transform: rotate(0deg) scale(1.05); transition: transform 2.5s ease-in-out; }
+  `}</style>
+  <div className="min-h-screen flex bg-black font-['Public_Sans',sans-serif]">
       <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-slate-900 items-center justify-center">
         {/* Back to home */}
         <a href="/" className="absolute top-6 left-6 z-30 flex items-center gap-1.5 text-white/60 hover:text-white text-sm font-medium transition-colors">
@@ -759,7 +768,7 @@ export default function Login() {
           />
         </div>
 
-        <div className="relative z-20 transform -rotate-[5deg] hover:rotate-0 transition-all duration-700 ease-in-out hover:scale-105">
+        <div className="card-float relative z-20">
           <div
             className="w-105 bg-white rounded-xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] overflow-hidden ring-1 ring-white/10 relative"
             style={{ aspectRatio: "85.6 / 53.98" }}
@@ -858,9 +867,9 @@ export default function Login() {
         </div>
       </div>
 
-      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center px-4 py-6 sm:p-8 lg:p-12 bg-white relative">
+      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center px-4 py-6 sm:p-8 lg:p-12 bg-black relative">
         {/* Mobile back to home */}
-        <a href="/" className="lg:hidden absolute top-4 left-4 flex items-center gap-1 text-slate-500 hover:text-[#1152d4] text-sm font-medium transition-colors">
+        <a href="/" className="lg:hidden absolute top-4 left-4 flex items-center gap-1 text-zinc-400 hover:text-[#1152d4] text-sm font-medium transition-colors">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
           Home
         </a>
@@ -870,48 +879,29 @@ export default function Login() {
               className="justify-center lg:justify-start mb-6"
               imageClassName="h-12 w-auto"
             />
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+            <h1 className="text-3xl font-bold text-white mb-2">
               Welcome back
             </h1>
-            <p className="text-slate-500">
+            <p className="text-zinc-400">
               Log in to your secure identity dashboard
             </p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
             {successMessage && (
-              <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm">
-                {successMessage}
-              </div>
+              <div className="p-3 rounded-lg bg-green-900/30 border border-green-700 text-green-400 text-sm">{successMessage}</div>
             )}
             {error && (
-              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
-                {error}
-              </div>
+              <div className="p-3 rounded-lg bg-red-900/30 border border-red-700 text-red-400 text-sm">{error}</div>
             )}
 
             <div className="space-y-4">
               <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-slate-700 mb-1"
-                >
-                  Email address
-                </label>
+                <label htmlFor="email" className="block text-sm font-medium text-zinc-300 mb-1">Email address</label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                      />
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-zinc-500">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </span>
                   <input
@@ -922,32 +912,17 @@ export default function Login() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@company.com"
-                    className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-slate-700 mb-1"
-                >
-                  Password
-                </label>
+                <label htmlFor="password" className="block text-sm font-medium text-zinc-300 mb-1">Password</label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                      />
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-zinc-500">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                   </span>
                   <input
@@ -958,47 +933,13 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Password"
-                    className="pl-10 pr-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 pr-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-[#1152d4] sm:text-sm py-2.5 outline-none"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
-                  >
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-500 hover:text-zinc-300">
                     {showPassword ? (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
-                        />
-                      </svg>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" /></svg>
                     ) : (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                        />
-                      </svg>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                     )}
                   </button>
                 </div>
@@ -1007,100 +948,36 @@ export default function Login() {
 
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-2">
               <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-[#1152d4] focus:ring-[#1152d4] border-slate-300 rounded"
-                />
-                <label
-                  htmlFor="remember-me"
-                  className="ml-2 block text-sm text-slate-600"
-                >
-                  Keep me logged in for 30 days
-                </label>
+                <input id="remember-me" type="checkbox" className="h-4 w-4 text-[#1152d4] focus:ring-[#1152d4] border-zinc-600 rounded bg-zinc-900" />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-zinc-400">Keep me logged in for 30 days</label>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setForgotEmail(email);
-                  setError("");
-                  setSuccessMessage("");
-                  setForgotStep("email");
-                }}
-                className="text-sm font-medium text-[#1152d4] hover:text-[#1152d4]/80 transition-colors text-left sm:text-right py-2 px-1"
-              >
+              <button type="button" onClick={() => { setForgotEmail(email); setError(""); setSuccessMessage(""); setForgotStep("email"); }} className="text-sm font-medium text-[#1152d4] hover:text-[#1152d4]/80 transition-colors text-left sm:text-right py-2 px-1">
                 Forgot password?
               </button>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#1152d4] hover:bg-[#1152d4]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1152d4] transition-all duration-200 shadow-lg shadow-[#1152d4]/25 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <button type="submit" disabled={loading} className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#1152d4] hover:bg-[#1152d4]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1152d4] focus:ring-offset-black transition-all duration-200 shadow-lg shadow-[#1152d4]/25 disabled:opacity-50 disabled:cursor-not-allowed">
               {loading ? (
-                <svg
-                  className="animate-spin h-5 w-5 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-              ) : (
-                <>
-                  <span>Sign in</span>
-                  <span>&rarr;</span>
-                </>
-              )}
+                <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+              ) : (<><span>Sign in</span><span>&rarr;</span></>)}
             </button>
           </form>
 
-          <p className="text-center text-sm text-slate-500">
+          <p className="text-center text-sm text-zinc-500">
             Don&apos;t have an account?{" "}
-            <Link
-              to="/signup"
-              className="font-semibold text-[#1152d4] hover:text-[#1152d4]/80 transition-colors"
-            >
-              Get started for free
-            </Link>
+            <Link to="/signup" className="font-semibold text-[#1152d4] hover:text-[#1152d4]/80 transition-colors">Get started for free</Link>
           </p>
 
           <div className="flex items-center justify-center gap-4 pt-2">
-            <a
-              href="#"
-              className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              Security
-            </a>
-            <span className="text-slate-300">.</span>
-            <a
-              href="#"
-              className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              Privacy Policy
-            </a>
-            <span className="text-slate-300">.</span>
-            <a
-              href="#"
-              className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              Terms of Service
-            </a>
+            <a href="#" className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors">Security</a>
+            <span className="text-zinc-700">.</span>
+            <a href="#" className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors">Privacy Policy</a>
+            <span className="text-zinc-700">.</span>
+            <a href="#" className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors">Terms of Service</a>
           </div>
         </div>
       </div>
     </div>
+    </>
   );
 }

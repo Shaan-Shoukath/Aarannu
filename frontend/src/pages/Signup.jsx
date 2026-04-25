@@ -213,7 +213,7 @@ export default function Signup() {
   // ── Success state ──
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8] font-['Public_Sans',sans-serif] px-4 py-8 sm:p-8">
+      <div className="min-h-screen flex items-center justify-center bg-black font-['Public_Sans',sans-serif] px-4 py-8 sm:p-8">
         <div className="max-w-md text-center space-y-6">
           <BrandLogoLink
             className="justify-center"
@@ -221,28 +221,15 @@ export default function Signup() {
             showText={false}
           />
           <div className="w-16 h-16 bg-[#1152d4]/10 rounded-full flex items-center justify-center mx-auto">
-            <svg
-              className="w-8 h-8 text-[#1152d4]"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
+            <svg className="w-8 h-8 text-[#1152d4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-slate-900">Account Ready</h2>
-          <p className="text-slate-500">
+          <h2 className="text-2xl font-bold text-white">Account Ready</h2>
+          <p className="text-zinc-400">
             Your Aarannu workspace is ready. You can start exploring immediately, and your 50 free starter tokens have been added to your account.
           </p>
-          <Link
-            to="/dashboard"
-            className="inline-flex items-center px-6 py-2.5 bg-[#1152d4] text-white text-sm font-medium rounded-lg hover:bg-[#1152d4]/90 transition-colors shadow-lg shadow-[#1152d4]/25"
-          >
+          <Link to="/dashboard" className="inline-flex items-center px-6 py-2.5 bg-[#1152d4] text-white text-sm font-medium rounded-lg hover:bg-[#1152d4]/90 transition-colors shadow-lg shadow-[#1152d4]/25">
             Go to Dashboard
           </Link>
         </div>
@@ -253,19 +240,20 @@ export default function Signup() {
   // ── OTP Verification step ──
   if (otpStep) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8] font-['Public_Sans',sans-serif] px-4 py-8 sm:p-8">
+      <div className="min-h-screen flex items-center justify-center bg-black font-['Public_Sans',sans-serif] px-4 py-8 sm:p-8">
         <div className="w-full max-w-md space-y-6 sm:space-y-8">
           <div className="text-center">
             <BrandLogoLink
               className="justify-center mb-6"
               imageClassName="h-12 w-auto"
+              textClassName="text-2xl font-bold text-white tracking-tight"
             />
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">
+            <h1 className="text-2xl font-bold text-white mb-2">
               Verify your email
             </h1>
-            <p className="text-slate-500 text-sm">
+            <p className="text-zinc-400 text-sm">
               Enter the 6-digit code sent to{" "}
-              <span className="font-medium text-slate-700">{email}</span>
+              <span className="font-medium text-zinc-200">{email}</span>
             </p>
           </div>
 
@@ -384,51 +372,84 @@ export default function Signup() {
   }
 
   return (
-    <div className="min-h-screen flex bg-white font-['Public_Sans',sans-serif]">
-      {/* ─── Left Panel: Decorative ─── */}
+    <>
+    <style>{`
+      @keyframes cardFloat {
+        0%, 100% { transform: rotate(-5deg) translateY(0px); }
+        50% { transform: rotate(-3deg) translateY(-12px); }
+      }
+      .signup-card-float { animation: cardFloat 7s ease-in-out infinite; transition: transform 2.5s ease-in-out; }
+      .signup-card-float:hover { animation: none; transform: rotate(0deg) scale(1.05); transition: transform 2.5s ease-in-out; }
+    `}</style>
+    <div className="min-h-screen flex bg-black font-['Public_Sans',sans-serif]">
+      {/* ─── Left Panel: Animated ID Card ─── */}
       <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-slate-900 items-center justify-center">
         <div className="absolute inset-0 z-0">
-          <div className="absolute -top-20 -left-20 w-150 h-150 bg-linear-to-br from-[#1152d4] via-blue-600 to-transparent rounded-full blur-[100px] opacity-60" />
-          <div className="absolute -bottom-20 -right-20 w-150 h-150 bg-linear-to-tl from-red-500 via-red-500 to-transparent rounded-full blur-[100px] opacity-40" />
-          <div
-            className="absolute inset-0 bg-slate-900/40 z-10"
-            style={{
-              backgroundImage:
-                "radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px)",
-              backgroundSize: "20px 20px",
-            }}
-          />
+          <div className="absolute -top-20 -left-20 w-[600px] h-[600px] bg-gradient-to-br from-[#1152d4] via-blue-600 to-transparent rounded-full blur-[100px] opacity-60" />
+          <div className="absolute -bottom-20 -right-20 w-[600px] h-[600px] bg-gradient-to-tl from-[#1152d4] via-blue-800 to-transparent rounded-full blur-[100px] opacity-40" />
+          <div className="absolute inset-0 bg-slate-900/40 z-10" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
         </div>
 
-        <div className="relative z-20 flex flex-col items-center text-center px-12">
-          <div className="w-20 h-20 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl flex items-center justify-center mb-8">
-            <svg
-              className="w-10 h-10 text-white"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
-            </svg>
+        <div className="signup-card-float relative z-20">
+          <div className="w-[420px] bg-white rounded-xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] overflow-hidden ring-1 ring-white/10 relative" style={{ aspectRatio: "85.6 / 53.98" }}>
+            <div className="absolute inset-0 z-0">
+              <div className="absolute -top-10 -right-10 w-48 h-48 bg-gradient-to-bl from-[#1152d4] to-blue-600 rounded-full blur-2xl opacity-20" />
+              <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-gradient-to-tr from-[#7C3AED] to-purple-400 rounded-full blur-2xl opacity-10" />
+            </div>
+            <div className="absolute top-4 left-6 right-6 flex items-center gap-2 z-10">
+              <img src="/aarannu.png" alt="" className="h-8 w-auto" />
+              <div className="flex flex-col leading-tight">
+                <span className="text-[10px] font-bold text-[#1152d4] uppercase tracking-wide">Aarannu</span>
+                <span className="text-[8px] text-slate-500 font-medium">Community Edition</span>
+              </div>
+            </div>
+            <div className="absolute top-16 left-6 right-6 bottom-6 flex gap-5 z-10">
+              <div className="w-24 h-28 shrink-0 relative rounded-md overflow-hidden bg-slate-200 flex items-center justify-center">
+                <svg className="w-10 h-10 text-slate-400" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>
+              </div>
+              <div className="flex-1 flex flex-col justify-center space-y-2">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800">Shaan Shoukath</h3>
+                  <p className="text-[9px] text-slate-500 font-medium uppercase tracking-wide">Inventory Manager</p>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex justify-between border-b border-slate-100 pb-1">
+                    <span className="text-[8px] text-slate-400 uppercase font-semibold">EMP ID</span>
+                    <span className="text-[10px] font-mono font-bold text-slate-700">INV-2026</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-100 pb-1">
+                    <span className="text-[8px] text-slate-400 uppercase font-semibold">Join Date</span>
+                    <span className="text-[10px] font-semibold text-slate-700">Jan 2026</span>
+                  </div>
+                </div>
+                <div className="pt-1">
+                  <div className="w-full h-8 bg-slate-50 border border-slate-100 rounded flex items-center justify-center">
+                    <div className="h-4 w-32 bg-slate-300 rounded-sm opacity-50" />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <h2 className="text-3xl font-bold text-white mb-3">
-            Try Aarannu Instantly
-          </h2>
-          <p className="text-slate-300 text-sm leading-relaxed max-w-sm">
-            Create your account to explore the digital ID card platform right away with 50 free starter tokens.
-          </p>
+          <div className="absolute -right-12 top-8 bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-lg shadow-xl animate-pulse">
+            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M3 11h2v2H3v-2zm0-4h2v2H3V7zm0 8h2v2H3v-2zm4-4h2v2H7v-2zm0-4h2v2H7V7zm0 8h2v2H7v-2zm4-4h2v2h-2v-2zm0-4h2v2h-2V7zm0 8h2v2h-2v-2zm4-4h2v2h-2v-2zm0-4h2v2h-2V7zm0 8h2v2h-2v-2z" /></svg>
+          </div>
+          <div className="absolute -left-10 bottom-4 bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-lg shadow-xl">
+            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M17.81 4.47c-.08 0-.16-.02-.23-.06C15.66 3.42 14 3 12.01 3c-1.98 0-3.86.47-5.57 1.41-.24.13-.54.04-.68-.2-.13-.24-.04-.55.2-.68C7.82 2.52 9.86 2 12.01 2c2.13 0 3.99.47 6.03 1.52.25.13.34.43.21.67-.09.18-.26.28-.44.28z" /></svg>
+          </div>
         </div>
 
         <div className="absolute bottom-12 left-12 z-20 text-white max-w-md">
-          <p className="text-slate-400 text-xs">
-            Secure • Verified • Production-grade
-          </p>
+          <h2 className="text-3xl font-bold mb-2">Join Aarannu Today</h2>
+          <p className="text-slate-300 text-sm leading-relaxed">Create your digital identity and get 50 free starter tokens instantly.</p>
         </div>
       </div>
 
       {/* ─── Right Panel: Signup Form ─── */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center px-4 py-6 sm:p-8 lg:p-12 bg-white relative overflow-y-auto">
+      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center px-4 py-6 sm:p-8 lg:p-12 bg-black relative overflow-y-auto">
         {/* Mobile back to home */}
-        <a href="/" className="lg:hidden absolute top-4 left-4 flex items-center gap-1 text-slate-500 hover:text-[#1152d4] text-sm font-medium transition-colors z-10">
+        <a href="/" className="lg:hidden absolute top-4 left-4 flex items-center gap-1 text-zinc-400 hover:text-[#1152d4] text-sm font-medium transition-colors z-10">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
           Home
         </a>
@@ -438,11 +459,12 @@ export default function Signup() {
             <BrandLogoLink
               className="justify-center lg:justify-start mb-6"
               imageClassName="h-12 w-auto"
+              textClassName="text-2xl font-bold text-white tracking-tight"
             />
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+            <h1 className="text-3xl font-bold text-white mb-2">
               Create your account
             </h1>
-            <p className="text-slate-500">
+            <p className="text-zinc-400">
               Fill in your details to start your Aarannu trial.
             </p>
           </div>
@@ -450,7 +472,7 @@ export default function Signup() {
           {/* Form */}
           <form onSubmit={handleSignup} className="space-y-5">
             {error && (
-              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+              <div className="p-3 rounded-lg bg-red-900/30 border border-red-700 text-red-400 text-sm">
                 {error}
               </div>
             )}
@@ -460,12 +482,12 @@ export default function Signup() {
               <div>
                 <label
                   htmlFor="name"
-                  className="block text-sm font-medium text-slate-700 mb-1"
+                  className="block text-sm font-medium text-zinc-300 mb-1"
                 >
                   Full Name
                 </label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-zinc-500">
                     <svg
                       className="w-5 h-5"
                       fill="none"
@@ -487,7 +509,7 @@ export default function Signup() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Alex Morgan"
-                    className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
                   />
                 </div>
               </div>
@@ -496,12 +518,12 @@ export default function Signup() {
               <div>
                 <label
                   htmlFor="role"
-                  className="block text-sm font-medium text-slate-700 mb-1"
+                  className="block text-sm font-medium text-zinc-300 mb-1"
                 >
                   Role / Designation
                 </label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-zinc-500">
                     <svg
                       className="w-5 h-5"
                       fill="none"
@@ -522,7 +544,7 @@ export default function Signup() {
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
                     placeholder="Member (default)"
-                    className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
                   />
                 </div>
               </div>
@@ -531,12 +553,12 @@ export default function Signup() {
               <div>
                 <label
                   htmlFor="signup-email"
-                  className="block text-sm font-medium text-slate-700 mb-1"
+                  className="block text-sm font-medium text-zinc-300 mb-1"
                 >
                   Email address
                 </label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-zinc-500">
                     <svg
                       className="w-5 h-5"
                       fill="none"
@@ -559,7 +581,7 @@ export default function Signup() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@company.com"
-                    className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
                   />
                 </div>
               </div>
@@ -568,12 +590,12 @@ export default function Signup() {
               <div>
                 <label
                   htmlFor="signup-password"
-                  className="block text-sm font-medium text-slate-700 mb-1"
+                  className="block text-sm font-medium text-zinc-300 mb-1"
                 >
                   Password
                 </label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-zinc-500">
                     <svg
                       className="w-5 h-5"
                       fill="none"
@@ -595,7 +617,7 @@ export default function Signup() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Min. 8 characters"
-                    className="pl-10 pr-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 pr-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
                   />
                   <button
                     type="button"
@@ -645,12 +667,12 @@ export default function Signup() {
               <div>
                 <label
                   htmlFor="confirm-password"
-                  className="block text-sm font-medium text-slate-700 mb-1"
+                  className="block text-sm font-medium text-zinc-300 mb-1"
                 >
                   Confirm Password
                 </label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-zinc-500">
                     <svg
                       className="w-5 h-5"
                       fill="none"
@@ -672,7 +694,7 @@ export default function Signup() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Re-enter password"
-                    className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
                   />
                 </div>
               </div>
@@ -682,7 +704,7 @@ export default function Signup() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#1152d4] hover:bg-[#1152d4]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1152d4] transition-all duration-200 shadow-lg shadow-[#1152d4]/25 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#1152d4] hover:bg-[#1152d4]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1152d4] focus:ring-offset-black transition-all duration-200 shadow-lg shadow-[#1152d4]/25 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <svg
@@ -711,7 +733,7 @@ export default function Signup() {
           </form>
 
           {/* Switch to Login */}
-          <p className="text-center text-sm text-slate-500">
+          <p className="text-center text-sm text-zinc-500">
             Already have an account?{" "}
             <Link
               to="/login"
@@ -723,5 +745,6 @@ export default function Signup() {
         </div>
       </div>
     </div>
+    </>
   );
 }
