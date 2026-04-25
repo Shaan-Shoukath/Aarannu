@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AccessStatusScreen from "../components/AccessStatusScreen";
 import BrandLogoLink from "../components/BrandLogoLink";
@@ -37,6 +37,17 @@ export default function Login() {
   const [forgotShowPass, setForgotShowPass] = useState(false);
   const [forgotShowConfirm, setForgotShowConfirm] = useState(false);
 
+  // Handle magic link callbacks — Supabase sets the session in the URL hash
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) navigate("/dashboard", { replace: true });
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) navigate("/dashboard", { replace: true });
+    });
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
@@ -64,6 +75,7 @@ export default function Login() {
 
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email: email.trim(),
+        options: { emailRedirectTo: `${window.location.origin}/login` },
       });
 
       if (otpError) {
@@ -71,7 +83,7 @@ export default function Login() {
         return;
       }
 
-      setOtpMessage("A 6-digit verification code has been sent to your email.");
+      setOtpMessage("A verification code has been sent to your email.");
       setOtpStep(true);
     } catch {
       setError("An unexpected error occurred. Please try again.");
@@ -85,8 +97,8 @@ export default function Login() {
     setError("");
     setOtpMessage("");
 
-    if (!otpCode.trim() || otpCode.trim().length !== 6) {
-      setError("Please enter the 6-digit code from your email.");
+    if (!otpCode.trim() || otpCode.trim().length < 6) {
+      setError("Please enter the full verification code from your email.");
       return;
     }
 
@@ -161,6 +173,7 @@ export default function Login() {
     try {
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email: email.trim(),
+        options: { emailRedirectTo: `${window.location.origin}/login` },
       });
 
       if (otpError) {
@@ -186,12 +199,13 @@ export default function Login() {
     try {
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email: forgotEmail.trim(),
+        options: { emailRedirectTo: `${window.location.origin}/login` },
       });
       if (otpError) {
         setError("Failed to send verification code. Please try again.");
         return;
       }
-      setForgotOtpMessage("A 6-digit code has been sent to your email.");
+      setForgotOtpMessage("A verification code has been sent to your email.");
       setForgotStep("otp");
     } catch {
       setError("An unexpected error occurred. Please try again.");
@@ -204,8 +218,8 @@ export default function Login() {
     e.preventDefault();
     setError("");
     setForgotOtpMessage("");
-    if (!forgotOtp.trim() || forgotOtp.trim().length !== 6) {
-      setError("Please enter the 6-digit code from your email.");
+    if (!forgotOtp.trim() || forgotOtp.trim().length < 6) {
+      setError("Please enter the full verification code from your email.");
       return;
     }
     setLoading(true);
@@ -234,6 +248,7 @@ export default function Login() {
     try {
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email: forgotEmail.trim(),
+        options: { emailRedirectTo: `${window.location.origin}/login` },
       });
       if (otpError) {
         setError(otpError.message || "Failed to resend code.");
@@ -405,7 +420,7 @@ export default function Login() {
             </div>
             <h1 className="text-2xl font-bold text-slate-900 mb-2">Check your email</h1>
             <p className="text-slate-500 text-sm">
-              Enter the 6-digit code sent to{" "}
+              Enter the verification code sent to{" "}
               <span className="font-medium text-slate-700">{forgotEmail}</span>
             </p>
           </div>
@@ -425,11 +440,11 @@ export default function Login() {
                 id="forgot-otp"
                 type="text"
                 inputMode="numeric"
-                pattern="[0-9]{6}"
-                maxLength={6}
+                pattern="[0-9]{6,8}"
+                maxLength={8}
                 required
                 value={forgotOtp}
-                onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
                 placeholder="000000"
                 className="block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] sm:text-sm py-3 outline-none tracking-[0.5em] text-center font-mono text-xl"
               />
@@ -649,12 +664,12 @@ export default function Login() {
                 id="otp-code"
                 type="text"
                 inputMode="numeric"
-                pattern="[0-9]{6}"
-                maxLength={6}
+                pattern="[0-9]{6,8}"
+                maxLength={8}
                 required
                 value={otpCode}
                 onChange={(e) =>
-                  setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                  setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 8))
                 }
                 placeholder="000000"
                 className="block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] sm:text-sm py-3 outline-none tracking-[0.5em] text-center font-mono text-xl"

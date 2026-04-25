@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import BrandLogoLink from "../components/BrandLogoLink";
+import { Button, Input } from "../components/ui";
 import {
   blobToBase64,
   buildDeliveryFileName,
@@ -50,6 +51,7 @@ export default function ProjectDashboard() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [filter, setFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selected, setSelected] = useState(new Set());
   const [showRenewModal, setShowRenewModal] = useState(false);
   const [renewMode, setRenewMode] = useState("continue");
@@ -750,9 +752,30 @@ export default function ProjectDashboard() {
     );
   }
 
-  const visibleMembers = members.filter((member) =>
-    filter === "all" ? true : member.status === filter,
-  );
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const visibleMembers = members.filter((member) => {
+    const matchesStatus = filter === "all" ? true : member.status === filter;
+    if (!matchesStatus) return false;
+    if (!normalizedSearch) return true;
+
+    const customFieldText = member.custom_fields
+      ? Object.entries(member.custom_fields)
+          .map(([key, value]) => `${key} ${value}`)
+          .join(" ")
+      : "";
+
+    return [
+      member.name,
+      member.email,
+      member.status,
+      member.delivery_phase,
+      customFieldText,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(normalizedSearch);
+  });
   const pendingVisibleMembers = visibleMembers.filter(
     (member) => member.status === "pending",
   );
@@ -1021,46 +1044,79 @@ export default function ProjectDashboard() {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3">
-          <div className="flex gap-1 bg-white border border-slate-200 rounded-lg p-1 overflow-x-auto">
-            {["all", "pending", "approved", "rejected"].map((nextFilter) => (
-              <button
-                key={nextFilter}
-                onClick={() => {
-                  setFilter(nextFilter);
-                  setSelected(new Set());
-                }}
-                className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer whitespace-nowrap ${
-                  filter === nextFilter
-                    ? "bg-[#2563EB] text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
-                }`}
+        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="flex gap-1 bg-slate-50 border border-slate-200 rounded-lg p-1 overflow-x-auto">
+              {["all", "pending", "approved", "rejected"].map((nextFilter) => (
+                <button
+                  key={nextFilter}
+                  onClick={() => {
+                    setFilter(nextFilter);
+                    setSelected(new Set());
+                  }}
+                  className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer whitespace-nowrap ${
+                    filter === nextFilter
+                      ? "bg-[#2563EB] text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-900 hover:bg-white"
+                  }`}
+                >
+                  {nextFilter.charAt(0).toUpperCase() + nextFilter.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <Input
+                type="search"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search members, emails, delivery state, or custom fields"
+                className="bg-white"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {pendingCount > 0 && (
+                <Button
+                  onClick={bulkApproveAll}
+                  className="bg-emerald-600 hover:bg-emerald-500"
+                  size="sm"
+                >
+                  Approve{" "}
+                  {selected.size > 0
+                    ? `(${selected.size})`
+                    : `All (${pendingCount})`}
+                </Button>
+              )}
+
+              <Button
+                onClick={() => setShowRenewModal(true)}
+                variant="secondary"
+                size="sm"
               >
-                {nextFilter.charAt(0).toUpperCase() + nextFilter.slice(1)}
-              </button>
-            ))}
+                Renew Project
+              </Button>
+            </div>
           </div>
 
-          <div className="flex-1" />
-
-          {pendingCount > 0 && (
-            <button
-              onClick={bulkApproveAll}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition cursor-pointer shadow-sm"
-            >
-              ✓ Approve{" "}
-              {selected.size > 0
-                ? `(${selected.size})`
-                : `All (${pendingCount})`}
-            </button>
+          {(selected.size > 0 || normalizedSearch) && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[#2563EB]/5 px-3 py-2 text-xs text-slate-600">
+              <span>
+                {selected.size > 0
+                  ? `${selected.size} pending member(s) selected`
+                  : `${visibleMembers.length} result(s) shown`}
+              </span>
+              <button
+                onClick={() => {
+                  setSelected(new Set());
+                  setSearchQuery("");
+                }}
+                className="font-semibold text-[#2563EB] hover:text-[#1d4ed8]"
+              >
+                Clear
+              </button>
+            </div>
           )}
-
-          <button
-            onClick={() => setShowRenewModal(true)}
-            className="px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-lg text-xs font-medium transition cursor-pointer"
-          >
-            Renew Project
-          </button>
         </div>
         {visibleMembers.length === 0 ? (
           <div className="text-center py-16 text-slate-400">
@@ -1150,7 +1206,7 @@ export default function ProjectDashboard() {
                           {member.name}
                         </td>
                         <td className="px-4 py-3 text-slate-500">
-                          {member.email || "—"}
+                          {member.email || "-"}
                         </td>
                         <td className="px-4 py-3">
                           <span
@@ -1188,7 +1244,7 @@ export default function ProjectDashboard() {
                               )}
                             </div>
                           ) : (
-                            <span className="text-slate-300">—</span>
+                            <span className="text-slate-300">-</span>
                           )}
                         </td>
                         <td className="px-4 py-3 text-slate-400 text-xs">
@@ -1200,7 +1256,7 @@ export default function ProjectDashboard() {
                             ? Object.entries(member.custom_fields)
                                 .map(([key, value]) => `${key}: ${value}`)
                                 .join(", ")
-                            : "—"}
+                            : "-"}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex justify-end gap-1.5 flex-wrap">

@@ -214,7 +214,7 @@ The frontend auto-maps columns whose names exactly match field labels or field k
 
 ## 5. Migration
 
-Run `backend/supabase_migrations/003_form_fields_and_uploads.sql` to create:
+Run `backend/migrations/001_form_fields.sql` to create:
 
 - `form_fields` table with indexes and RLS policies
 - `member_uploads` table with RLS policies

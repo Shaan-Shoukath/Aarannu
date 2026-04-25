@@ -58,7 +58,7 @@ Checks current count against plan limit before allowing the operation. Returns H
 
 ## Files
 
-| File                                        | Purpose                |
-| ------------------------------------------- | ---------------------- |
-| `backend/migrations/002_saas_platform.sql`  | Plan table + seed data |
-| `backend/src/middleware/checkPlanLimits.js` | Limit enforcement      |
+| File                                        | Purpose                          |
+| ------------------------------------------- | -------------------------------- |
+| `backend/migrations/000_full_setup.sql`     | Plan table + seed data (Step 2)  |
+| `backend/src/middleware/checkPlanLimits.js` | Limit enforcement                |

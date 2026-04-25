@@ -365,7 +365,7 @@ The backend auto-cleans every 6 hours. To trigger immediately:
 
 ## 11. Token System Migration
 
-The token/credit system adds usage-based billing. Run `backend/migrations/003_token_system.sql` in the **SQL Editor**:
+The token/credit system adds usage-based billing. It is included in `backend/migrations/000_full_setup.sql` (Step 3). If you have already run the full setup, no separate migration is needed.
 
 This creates:
 

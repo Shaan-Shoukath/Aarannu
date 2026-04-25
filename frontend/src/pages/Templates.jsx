@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import BrandLogoLink from "../components/BrandLogoLink";
+import { Button, StatusBadge } from "../components/ui";
 
 /**
  * Templates Page
@@ -15,6 +16,7 @@ const TEMPLATES = [
     id: "custom",
     name: "Create Custom",
     description: "Start with a blank canvas and design your own ID card.",
+    bestFor: "Full control",
     tags: [],
     gradient: null,
     icon: "plus",
@@ -22,7 +24,8 @@ const TEMPLATES = [
   {
     id: "corporate",
     name: "Corporate Standard",
-    description: "Red & Blue Dynamic Gradient",
+    description: "Clean employee cards with bold brand color and QR support.",
+    bestFor: "Companies",
     tags: ["Portrait", "Employee"],
     badge: "PRO",
     gradient: "from-[#2563EB] via-blue-500 to-red-400",
@@ -30,7 +33,8 @@ const TEMPLATES = [
   {
     id: "event",
     name: "Event Access",
-    description: "Dark Royal Theme",
+    description: "High-contrast passes for check-in desks and event gates.",
+    bestFor: "Events",
     tags: ["Landscape", "VIP"],
     badge: "POPULAR",
     gradient: "from-indigo-900 via-purple-800 to-indigo-700",
@@ -38,7 +42,8 @@ const TEMPLATES = [
   {
     id: "student",
     name: "Student ID",
-    description: "Modern Academic Vertical",
+    description: "Vertical academic identity card with strong photo focus.",
+    bestFor: "Schools",
     tags: ["Vertical", "Education"],
     badge: null,
     gradient: "from-orange-400 via-pink-500 to-purple-600",
@@ -50,7 +55,6 @@ export default function Templates() {
   const [loading, setLoading] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [showOrgModal, setShowOrgModal] = useState(false);
-  const [templateFilter, setTemplateFilter] = useState("all");
   const [orgConfig, setOrgConfig] = useState({
     orgName: "",
     logoUrl: "",
@@ -172,28 +176,18 @@ export default function Templates() {
           </p>
         </div>
 
-        {/* ─── Filter Tags ─── */}
-        <div className="flex gap-2 mb-5 sm:mb-8 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
-          {[
-            { key: "all", label: "All Templates" },
-            { key: "professional", label: "Professional" },
-            { key: "modern", label: "Modern" },
-            { key: "educational", label: "Educational" },
-            { key: "event", label: "Event Access" },
-            { key: "vertical", label: "Vertical Layout" },
-          ].map((tag) => (
-            <button
-              key={tag.key}
-              onClick={() => setTemplateFilter(tag.key)}
-              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-                templateFilter === tag.key
-                  ? "bg-[#2563EB] text-white shadow-lg shadow-[#2563EB]/20"
-                  : "bg-white text-slate-600 border border-slate-200 hover:border-[#2563EB]/30 hover:text-[#2563EB]"
-              }`}
-            >
-              {tag.label}
-            </button>
-          ))}
+        {/* Template summary */}
+        <div className="mb-5 sm:mb-8 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-slate-800">
+              Template library
+            </p>
+            <p className="text-xs text-slate-500">
+              Pick the card structure first. Fine tune colors, fields, and
+              orientation in the generator.
+            </p>
+          </div>
+          <StatusBadge tone="blue">{TEMPLATES.length} templates</StatusBadge>
         </div>
 
         {/* ─── Template Grid ─── */}
@@ -202,7 +196,7 @@ export default function Templates() {
             <button
               key={t.id}
               onClick={() => handleSelectTemplate(t)}
-              className="group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-[#2563EB]/30 transition-all duration-300 overflow-hidden text-left"
+              className="group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-[#2563EB]/30 transition-all duration-300 overflow-hidden text-left focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20"
             >
               {/* Card Preview */}
               <div
@@ -228,22 +222,37 @@ export default function Templates() {
                     <span className="text-sm font-semibold text-slate-600">
                       {t.name}
                     </span>
-                    <span className="text-xs text-slate-400">
-                      {t.description}
-                    </span>
+                    <StatusBadge tone="slate">{t.bestFor}</StatusBadge>
                   </div>
                 ) : (
                   <>
                     <div
-                      className={`h-full bg-linear-to-br ${t.gradient} flex items-center justify-center`}
+                      className={`h-full bg-linear-to-br ${t.gradient} flex items-center justify-center p-5`}
                     >
                       {/* Mini card preview */}
-                      <div className="w-4/5 h-3/5 bg-white/20 backdrop-blur-sm rounded-lg border border-white/30 p-3 flex gap-2">
-                        <div className="w-8 h-10 bg-white/30 rounded" />
-                        <div className="flex-1 space-y-1.5">
-                          <div className="h-2 w-3/4 bg-white/40 rounded" />
-                          <div className="h-1.5 w-1/2 bg-white/30 rounded" />
-                          <div className="h-1.5 w-2/3 bg-white/20 rounded" />
+                      <div className="w-full max-w-44 rounded-xl border border-white/35 bg-white/20 p-3 shadow-2xl backdrop-blur-sm">
+                        <div className="mb-3 flex items-center justify-between">
+                          <div className="h-5 w-5 rounded bg-white/45" />
+                          <div className="h-2 w-12 rounded bg-white/40" />
+                        </div>
+                        <div className="flex gap-3">
+                          <div className="h-14 w-11 rounded-lg bg-white/55" />
+                          <div className="flex-1 space-y-2 pt-1">
+                            <div className="h-2.5 w-4/5 rounded bg-white/55" />
+                            <div className="h-1.5 w-2/3 rounded bg-white/35" />
+                            <div className="h-1.5 w-1/2 rounded bg-white/30" />
+                          </div>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between">
+                          <div className="h-2 w-14 rounded bg-white/35" />
+                          <div className="grid h-8 w-8 grid-cols-3 gap-0.5 rounded bg-white/35 p-1">
+                            {Array.from({ length: 9 }).map((_, index) => (
+                              <span
+                                key={index}
+                                className="rounded-[1px] bg-white/45"
+                              />
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -271,15 +280,16 @@ export default function Templates() {
                   <p className="text-xs text-slate-500 mt-0.5">
                     {t.description}
                   </p>
-                  <div className="flex gap-1.5 mt-3">
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    <StatusBadge tone="blue">{t.bestFor}</StatusBadge>
                     {t.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-500 border border-slate-200"
-                      >
+                      <StatusBadge key={tag} tone="slate">
                         {tag}
-                      </span>
+                      </StatusBadge>
                     ))}
+                  </div>
+                  <div className="mt-4 text-xs font-semibold text-[#2563EB] opacity-0 transition group-hover:opacity-100">
+                    Use this template
                   </div>
                 </div>
               )}
@@ -507,22 +517,21 @@ export default function Templates() {
             </div>
 
             <div className="p-6 border-t border-slate-200 flex gap-3 justify-end">
-              <button
+              <Button
                 onClick={() => {
                   setShowOrgModal(false);
                   setSelectedTemplate(null);
                 }}
-                className="px-4 py-2 text-sm font-medium text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+                variant="secondary"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleProceed}
                 disabled={!orgConfig.orgName.trim()}
-                className="px-6 py-2 text-sm font-medium text-white bg-[#2563EB] rounded-lg hover:bg-[#2563EB]/90 transition-colors shadow-lg shadow-[#2563EB]/25 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Continue &rarr;
-              </button>
+                Continue
+              </Button>
             </div>
           </div>
         </div>

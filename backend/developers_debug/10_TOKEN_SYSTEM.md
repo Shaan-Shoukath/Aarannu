@@ -160,7 +160,7 @@ Returns **402 Payment Required** if insufficient:
 
 ## Migration
 
-Run `backend/migrations/003_token_system.sql` in the Supabase SQL Editor:
+The token system is included in `backend/migrations/000_full_setup.sql` (Step 3). Run it in the Supabase SQL Editor:
 
 - Creates `token_wallets`, `token_transactions`, `token_packages` tables
 - Seeds 3 default packages

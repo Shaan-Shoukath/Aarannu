@@ -8,11 +8,16 @@
  *   Add DATABASE_URL to backend/.env (find it in Supabase Dashboard →
  *   Settings → Database → Connection string → URI).
  *
+ * Migration order (run in sequence for a fresh setup):
+ *   000_full_setup.sql       — all core tables, RLS, indexes, triggers
+ *   001_form_fields.sql      — form_fields + member_uploads tables
+ *   002_delivery_status.sql  — delivery tracking columns on project_members
+ *
  * Usage:
- *   node scripts/run-migration.js 003_token_system.sql
+ *   node scripts/run-migration.js 000_full_setup.sql
  *   node scripts/run-migration.js --list        # list available
- *   node scripts/run-migration.js 3             # by index number
- *   node scripts/run-migration.js --print 003   # just print SQL
+ *   node scripts/run-migration.js 1             # by index number
+ *   node scripts/run-migration.js --print 001   # just print SQL
  */
 
 require("dotenv").config();

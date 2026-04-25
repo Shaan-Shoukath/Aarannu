@@ -162,7 +162,7 @@ CREATE INDEX IF NOT EXISTS idx_gcards_expiry  ON public.generated_cards(expires_
 CREATE TABLE IF NOT EXISTS public.token_wallets (
   id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id            UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  org_id             UUID,                  -- NULL = personal wallet
+  org_id             UUID REFERENCES public.organizations(id) ON DELETE SET NULL, -- NULL = personal wallet
   balance            INTEGER NOT NULL DEFAULT 0 CHECK (balance >= 0),
   lifetime_purchased INTEGER NOT NULL DEFAULT 0,
   lifetime_used      INTEGER NOT NULL DEFAULT 0,
@@ -193,7 +193,7 @@ CREATE TABLE IF NOT EXISTS public.token_transactions (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   wallet_id     UUID NOT NULL REFERENCES public.token_wallets(id) ON DELETE CASCADE,
   user_id       UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  org_id        UUID,
+  org_id        UUID REFERENCES public.organizations(id) ON DELETE SET NULL,
   amount        INTEGER NOT NULL,            -- positive = credit, negative = debit
   type          TEXT NOT NULL CHECK (type IN ('purchase','usage','refund','bonus','adjustment')),
   description   TEXT,

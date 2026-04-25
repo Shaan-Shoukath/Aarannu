@@ -196,6 +196,33 @@ export default function Generate() {
     student: "Student ID",
   };
 
+  const emailEnabledCount = members.filter((member) => member.sendEmail).length;
+  const memberPhotoCount = members.filter((member) =>
+    member.photo_url?.trim?.(),
+  ).length;
+  const workspaceSteps = [
+    {
+      label: "Data",
+      value: `${members.length} queued`,
+      active: members.length > 0,
+    },
+    {
+      label: "Design",
+      value: TEMPLATE_LABELS[templateId],
+      active: true,
+    },
+    {
+      label: "Preview",
+      value: previewData ? previewData.name || "Ready" : "Not selected",
+      active: Boolean(previewData),
+    },
+    {
+      label: "Generate",
+      value: uploadToCloud ? "Cloud on" : "Local PDFs",
+      active: members.length > 0,
+    },
+  ];
+
   /** Available font families for card styling */
   const FONT_FAMILIES = [
     { value: DEFAULT_CARD_FONT_FAMILY, label: "Public Sans" },
@@ -658,7 +685,7 @@ export default function Generate() {
 
     setMembers((prev) => [...prev, ...imported]);
     setSheetsSuccess(
-      `✓ Imported ${imported.length} member(s). Scroll down and click "Generate & Download" to create the ID cards.`,
+      `Imported ${imported.length} member(s). Scroll down and click "Generate & Download" to create the ID cards.`,
     );
     setShowMapping(false);
     setSheetHeaders([]);
@@ -785,8 +812,8 @@ export default function Generate() {
             onClick={() => navigate("/templates")}
             className="px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-600 hover:text-[#2563EB] transition-colors border border-slate-300 rounded-lg cursor-pointer"
           >
-            <span className="hidden sm:inline">← Change Template</span>
-            <span className="sm:hidden">← Template</span>
+            <span className="hidden sm:inline">Back to Templates</span>
+            <span className="sm:hidden">Templates</span>
           </button>
           <button
             onClick={() => navigate("/dashboard")}
@@ -802,6 +829,47 @@ export default function Generate() {
         {/* ─── Left Sidebar: Data Entry ─── */}
         <aside className="w-full lg:w-100 shrink-0 bg-white border-b lg:border-b-0 lg:border-r border-slate-200 overflow-y-auto lg:max-h-full max-h-[50vh]">
           <div className="p-6 space-y-8">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Workspace
+                </p>
+                <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-500 ring-1 ring-slate-200">
+                  {orgName || "No organization"}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {workspaceSteps.map((step, index) => (
+                  <div
+                    key={step.label}
+                    className={`rounded-lg border px-3 py-2 ${
+                      step.active
+                        ? "border-[#2563EB]/25 bg-white text-slate-900"
+                        : "border-slate-200 bg-white/60 text-slate-400"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
+                          step.active
+                            ? "bg-[#2563EB] text-white"
+                            : "bg-slate-200 text-slate-500"
+                        }`}
+                      >
+                        {index + 1}
+                      </span>
+                      <span className="text-xs font-semibold">
+                        {step.label}
+                      </span>
+                    </div>
+                    <p className="mt-1 truncate text-[10px] text-slate-500">
+                      {step.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Google Sheets Import */}
             <div className="space-y-3">
               <h2 className="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-2 flex items-center gap-2">
@@ -831,7 +899,7 @@ export default function Generate() {
                   disabled={sheetsLoading || !sheetsUrl.trim()}
                   className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
                 >
-                  {sheetsLoading ? "Fetching…" : "Import"}
+                  {sheetsLoading ? "Fetching..." : "Import"}
                 </button>
               </div>
               {sheetsError && (
@@ -917,7 +985,7 @@ export default function Generate() {
                               : "border-slate-200 bg-white text-slate-500"
                           }`}
                         >
-                          <option value={-1}>— Skip —</option>
+                          <option value={-1}>Skip</option>
                           {sheetHeaders.map((h, i) => (
                             <option key={i} value={i}>
                               {h}
@@ -1040,7 +1108,7 @@ export default function Generate() {
                     }
                     className="w-full rounded-lg border border-slate-300 bg-slate-50 text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2 px-3 outline-none"
                   >
-                    <option value="">— Select —</option>
+                    <option value="">Select</option>
                     <option>A+</option>
                     <option>A-</option>
                     <option>B+</option>
@@ -1139,7 +1207,7 @@ export default function Generate() {
                       />
                     </svg>
                     <span className="text-xs text-slate-500">
-                      {localLogoUrl ? "Logo selected ✓" : "Choose file..."}
+                      {localLogoUrl ? "Logo selected" : "Choose file..."}
                     </span>
                     <input
                       type="file"
@@ -1161,7 +1229,7 @@ export default function Generate() {
                       className="text-red-400 hover:text-red-600 text-xs"
                       title="Remove logo"
                     >
-                      ✕
+                      Remove
                     </button>
                   )}
                 </div>
@@ -1198,7 +1266,7 @@ export default function Generate() {
                       />
                     </svg>
                     <span className="text-xs text-slate-500">
-                      {signatureUrl ? "Signature selected ✓" : "Choose file..."}
+                      {signatureUrl ? "Signature selected" : "Choose file..."}
                     </span>
                     <input
                       type="file"
@@ -1220,7 +1288,7 @@ export default function Generate() {
                       className="text-red-400 hover:text-red-600 text-xs"
                       title="Remove signature"
                     >
-                      ✕
+                      Remove
                     </button>
                   )}
                 </div>
@@ -1946,9 +2014,11 @@ export default function Generate() {
         {/* ─── Right Side: Preview + Queue ─── */}
         <div className="flex-1 flex flex-col overflow-hidden min-h-[50vh] lg:min-h-0">
           {/* Toolbar */}
-          <div className="h-12 border-b border-slate-200 bg-white/50 backdrop-blur-sm flex items-center justify-between px-4 sm:px-6">
+          <div className="min-h-12 border-b border-slate-200 bg-white/80 backdrop-blur-sm flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-slate-600">PDF Preview</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                PDF Preview
+              </span>
               {pdfGenerating && (
                 <svg className="animate-spin h-4 w-4 text-[#2563EB]" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -1956,9 +2026,20 @@ export default function Generate() {
                 </svg>
               )}
             </div>
-            <span className="text-xs text-slate-400">
-              {members.length} member{members.length !== 1 ? "s" : ""} in queue
-            </span>
+            <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-slate-500">
+              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1">
+                {members.length} member{members.length !== 1 ? "s" : ""}
+              </span>
+              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1">
+                {memberPhotoCount} photo{memberPhotoCount !== 1 ? "s" : ""}
+              </span>
+              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1">
+                {emailEnabledCount} email enabled
+              </span>
+              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1">
+                {orientation}
+              </span>
+            </div>
           </div>
 
           {/* Canvas area */}
@@ -2002,7 +2083,7 @@ export default function Generate() {
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                           </svg>
-                          <p className="text-sm text-slate-500">Generating PDF…</p>
+                          <p className="text-sm text-slate-500">Generating PDF...</p>
                         </div>
                       </div>
                     ) : null}
@@ -2017,7 +2098,7 @@ export default function Generate() {
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z" />
                         </svg>
-                        {downloading ? "Processing…" : "Download PDF"}
+                        {downloading ? "Processing..." : "Download PDF"}
                       </button>
                       <button
                         onClick={() => regeneratePreview(previewData)}
@@ -2044,13 +2125,13 @@ export default function Generate() {
                         {downloadStatus.startsWith("Error")
                           ? ""
                           : downloadStatus === "Done!"
-                            ? "✓ "
-                            : "⏳ "}
+                            ? "Done: "
+                            : "Working: "}
                         {downloadStatus}
                       </div>
                     )}
                     <p className="text-[10px] text-slate-400 text-center">
-                      PDF generated client-side (no server needed) · Front + back pages
+                      PDF generated client-side. Front and back pages.
                     </p>
                   </div>
                 )}
@@ -2130,10 +2211,10 @@ export default function Generate() {
                                   {m.name}
                                 </p>
                                 <p className="text-xs text-slate-500">
-                                  {m.role} · {m.id_number}
+                                  {m.role} / {m.id_number}
                                   {m.email && (
                                     <span className="text-blue-500 ml-1">
-                                      · {m.email}
+                                      / {m.email}
                                     </span>
                                   )}
                                 </p>
@@ -2157,8 +2238,8 @@ export default function Generate() {
                                   }
                                   title={
                                     m.sendEmail
-                                      ? "Email ON — click to disable"
-                                      : "Email OFF — click to enable"
+                                      ? "Email ON - click to disable"
+                                      : "Email OFF - click to enable"
                                   }
                                   className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
                                     m.sendEmail

@@ -1,3 +1,5 @@
+import { Button, Field, Input } from "./ui";
+
 export default function MemberForm({
   form,
   onChange,
@@ -9,72 +11,53 @@ export default function MemberForm({
       <h2 className="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-2">
         Add Member Manually
       </h2>
-      <div className="space-y-4">
+      <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         {/* Basic Fields */}
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-slate-600">
-            Full Name <span className="text-red-500">*</span>
-          </label>
-          <input
+        <Field label="Full Name *">
+          <Input
             type="text"
             value={form.name}
             onChange={(e) => onChange("name", e.target.value)}
-            className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2 outline-none px-3"
             placeholder="e.g. John Doe"
           />
-        </div>
+        </Field>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-600">
-              Email
-            </label>
-            <input
+          <Field label="Email">
+            <Input
               type="email"
               value={form.email}
               onChange={(e) => onChange("email", e.target.value)}
-              className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2 outline-none px-3"
               placeholder="e.g. john@example.com"
             />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-600">
-              Role
-            </label>
-            <input
+          </Field>
+          <Field label="Role">
+            <Input
               type="text"
               value={form.role}
               onChange={(e) => onChange("role", e.target.value)}
-              className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2 outline-none px-3"
               placeholder="e.g. Member"
             />
-          </div>
+          </Field>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-600">
-              ID Number
-            </label>
-            <input
+          <Field label="ID Number">
+            <Input
               type="text"
               value={form.id_number}
               onChange={(e) => onChange("id_number", e.target.value)}
-              className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2 outline-none px-3"
               placeholder="Auto-generated"
             />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-600">
-              Date of Birth
-            </label>
-            <input
+          </Field>
+          <Field label="Date of Birth">
+            <Input
               type="date"
               value={form.dob}
               onChange={(e) => onChange("dob", e.target.value)}
-              className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2 outline-none px-3 text-slate-600"
+              className="text-slate-600"
             />
-          </div>
+          </Field>
         </div>
 
         {/* Custom Fields */}
@@ -84,11 +67,8 @@ export default function MemberForm({
               Custom Fields
             </h3>
             {customFieldDefs.map((def, idx) => (
-              <div key={idx} className="space-y-1">
-                <label className="text-xs font-semibold text-slate-600">
-                  {def.label}
-                </label>
-                <input
+              <Field key={idx} label={def.label}>
+                <Input
                   type={def.type === "date" ? "date" : "text"}
                   value={form.customValues[def.label] || ""}
                   onChange={(e) =>
@@ -97,21 +77,21 @@ export default function MemberForm({
                       [def.label]: e.target.value,
                     })
                   }
-                  className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2 outline-none px-3"
                   placeholder={`Enter ${def.label}...`}
                 />
-              </div>
+              </Field>
             ))}
           </div>
         )}
 
-        <button
+        <Button
           onClick={onAdd}
           disabled={!form.name.trim()}
-          className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-bold shadow-md transition-all disabled:opacity-50"
+          variant="dark"
+          className="w-full"
         >
           Add to Queue
-        </button>
+        </Button>
       </div>
     </div>
   );
