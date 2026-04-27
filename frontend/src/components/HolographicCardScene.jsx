@@ -1,282 +1,363 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import QRCode from "qrcode";
 
-function drawShield(ctx, x, y, size) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(size / 120, size / 120);
+const RICKROLL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+const CW = 720, CH = 1100;
+
+// ── canvas helpers ─────────────────────────────────────────────────────────────
+function rr(ctx, x, y, w, h, r) {
   ctx.beginPath();
-  ctx.moveTo(60, 6);
-  ctx.lineTo(14, 26);
-  ctx.lineTo(14, 56);
-  ctx.bezierCurveTo(14, 86, 34, 110, 60, 118);
-  ctx.bezierCurveTo(86, 110, 106, 86, 106, 56);
-  ctx.lineTo(106, 26);
-  ctx.closePath();
-  ctx.fillStyle = "rgba(255,255,255,0.13)";
-  ctx.fill();
-  ctx.strokeStyle = "rgba(255,255,255,0.32)";
-  ctx.lineWidth = 3;
-  ctx.stroke();
+  ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r); ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
+}
+function barcode(ctx, x, y, w, h) {
+  let s = 17;
+  const rng = () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
+  ctx.fillStyle = "#fff";
+  const bars = 54, bw = w / bars;
+  for (let i = 0; i < bars; i++) ctx.fillRect(x + i * bw, y, bw * (rng() > 0.4 ? 0.55 : 0.28), h);
+}
 
+// ── FRONT CANVAS ──────────────────────────────────────────────────────────────
+function makeFront() {
+  const c = document.createElement("canvas"); c.width = CW; c.height = CH;
+  const x = c.getContext("2d");
+
+  // bg
+  const bg = x.createLinearGradient(0, 0, CW, CH);
+  bg.addColorStop(0, "#0b1120"); bg.addColorStop(0.5, "#0f1f3d"); bg.addColorStop(1, "#06101a");
+  x.fillStyle = bg; x.fillRect(0, 0, CW, CH);
+  const g1 = x.createRadialGradient(0, 0, 0, 160, 200, 560);
+  g1.addColorStop(0, "rgba(37,99,235,.72)"); g1.addColorStop(1, "rgba(37,99,235,0)");
+  x.fillStyle = g1; x.fillRect(0, 0, CW, CH);
+  const g2 = x.createRadialGradient(CW, CH, 0, CW - 130, CH - 160, 460);
+  g2.addColorStop(0, "rgba(220,38,38,.6)"); g2.addColorStop(1, "rgba(220,38,38,0)");
+  x.fillStyle = g2; x.fillRect(0, 0, CW, CH);
+
+  // dot grid
+  x.fillStyle = "rgba(255,255,255,.06)";
+  for (let px = 20; px < CW; px += 28) for (let py = 20; py < CH; py += 28) x.fillRect(px, py, 2, 2);
+
+  // border
+  x.strokeStyle = "rgba(255,255,255,.25)"; x.lineWidth = 3;
+  rr(x, 26, 26, CW - 52, CH - 52, 24); x.stroke();
+
+  // header strip
+  x.save(); rr(x, 26, 26, CW - 52, 148, 24); x.clip();
+  const hdr = x.createLinearGradient(0, 0, CW, 0);
+  hdr.addColorStop(0, "rgba(37,99,235,.65)"); hdr.addColorStop(1, "rgba(220,38,38,.4)");
+  x.fillStyle = hdr; x.fillRect(26, 26, CW - 52, 148); x.restore();
+
+  x.fillStyle = "#fff"; x.font = "900 52px Arial, sans-serif"; x.textAlign = "left";
+  x.fillText("AARANNU", 58, 108);
+  x.fillStyle = "rgba(200,220,255,.75)"; x.font = "600 22px Arial, sans-serif";
+  x.fillText("DIGITAL IDENTITY CARD", 60, 150);
+
+  // photo
+  const px = CW / 2, py = 368, pr = 118;
+  const ring = x.createLinearGradient(px - pr, py - pr, px + pr, py + pr);
+  ring.addColorStop(0, "#3b82f6"); ring.addColorStop(1, "#ef4444");
+  x.strokeStyle = ring; x.lineWidth = 6;
+  x.beginPath(); x.arc(px, py, pr + 8, 0, Math.PI * 2); x.stroke();
+  x.fillStyle = "#1e3a5f"; x.beginPath(); x.arc(px, py, pr, 0, Math.PI * 2); x.fill();
+  // person silhouette
+  x.fillStyle = "rgba(147,197,253,.55)";
+  x.beginPath(); x.arc(px, py - 30, 46, 0, Math.PI * 2); x.fill();
+  x.beginPath(); x.ellipse(px, py + 88, 74, 52, 0, Math.PI, 0); x.fill();
+
+  // name
+  x.fillStyle = "#fff"; x.font = "900 52px Arial, sans-serif"; x.textAlign = "center";
+  x.fillText("SHAAN SHOUKATH", CW / 2, 562);
+
+  // role badge
+  const badge = x.createLinearGradient(162, 0, 558, 0);
+  badge.addColorStop(0, "rgba(37,99,235,.4)"); badge.addColorStop(1, "rgba(220,38,38,.3)");
+  x.fillStyle = badge; rr(x, 162, 578, 396, 58, 14); x.fill();
+  x.strokeStyle = "rgba(147,197,253,.42)"; x.lineWidth = 1.5; x.stroke();
+  x.fillStyle = "#93c5fd"; x.font = "700 26px Arial, sans-serif";
+  x.fillText("INVENTORY MANAGER", CW / 2, 618);
+
+  // divider
+  x.strokeStyle = "rgba(255,255,255,.14)"; x.lineWidth = 1.5;
+  x.beginPath(); x.moveTo(60, 672); x.lineTo(CW - 60, 672); x.stroke();
+
+  // info rows
+  x.textAlign = "left";
+  [["ID NO.", "ANN-2026-0047"], ["DEPT.", "OPERATIONS"], ["VALID", "2026 – 2027"]].forEach(([l, v], i) => {
+    const ry = 718 + i * 76;
+    x.fillStyle = "rgba(148,163,184,.72)"; x.font = "600 20px Arial, sans-serif"; x.fillText(l, 70, ry);
+    x.fillStyle = "#fff"; x.font = "700 30px Arial, sans-serif"; x.fillText(v, 70, ry + 36);
+  });
+
+  // EMV chip
+  const chipX = CW / 2 - 46, chipY = 716;
+  const cg = x.createLinearGradient(chipX, chipY, chipX + 90, chipY + 66);
+  cg.addColorStop(0, "#d4a843"); cg.addColorStop(0.5, "#f0cc6a"); cg.addColorStop(1, "#b8892a");
+  x.fillStyle = cg; rr(x, chipX, chipY, 92, 66, 8); x.fill();
+  x.strokeStyle = "rgba(0,0,0,.22)"; x.lineWidth = 1;
+  for (let i = 0; i < 4; i++) { x.beginPath(); x.moveTo(chipX + 12, chipY + 14 + i * 13); x.lineTo(chipX + 80, chipY + 14 + i * 13); x.stroke(); }
+  x.beginPath(); x.moveTo(chipX + 46, chipY + 10); x.lineTo(chipX + 46, chipY + 56); x.stroke();
+
+  // barcode
+  x.fillStyle = "rgba(255,255,255,.05)"; x.fillRect(60, 982, CW - 120, 68);
+  barcode(x, 70, 992, CW - 140, 46);
+  x.fillStyle = "rgba(148,163,184,.55)"; x.font = "500 18px 'Courier New',monospace";
+  x.textAlign = "center"; x.fillText("4 8 1 0  0 0 4 7  2 0 2 6  9 9 3 1", CW / 2, 1072);
+  return c;
+}
+
+// ── BACK CANVAS ───────────────────────────────────────────────────────────────
+async function makeBack() {
+  const c = document.createElement("canvas"); c.width = CW; c.height = CH;
+  const x = c.getContext("2d");
+
+  const bg = x.createLinearGradient(CW, CH, 0, 0);
+  bg.addColorStop(0, "#0b1120"); bg.addColorStop(0.5, "#0f1f3d"); bg.addColorStop(1, "#06101a");
+  x.fillStyle = bg; x.fillRect(0, 0, CW, CH);
+  const g1 = x.createRadialGradient(CW, 0, 0, CW - 130, 130, 420);
+  g1.addColorStop(0, "rgba(220,38,38,.6)"); g1.addColorStop(1, "rgba(220,38,38,0)");
+  x.fillStyle = g1; x.fillRect(0, 0, CW, CH);
+  const g2 = x.createRadialGradient(0, CH, 0, 130, CH - 130, 380);
+  g2.addColorStop(0, "rgba(37,99,235,.52)"); g2.addColorStop(1, "rgba(37,99,235,0)");
+  x.fillStyle = g2; x.fillRect(0, 0, CW, CH);
+
+  x.fillStyle = "rgba(255,255,255,.06)";
+  for (let px = 20; px < CW; px += 28) for (let py = 20; py < CH; py += 28) x.fillRect(px, py, 2, 2);
+  x.strokeStyle = "rgba(255,255,255,.22)"; x.lineWidth = 3;
+  rr(x, 26, 26, CW - 52, CH - 52, 24); x.stroke();
+
+  // magnetic stripe
+  x.fillStyle = "#111827"; x.fillRect(0, 66, CW, 74);
+  x.fillStyle = "rgba(255,255,255,.03)"; x.fillRect(0, 66, CW, 74);
+
+  x.fillStyle = "rgba(148,163,184,.72)"; x.font = "700 22px Arial, sans-serif";
+  x.textAlign = "center"; x.fillText("SCAN TO VERIFY IDENTITY", CW / 2, 218);
+
+  // QR code
+  const qrSize = 300, qrC = document.createElement("canvas");
+  await QRCode.toCanvas(qrC, RICKROLL, { width: qrSize, margin: 2, color: { dark: "#ffffff", light: "#071428" }, errorCorrectionLevel: "H" });
+  const qrX = (CW - qrSize) / 2, qrY = 258;
+  const glow = x.createRadialGradient(CW / 2, qrY + qrSize / 2, 10, CW / 2, qrY + qrSize / 2, 230);
+  glow.addColorStop(0, "rgba(37,99,235,.32)"); glow.addColorStop(1, "rgba(37,99,235,0)");
+  x.fillStyle = glow; x.fillRect(0, qrY - 40, CW, qrSize + 80);
+  x.strokeStyle = "rgba(147,197,253,.45)"; x.lineWidth = 2;
+  rr(x, qrX - 16, qrY - 16, qrSize + 32, qrSize + 32, 16); x.stroke();
+  x.drawImage(qrC, qrX, qrY, qrSize, qrSize);
+
+  x.fillStyle = "rgba(147,197,253,.75)"; x.font = "600 20px Arial, sans-serif";
+  x.fillText("⬆  Scan with your phone  ⬆", CW / 2, 614);
+
+  x.strokeStyle = "rgba(255,255,255,.12)"; x.lineWidth = 1.5;
+  x.beginPath(); x.moveTo(60, 648); x.lineTo(CW - 60, 648); x.stroke();
+
+  // address block
+  x.fillStyle = "rgba(255,255,255,.07)"; rr(x, 56, 670, CW - 112, 228, 16); x.fill();
+  x.strokeStyle = "rgba(255,255,255,.1)"; x.lineWidth = 1.5; x.stroke();
+  x.fillStyle = "#fff"; x.font = "800 28px Arial, sans-serif"; x.textAlign = "left";
+  x.fillText("AARANNU SYSTEMS PVT. LTD.", 86, 720);
+  x.fillStyle = "rgba(148,163,184,.85)"; x.font = "500 22px Arial, sans-serif";
+  ["Plot 14, Tech Park, Sector 5", "Kochi, Kerala – 682 030, India", "+91 484 000 0047  ·  id@aarannu.io"].forEach((l, i) => x.fillText(l, 86, 764 + i * 42));
+
+  // barcode
+  x.fillStyle = "rgba(255,255,255,.05)"; x.fillRect(60, 932, CW - 120, 62);
+  barcode(x, 70, 942, CW - 140, 42);
+  x.fillStyle = "rgba(100,116,139,.75)"; x.font = "500 18px 'Courier New',monospace";
+  x.textAlign = "center"; x.fillText("ISSUED BY AARANNU  ·  NOT TRANSFERABLE", CW / 2, 1026);
+  x.fillStyle = "rgba(71,85,105,.6)"; x.font = "500 16px Arial, sans-serif";
+  x.fillText("If found, please return to the address above", CW / 2, 1064);
+  return c;
+}
+
+function mkTex(canvas) {
+  const t = new THREE.CanvasTexture(canvas);
+  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
+}
+
+function roundedRectShape(w, h, r) {
+  const s = new THREE.Shape();
+  const x = -w / 2, y = -h / 2;
+  s.moveTo(x + r, y);
+  s.lineTo(x + w - r, y);
+  s.quadraticCurveTo(x + w, y, x + w, y + r);
+  s.lineTo(x + w, y + h - r);
+  s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  s.lineTo(x + r, y + h);
+  s.quadraticCurveTo(x, y + h, x, y + h - r);
+  s.lineTo(x, y + r);
+  s.quadraticCurveTo(x, y, x + r, y);
+  return s;
+}
+
+function makeAlphaMap(w, h, r) {
+  // Canvas alpha mask: white inside rounded rect, black outside
+  const size = 512;
+  const c = document.createElement("canvas"); c.width = size; c.height = Math.round(size * h / w);
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#000"; ctx.fillRect(0, 0, c.width, c.height);
+  const rx = Math.round(r / w * c.width);
+  ctx.fillStyle = "#fff";
   ctx.beginPath();
-  ctx.moveTo(39, 63);
-  ctx.lineTo(54, 78);
-  ctx.lineTo(84, 43);
-  ctx.strokeStyle = "#ffffff";
-  ctx.lineWidth = 8;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.stroke();
-  ctx.restore();
+  ctx.moveTo(rx, 0); ctx.lineTo(c.width - rx, 0);
+  ctx.quadraticCurveTo(c.width, 0, c.width, rx);
+  ctx.lineTo(c.width, c.height - rx);
+  ctx.quadraticCurveTo(c.width, c.height, c.width - rx, c.height);
+  ctx.lineTo(rx, c.height);
+  ctx.quadraticCurveTo(0, c.height, 0, c.height - rx);
+  ctx.lineTo(0, rx);
+  ctx.quadraticCurveTo(0, 0, rx, 0);
+  ctx.closePath(); ctx.fill();
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.NoColorSpace; return t;
 }
 
-function makeVerticalCardTexture() {
-  const canvas = document.createElement("canvas");
-  canvas.width = 720;
-  canvas.height = 1100;
-  const ctx = canvas.getContext("2d");
+function makeCardGroup(frontTex, backTex) {
+  const group = new THREE.Group();
+  const W = 2.7, H = 4.15, D = 0.09, R = 0.22;
+  const alpha = makeAlphaMap(W, H, R);
+  const matProps = { metalness: 0.15, roughness: 0.22, clearcoat: 1.0, clearcoatRoughness: 0.12 };
 
-  const bg = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-  bg.addColorStop(0, "#0f172a");
-  bg.addColorStop(0.48, "#111827");
-  bg.addColorStop(1, "#030712");
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // Front face
+  const frontGeo = new THREE.PlaneGeometry(W, H);
+  const frontMat = new THREE.MeshPhysicalMaterial({ map: frontTex, alphaMap: alpha, alphaTest: 0.5, ...matProps });
+  const frontMesh = new THREE.Mesh(frontGeo, frontMat);
+  frontMesh.position.z = D / 2;
+  group.add(frontMesh);
 
-  const blueGlow = ctx.createRadialGradient(10, 20, 20, 40, 60, 470);
-  blueGlow.addColorStop(0, "rgba(37,99,235,0.82)");
-  blueGlow.addColorStop(1, "rgba(37,99,235,0)");
-  ctx.fillStyle = blueGlow;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // Back face
+  const backGeo = new THREE.PlaneGeometry(W, H);
+  const backMat = new THREE.MeshPhysicalMaterial({ map: backTex, alphaMap: alpha, alphaTest: 0.5, ...matProps });
+  const backMesh = new THREE.Mesh(backGeo, backMat);
+  backMesh.rotation.y = Math.PI;
+  backMesh.position.z = -D / 2;
+  group.add(backMesh);
 
-  const redGlow = ctx.createRadialGradient(720, 1080, 20, 680, 1040, 440);
-  redGlow.addColorStop(0, "rgba(239,68,68,0.66)");
-  redGlow.addColorStop(1, "rgba(239,68,68,0)");
-  ctx.fillStyle = redGlow;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // Edge strips (4 thin boxes for top/bottom/left/right edges, inset from corners)
+  const edgeMat = new THREE.MeshPhysicalMaterial({ color: "#1e293b", metalness: 0.65, roughness: 0.25, clearcoat: 0.8 });
+  // top edge
+  const topGeo = new THREE.BoxGeometry(W - 2 * R, D, 0.001);
+  const top = new THREE.Mesh(topGeo, edgeMat); top.position.set(0, H / 2, 0); group.add(top);
+  // bottom edge
+  const bot = new THREE.Mesh(topGeo, edgeMat); bot.position.set(0, -H / 2, 0); group.add(bot);
+  // left edge
+  const sideGeo = new THREE.BoxGeometry(0.001, H - 2 * R, D);
+  const left = new THREE.Mesh(sideGeo, edgeMat); left.position.set(-W / 2, 0, 0); group.add(left);
+  // right edge
+  const right = new THREE.Mesh(sideGeo, edgeMat); right.position.set(W / 2, 0, 0); group.add(right);
 
-  ctx.fillStyle = "rgba(255,255,255,0.09)";
-  for (let x = 24; x < canvas.width; x += 30) {
-    for (let y = 24; y < canvas.height; y += 30) {
-      ctx.fillRect(x, y, 2, 2);
-    }
-  }
-
-  ctx.strokeStyle = "rgba(255,255,255,0.20)";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(36, 36, canvas.width - 72, canvas.height - 72);
-
-  ctx.fillStyle = "rgba(255,255,255,0.09)";
-  ctx.fillRect(0, 0, canvas.width, 150);
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "900 44px 'Public Sans', Arial, sans-serif";
-  ctx.letterSpacing = "8px";
-  ctx.fillText("AARANNU", 58, 88);
-  ctx.fillStyle = "rgba(255,255,255,0.68)";
-  ctx.font = "700 22px 'Public Sans', Arial, sans-serif";
-  ctx.fillText("DIGITAL ID TRIAL", 60, 124);
-
-  drawShield(ctx, 248, 220, 224);
-
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "900 54px 'Public Sans', Arial, sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("Try Aarannu", canvas.width / 2, 548);
-  ctx.fillText("Instantly", canvas.width / 2, 612);
-
-  ctx.fillStyle = "rgba(226,232,240,0.88)";
-  ctx.font = "600 26px 'Public Sans', Arial, sans-serif";
-  ctx.fillText("50 free starter tokens", canvas.width / 2, 682);
-  ctx.fillText("for your first card batch", canvas.width / 2, 720);
-
-  const chipGradient = ctx.createLinearGradient(90, 0, 610, 0);
-  chipGradient.addColorStop(0, "rgba(255,255,255,0.20)");
-  chipGradient.addColorStop(1, "rgba(255,255,255,0.07)");
-  ctx.fillStyle = chipGradient;
-  ctx.fillRect(76, 802, 568, 86);
-  ctx.strokeStyle = "rgba(255,255,255,0.18)";
-  ctx.strokeRect(76, 802, 568, 86);
-  ctx.textAlign = "left";
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "800 24px 'Public Sans', Arial, sans-serif";
-  ctx.fillText("SECURE / VERIFIED / PRODUCTION-GRADE", 104, 855);
-
-  ctx.fillStyle = "#60a5fa";
-  ctx.font = "800 26px 'Courier New', monospace";
-  ctx.fillText("ACCESS-READY-2026", 76, 996);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 8;
-  return texture;
+  return { group, frontMat, backMat, edgeMat };
 }
 
-function createRoundedCardGeometry(width, height, radius, depth) {
-  const x = -width / 2;
-  const y = -height / 2;
-  const shape = new THREE.Shape();
-
-  shape.moveTo(x + radius, y);
-  shape.lineTo(x + width - radius, y);
-  shape.quadraticCurveTo(x + width, y, x + width, y + radius);
-  shape.lineTo(x + width, y + height - radius);
-  shape.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  shape.lineTo(x + radius, y + height);
-  shape.quadraticCurveTo(x, y + height, x, y + height - radius);
-  shape.lineTo(x, y + radius);
-  shape.quadraticCurveTo(x, y, x + radius, y);
-
-  return new THREE.ExtrudeGeometry(shape, {
-    depth,
-    bevelEnabled: true,
-    bevelSegments: 10,
-    bevelSize: 0.035,
-    bevelThickness: 0.035,
-  }).center();
-}
-
+// ── Component ──────────────────────────────────────────────────────────────────
 export default function HolographicCardScene() {
   const hostRef = useRef(null);
 
   useEffect(() => {
     const host = hostRef.current;
-    if (!host) return undefined;
+    if (!host) return;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color("#000000");
-
     const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
-    camera.position.set(0, 0.1, 8.2);
+    camera.position.set(0, 0.1, 7.4);
 
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      powerPreference: "high-performance",
-      preserveDrawingBuffer: true,
-    });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.domElement.setAttribute("aria-label", "Animated vertical ID card");
     renderer.domElement.className = "h-full w-full";
+    renderer.domElement.setAttribute("aria-label", "3D ID card – click to flip");
     host.appendChild(renderer.domElement);
 
-    const geometry = createRoundedCardGeometry(2.7, 4.15, 0.18, 0.1);
-    const cardMaterial = new THREE.MeshPhysicalMaterial({
-      map: makeVerticalCardTexture(),
-      color: "#ffffff",
-      metalness: 0.18,
-      roughness: 0.24,
-      clearcoat: 0.9,
-      clearcoatRoughness: 0.16,
-      side: THREE.DoubleSide,
-    });
+    // Front texture (sync)
+    const frontTex = mkTex(makeFront());
 
-    const card = new THREE.Mesh(geometry, cardMaterial);
-    card.rotation.set(-0.08, -0.32, 0.04);
+    // Back texture (async placeholder → real)
+    const bpC = document.createElement("canvas"); bpC.width = CW; bpC.height = CH;
+    const bpCtx = bpC.getContext("2d"); bpCtx.fillStyle = "#0b1120"; bpCtx.fillRect(0, 0, CW, CH);
+    const backTex = mkTex(bpC);
+    makeBack().then(bc => { bpCtx.clearRect(0, 0, CW, CH); bpCtx.drawImage(bc, 0, 0); backTex.needsUpdate = true; });
+
+    const { group: card, frontMat, backMat, edgeMat } = makeCardGroup(frontTex, backTex);
+    card.rotation.set(-0.06, -0.28, 0.03);
     scene.add(card);
 
-    const shadowGeometry = createRoundedCardGeometry(2.74, 4.19, 0.18, 0.03);
-    const shadowMaterial = new THREE.MeshBasicMaterial({
-      color: "#111827",
-      transparent: true,
-      opacity: 0.5,
-      side: THREE.DoubleSide,
-    });
-    const shadowCard = new THREE.Mesh(shadowGeometry, shadowMaterial);
-    shadowCard.position.set(0.18, -0.16, -0.22);
-    shadowCard.rotation.set(-0.08, -0.32, 0.04);
-    scene.add(shadowCard);
+    // Drop shadow (also rounded)
+    const shadowGeo = new THREE.ShapeGeometry(roundedRectShape(2.8, 4.3, 0.24), 8);
+    const shadowMat = new THREE.MeshBasicMaterial({ color: "#0a0f1e", transparent: true, opacity: 0.6 });
+    const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
+    shadowMesh.position.set(0.22, -0.2, -0.28); shadowMesh.rotation.copy(card.rotation);
+    scene.add(shadowMesh);
 
-    const starGeometry = new THREE.BufferGeometry();
-    const starCount = 90;
-    const positions = new Float32Array(starCount * 3);
-    for (let index = 0; index < starCount; index += 1) {
-      positions[index * 3] = (Math.random() - 0.5) * 8;
-      positions[index * 3 + 1] = (Math.random() - 0.5) * 6;
-      positions[index * 3 + 2] = -3 - Math.random() * 6;
-    }
-    starGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    const stars = new THREE.Points(
-      starGeometry,
-      new THREE.PointsMaterial({
-        color: "#cbd5e1",
-        size: 0.018,
-        transparent: true,
-        opacity: 0.5,
-      }),
-    );
+    // Stars
+    const starGeo = new THREE.BufferGeometry();
+    const pos = new Float32Array(90 * 3);
+    for (let i = 0; i < 90; i++) { pos[i * 3] = (Math.random() - .5) * 9; pos[i * 3 + 1] = (Math.random() - .5) * 7; pos[i * 3 + 2] = -4 - Math.random() * 5; }
+    starGeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: "#cbd5e1", size: 0.018, transparent: true, opacity: 0.45 }));
     scene.add(stars);
 
-    const keyLight = new THREE.DirectionalLight("#ffffff", 2.2);
-    keyLight.position.set(2.5, 4, 5);
-    scene.add(keyLight);
+    // Lights
+    const key = new THREE.DirectionalLight("#ffffff", 2.6); key.position.set(2.5, 4, 5); scene.add(key);
+    const blue = new THREE.PointLight("#3b82f6", 5.5, 11); blue.position.set(-3, 2, 3.5); scene.add(blue);
+    const red = new THREE.PointLight("#ef4444", 4.5, 10); red.position.set(3.5, -2.5, 3); scene.add(red);
+    scene.add(new THREE.AmbientLight("#ffffff", 0.5));
 
-    const blueLight = new THREE.PointLight("#3b82f6", 5, 10);
-    blueLight.position.set(-3, 2, 3);
-    scene.add(blueLight);
+    // State
+    let ptrX = 0, ptrY = 0;
+    let flipped = false, targetY = -0.28, currentY = -0.28;
 
-    const redLight = new THREE.PointLight("#ef4444", 4, 9);
-    redLight.position.set(3, -2.2, 3);
-    scene.add(redLight);
-
-    scene.add(new THREE.AmbientLight("#ffffff", 0.44));
-
-    let pointerX = 0;
-    let pointerY = 0;
-    const handlePointerMove = (event) => {
-      const rect = host.getBoundingClientRect();
-      pointerX = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
-      pointerY = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
-    };
+    const onPtr = (e) => { const r = host.getBoundingClientRect(); ptrX = ((e.clientX - r.left) / r.width - 0.5) * 2; ptrY = ((e.clientY - r.top) / r.height - 0.5) * 2; };
+    const onClick = () => { flipped = !flipped; targetY = flipped ? Math.PI + 0.28 : -0.28; };
 
     const resize = () => {
       const { width, height } = host.getBoundingClientRect();
       renderer.setSize(width, height, false);
-      camera.aspect = width / Math.max(height, 1);
-      camera.updateProjectionMatrix();
-      const scale = width < 420 ? 0.82 : width < 900 ? 0.92 : 1.08;
-      card.scale.setScalar(scale);
-      shadowCard.scale.setScalar(scale);
+      camera.aspect = width / Math.max(height, 1); camera.updateProjectionMatrix();
+      const sc = width < 360 ? 0.62 : width < 420 ? 0.72 : width < 600 ? 0.82 : width < 900 ? 0.92 : 1.05;
+      card.scale.setScalar(sc); shadowMesh.scale.setScalar(sc);
     };
 
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    let animationFrame = 0;
-    const clock = new THREE.Clock();
+    const rm = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const clock = new THREE.Clock(); let raf = 0;
     const animate = () => {
-      const time = clock.getElapsedTime();
-      const drift = reduceMotion.matches ? 0 : Math.sin(time * 0.7) * 0.06;
-
-      card.rotation.y = -0.32 + pointerX * 0.08 + drift;
-      card.rotation.x = -0.08 - pointerY * 0.04;
-      card.position.y = reduceMotion.matches ? 0 : Math.sin(time * 0.9) * 0.08;
-
-      shadowCard.rotation.copy(card.rotation);
-      shadowCard.position.y = card.position.y - 0.16;
-      stars.rotation.z = time * 0.01;
-
+      const t = clock.getElapsedTime();
+      const drift = rm.matches ? 0 : Math.sin(t * 0.7) * 0.05;
+      currentY += (targetY - currentY) * 0.055;
+      card.rotation.y = currentY + ptrX * 0.07 + drift;
+      card.rotation.x = -0.06 - ptrY * 0.035;
+      card.position.y = rm.matches ? 0 : Math.sin(t * 0.85) * 0.09;
+      shadowMesh.rotation.copy(card.rotation);
+      shadowMesh.position.y = card.position.y - 0.2;
+      stars.rotation.z = t * 0.009;
       renderer.render(scene, camera);
-      animationFrame = window.requestAnimationFrame(animate);
+      raf = requestAnimationFrame(animate);
     };
 
-    resize();
-    animate();
+    resize(); animate();
     window.addEventListener("resize", resize);
-    host.addEventListener("pointermove", handlePointerMove);
+    host.addEventListener("pointermove", onPtr);
+    host.addEventListener("click", onClick);
 
     return () => {
-      window.cancelAnimationFrame(animationFrame);
+      cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
-      host.removeEventListener("pointermove", handlePointerMove);
-      geometry.dispose();
-      shadowGeometry.dispose();
-      starGeometry.dispose();
-      cardMaterial.map?.dispose();
-      cardMaterial.dispose();
-      shadowMaterial.dispose();
-      renderer.dispose();
-      renderer.domElement.remove();
+      host.removeEventListener("pointermove", onPtr);
+      host.removeEventListener("click", onClick);
+      [frontTex, backTex].forEach(t => t.dispose());
+      [frontMat, backMat, edgeMat, shadowMat].forEach(m => m.dispose());
+      [starGeo, shadowGeo].forEach(g => g.dispose());
+      renderer.dispose(); renderer.domElement.remove();
     };
   }, []);
 
-  return <div ref={hostRef} className="absolute inset-0" />;
+  return (
+    <div style={{ position: "absolute", inset: 0 }}>
+      <div ref={hostRef} style={{ position: "absolute", inset: 0, cursor: "pointer" }} />
+      <p style={{ position: "absolute", bottom: 10, left: "50%", transform: "translateX(-50%)", color: "rgba(147,197,253,.65)", fontSize: 12, fontWeight: 600, letterSpacing: "2.5px", pointerEvents: "none", whiteSpace: "nowrap", userSelect: "none" }}>
+        ↩ CLICK TO FLIP
+      </p>
+    </div>
+  );
 }
