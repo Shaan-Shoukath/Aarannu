@@ -746,8 +746,8 @@ export default function ProjectDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f6f6f8] flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-2 border-[#2563EB] border-t-transparent rounded-full" />
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-2 border-cyan-300 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -785,14 +785,14 @@ export default function ProjectDashboard() {
   const pendingCount = stats?.pending || 0;
 
   const statusColors = {
-    pending: "text-amber-600 bg-amber-50 border-amber-200",
-    approved: "text-emerald-600 bg-emerald-50 border-emerald-200",
-    rejected: "text-red-600 bg-red-50 border-red-200",
+    pending: "text-amber-400 bg-amber-900/30 border-amber-700",
+    approved: "text-emerald-400 bg-emerald-900/30 border-emerald-700",
+    rejected: "text-red-400 bg-red-900/30 border-red-700",
   };
 
   return (
-    <div className="min-h-screen bg-[#f6f6f8] text-slate-900 font-['Public_Sans',sans-serif]">
-      <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
+    <div className="min-h-screen bg-black text-white font-['Public_Sans',sans-serif]">
+      <div className="sticky top-0 z-50 bg-black/90 backdrop-blur-md border-b border-white/12">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-2 sm:py-3 gap-2 sm:gap-0">
           <div className="flex items-center gap-2 sm:gap-3 text-sm min-w-0">
             <BrandLogoLink
@@ -800,15 +800,15 @@ export default function ProjectDashboard() {
               imageClassName="h-7 sm:h-8 w-auto"
               showText={false}
             />
-            <div className="w-px h-6 bg-slate-200 shrink-0 hidden sm:block" />
+            <div className="w-px h-6 bg-white/20 shrink-0 hidden sm:block" />
             <button
               onClick={() => navigate(`/org/${slug}/dashboard`)}
-              className="text-[#2563EB] hover:underline transition cursor-pointer font-medium text-xs sm:text-sm"
+              className="text-cyan-300 hover:underline transition cursor-pointer font-medium text-xs sm:text-sm"
             >
               {slug}
             </button>
             <svg
-              className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400"
+              className="w-3 h-3 sm:w-4 sm:h-4 text-zinc-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -820,14 +820,14 @@ export default function ProjectDashboard() {
                 d="M9 5l7 7-7 7"
               />
             </svg>
-            <span className="font-bold text-slate-900 truncate max-w-32 sm:max-w-xs text-xs sm:text-sm">
+            <span className="font-bold text-white truncate max-w-32 sm:max-w-xs text-xs sm:text-sm">
               {project?.name || "Project"}
             </span>
           </div>
           <div className="flex gap-1.5 sm:gap-2 flex-wrap">
             <button
               onClick={copyFormLink}
-              className="px-2 sm:px-3 py-1 sm:py-1.5 bg-[#2563EB] hover:bg-[#2563EB]/90 text-white rounded-lg text-[10px] sm:text-xs font-medium transition cursor-pointer shadow-sm"
+              className="px-2 sm:px-3 py-1 sm:py-1.5 bg-cyan-300 hover:bg-white text-black rounded-lg text-[10px] sm:text-xs font-medium transition cursor-pointer shadow-sm shadow-cyan-300/20"
             >
               Copy Link
             </button>
@@ -863,7 +863,7 @@ export default function ProjectDashboard() {
             </button>
             <button
               onClick={handleExportCsv}
-              className="px-2 sm:px-3 py-1 sm:py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-lg text-[10px] sm:text-xs font-medium transition cursor-pointer"
+              className="px-2 sm:px-3 py-1 sm:py-1.5 border border-white/12 text-zinc-400 hover:bg-white/5 hover:text-white rounded-lg text-[10px] sm:text-xs font-medium transition cursor-pointer"
             >
               CSV
             </button>
@@ -872,7 +872,7 @@ export default function ProjectDashboard() {
       </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 md:py-8 space-y-4 sm:space-y-6">
         {error && (
-          <div className="px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+          <div className="px-4 py-3 rounded-lg bg-red-900/30 border border-red-700 text-red-400 text-sm">
             {error}
             <button
               onClick={() => setError("")}
@@ -884,7 +884,7 @@ export default function ProjectDashboard() {
         )}
 
         {success && (
-          <div className="px-4 py-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
+          <div className="px-4 py-3 rounded-lg bg-emerald-900/30 border border-emerald-700 text-emerald-400 text-sm">
             {success}
             <button
               onClick={() => setSuccess("")}
@@ -900,47 +900,47 @@ export default function ProjectDashboard() {
             {
               label: "Total",
               value: stats?.totalMembers || 0,
-              color: "text-slate-900",
-              bg: "bg-white",
-              iconBg: "bg-slate-100",
-              iconColor: "text-slate-600",
+              color: "text-white",
+              bg: "bg-zinc-950",
+              iconBg: "bg-zinc-800",
+              iconColor: "text-zinc-400",
             },
             {
               label: "Pending",
               value: pendingCount,
-              color: "text-amber-600",
-              bg: "bg-white",
-              iconBg: "bg-amber-50",
-              iconColor: "text-amber-500",
+              color: "text-amber-400",
+              bg: "bg-zinc-950",
+              iconBg: "bg-amber-900/30",
+              iconColor: "text-amber-400",
             },
             {
               label: "Approved",
               value: stats?.approved || 0,
-              color: "text-emerald-600",
-              bg: "bg-white",
-              iconBg: "bg-emerald-50",
-              iconColor: "text-emerald-500",
+              color: "text-emerald-400",
+              bg: "bg-zinc-950",
+              iconBg: "bg-emerald-900/30",
+              iconColor: "text-emerald-400",
             },
             {
               label: "Rejected",
               value: stats?.rejected || 0,
-              color: "text-red-600",
-              bg: "bg-white",
-              iconBg: "bg-red-50",
-              iconColor: "text-red-500",
+              color: "text-red-400",
+              bg: "bg-zinc-950",
+              iconBg: "bg-red-900/30",
+              iconColor: "text-red-400",
             },
             {
               label: "Cards",
               value: stats?.cardsGenerated || 0,
-              color: "text-[#2563EB]",
-              bg: "bg-white",
-              iconBg: "bg-[#2563EB]/10",
-              iconColor: "text-[#2563EB]",
+              color: "text-cyan-300",
+              bg: "bg-zinc-950",
+              iconBg: "bg-cyan-300/10",
+              iconColor: "text-cyan-300",
             },
           ].map((stat) => (
             <div
               key={stat.label}
-              className={`${stat.bg} border border-slate-200 rounded-xl p-3 sm:p-5`}
+              className={`${stat.bg} border border-white/12 rounded-xl p-3 sm:p-5`}
             >
               <div className="flex items-center gap-2 sm:gap-3">
                 <div
@@ -950,23 +950,23 @@ export default function ProjectDashboard() {
                 </div>
                 <div>
                   <p className={`text-xl sm:text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-                  <p className="text-[10px] sm:text-xs text-slate-500">{stat.label}</p>
+                  <p className="text-[10px] sm:text-xs text-zinc-500">{stat.label}</p>
                 </div>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
+        <div className="bg-zinc-950 border border-white/12 rounded-xl p-4 space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
                 Approval Delivery Queue
               </p>
-              <h2 className="text-lg font-bold text-slate-900 mt-1">
+              <h2 className="text-lg font-bold text-white mt-1">
                 Client-side PDF generation with persisted send status
               </h2>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-sm text-zinc-400 mt-1">
                 Approval prepares the card record on the backend. This dashboard
                 tab generates the PDF in the browser, calls the email endpoint,
                 and stores the last confirmed state for every approved member.
@@ -975,7 +975,7 @@ export default function ProjectDashboard() {
             {resumableMembers.length > 0 && (
               <button
                 onClick={resumePendingDeliveries}
-                className="px-4 py-2 bg-[#2563EB] hover:bg-[#2563EB]/90 text-white rounded-lg text-sm font-medium transition cursor-pointer shadow-sm"
+                className="px-4 py-2 bg-cyan-300 hover:bg-white text-black rounded-lg text-sm font-medium transition cursor-pointer shadow-sm"
               >
                 {deliveryBusy
                   ? "Queue Running..."
@@ -995,9 +995,9 @@ export default function ProjectDashboard() {
             ].map((item) => (
               <div
                 key={item.label}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3"
+                className="rounded-lg border border-white/12 bg-zinc-900 px-3 py-3"
               >
-                <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                <p className="text-[11px] uppercase tracking-wide text-zinc-500">
                   {item.label}
                 </p>
                 <p className={`text-xl font-bold mt-1 ${item.color}`}>{item.value}</p>
@@ -1025,28 +1025,28 @@ export default function ProjectDashboard() {
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-4">
+        <div className="bg-zinc-950 border border-white/12 rounded-xl p-4">
           <div className="flex items-center justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-slate-500 mb-1 font-medium">
+              <p className="text-xs text-zinc-500 mb-1 font-medium">
                 Public Registration Link
               </p>
-              <code className="block text-sm text-[#2563EB] truncate font-mono bg-[#2563EB]/5 px-3 py-1.5 rounded-lg">
+              <code className="block text-sm text-cyan-300 truncate font-mono bg-cyan-300/5 px-3 py-1.5 rounded-lg">
                 {window.location.origin}/register/{projectId}
               </code>
             </div>
             <button
               onClick={copyFormLink}
-              className="px-4 py-2 bg-[#2563EB] hover:bg-[#2563EB]/90 text-white rounded-lg text-sm font-medium transition cursor-pointer shrink-0 shadow-sm"
+              className="px-4 py-2 bg-cyan-300 hover:bg-white text-black rounded-lg text-sm font-medium transition cursor-pointer shrink-0 shadow-sm"
             >
               Copy
             </button>
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="rounded-xl border border-white/12 bg-zinc-950 p-3">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="flex gap-1 bg-slate-50 border border-slate-200 rounded-lg p-1 overflow-x-auto">
+            <div className="flex gap-1 bg-zinc-900 border border-zinc-700 rounded-lg p-1 overflow-x-auto">
               {["all", "pending", "approved", "rejected"].map((nextFilter) => (
                 <button
                   key={nextFilter}
@@ -1056,8 +1056,8 @@ export default function ProjectDashboard() {
                   }}
                   className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer whitespace-nowrap ${
                     filter === nextFilter
-                      ? "bg-[#2563EB] text-white shadow-sm"
-                      : "text-slate-500 hover:text-slate-900 hover:bg-white"
+                      ? "bg-cyan-300 text-black shadow-sm"
+                      : "text-zinc-500 hover:text-white hover:bg-white/5"
                   }`}
                 >
                   {nextFilter.charAt(0).toUpperCase() + nextFilter.slice(1)}
@@ -1139,11 +1139,11 @@ export default function ProjectDashboard() {
             </p>
           </div>
         ) : (
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+          <div className="bg-zinc-950 border border-white/12 rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 text-slate-500 text-xs bg-slate-50/50">
+                  <tr className="border-b border-white/8 text-zinc-500 text-xs bg-zinc-900">
                     <th className="text-left px-4 py-3 w-8">
                       <input
                         type="checkbox"
@@ -1190,7 +1190,7 @@ export default function ProjectDashboard() {
                     return (
                       <tr
                         key={member.id}
-                        className="border-b border-slate-100 hover:bg-slate-50/50 transition"
+                        className="border-b border-white/8 hover:bg-white/5 transition"
                       >
                         <td className="px-4 py-3">
                           {member.status === "pending" && (
@@ -1202,17 +1202,17 @@ export default function ProjectDashboard() {
                             />
                           )}
                         </td>
-                        <td className="px-4 py-3 font-medium text-slate-900">
+                        <td className="px-4 py-3 font-medium text-white">
                           {member.name}
                         </td>
-                        <td className="px-4 py-3 text-slate-500">
+                        <td className="px-4 py-3 text-zinc-400">
                           {member.email || "-"}
                         </td>
                         <td className="px-4 py-3">
                           <span
                             className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
                               statusColors[member.status] ||
-                              "text-slate-400 bg-slate-50 border-slate-200"
+                              "text-zinc-500 bg-zinc-800 border-zinc-700"
                             }`}
                           >
                             {member.status}
@@ -1232,25 +1232,25 @@ export default function ProjectDashboard() {
                                 </p>
                               )}
                               {member.delivery_card_id && (
-                                <p className="text-[11px] text-slate-400 font-mono">
+                                <p className="text-[11px] text-zinc-500 font-mono">
                                   Card {String(member.delivery_card_id).slice(0, 8)}
                                 </p>
                               )}
                               {member.email_sent_at && (
-                                <p className="text-[11px] text-slate-400">
+                                <p className="text-[11px] text-zinc-500">
                                   Sent{" "}
                                   {new Date(member.email_sent_at).toLocaleString()}
                                 </p>
                               )}
                             </div>
                           ) : (
-                            <span className="text-slate-300">-</span>
+                            <span className="text-zinc-600">-</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-slate-400 text-xs">
+                        <td className="px-4 py-3 text-zinc-500 text-xs">
                           {new Date(member.created_at).toLocaleDateString()}
                         </td>
-                        <td className="px-4 py-3 text-slate-400 text-xs max-w-56 truncate">
+                        <td className="px-4 py-3 text-zinc-500 text-xs max-w-56 truncate">
                           {member.custom_fields &&
                           Object.keys(member.custom_fields).length > 0
                             ? Object.entries(member.custom_fields)
@@ -1264,13 +1264,13 @@ export default function ProjectDashboard() {
                               <>
                                 <button
                                   onClick={() => approveMember(member.id)}
-                                  className="px-2.5 py-1 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 rounded-md text-xs font-medium transition cursor-pointer"
+                                  className="px-2.5 py-1 bg-emerald-900/30 text-emerald-400 hover:bg-emerald-900/50 border border-emerald-700 rounded-md text-xs font-medium transition cursor-pointer"
                                 >
                                   Approve
                                 </button>
                                 <button
                                   onClick={() => rejectMember(member.id)}
-                                  className="px-2.5 py-1 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-md text-xs font-medium transition cursor-pointer"
+                                  className="px-2.5 py-1 bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-700 rounded-md text-xs font-medium transition cursor-pointer"
                                 >
                                   Reject
                                 </button>
@@ -1295,14 +1295,14 @@ export default function ProjectDashboard() {
                                 href={member.delivery_verification_url}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="px-2.5 py-1 bg-white text-slate-600 hover:text-[#2563EB] border border-slate-200 hover:border-[#2563EB]/30 rounded-md text-xs font-medium transition"
+                                className="px-2.5 py-1 bg-zinc-800 text-zinc-400 hover:text-cyan-300 border border-white/12 hover:border-cyan-300/30 rounded-md text-xs font-medium transition"
                               >
                                 Verify
                               </a>
                             )}
                             <button
                               onClick={() => deleteMember(member.id)}
-                              className="px-2.5 py-1 bg-slate-50 text-slate-500 hover:bg-red-50 hover:text-red-600 border border-slate-200 hover:border-red-200 rounded-md text-xs font-medium transition cursor-pointer"
+                              className="px-2.5 py-1 bg-zinc-900 text-zinc-500 hover:bg-red-900/30 hover:text-red-400 border border-white/12 hover:border-red-700 rounded-md text-xs font-medium transition cursor-pointer"
                             >
                               Delete
                             </button>
@@ -1319,9 +1319,9 @@ export default function ProjectDashboard() {
       </div>
       {showRenewModal && (
         <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 space-y-5 shadow-xl">
-            <h2 className="text-lg font-bold text-slate-900">Renew Project</h2>
-            <p className="text-sm text-slate-500">
+          <div className="bg-zinc-950 border border-white/12 rounded-2xl w-full max-w-md p-6 space-y-5 shadow-xl">
+            <h2 className="text-lg font-bold text-white">Renew Project</h2>
+            <p className="text-sm text-zinc-400">
               Choose how to handle existing members when renewing this project
               for a new subscription period.
             </p>
@@ -1329,8 +1329,8 @@ export default function ProjectDashboard() {
               <label
                 className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition ${
                   renewMode === "continue"
-                    ? "border-[#2563EB] bg-[#2563EB]/5"
-                    : "border-slate-200 hover:border-slate-300"
+                    ? "border-cyan-300 bg-cyan-300/5"
+                    : "border-white/12 hover:border-white/20"
                 }`}
               >
                 <input

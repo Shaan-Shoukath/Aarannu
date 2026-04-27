@@ -115,9 +115,9 @@ export default function Templates() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8]">
+      <div className="min-h-screen flex items-center justify-center bg-black">
         <svg
-          className="animate-spin h-8 w-8 text-[#2563EB]"
+          className="animate-spin h-8 w-8 text-cyan-300"
           fill="none"
           viewBox="0 0 24 24"
         >
@@ -140,24 +140,24 @@ export default function Templates() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f6f8] font-['Public_Sans',sans-serif] flex flex-col">
+    <div className="min-h-screen bg-black font-['Public_Sans',sans-serif] flex flex-col text-white">
       {/* ─── Header ─── */}
-      <header className="h-14 sm:h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-40">
+      <header className="h-14 sm:h-16 bg-black/90 backdrop-blur-md border-b border-white/12 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-40">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <BrandLogoLink
             imageClassName="h-8 sm:h-9 w-auto"
             showText={false}
           />
-          <h1 className="font-bold text-base sm:text-lg text-slate-900 truncate">
+          <h1 className="font-bold text-base sm:text-lg text-white truncate">
             Aarannu
-            <span className="text-slate-400 font-normal ml-1 sm:ml-2 text-xs sm:text-sm">
+            <span className="text-zinc-500 font-normal ml-1 sm:ml-2 text-xs sm:text-sm">
               | Templates
             </span>
           </h1>
         </div>
         <button
           onClick={() => navigate("/dashboard")}
-          className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-600 hover:text-[#2563EB] transition-colors border border-slate-200 rounded-lg hover:border-[#2563EB]/30 cursor-pointer shrink-0"
+          className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-zinc-400 hover:text-cyan-300 transition-colors border border-white/12 rounded-lg hover:border-cyan-300/30 cursor-pointer shrink-0"
         >
           &larr; <span className="hidden sm:inline">Back to </span>Dashboard
         </button>
@@ -166,10 +166,10 @@ export default function Templates() {
       {/* ─── Main ─── */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 md:py-10 flex-1">
         <div className="mb-5 sm:mb-8">
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white">
             Select a Template
           </h2>
-          <p className="text-sm sm:text-base text-slate-500 mt-2 max-w-xl">
+          <p className="text-sm sm:text-base text-zinc-400 mt-2 max-w-xl">
             Start creating professional ID cards in minutes. Choose from our
             expertly designed templates or build a custom layout from the ground
             up.
@@ -177,12 +177,12 @@ export default function Templates() {
         </div>
 
         {/* Template summary */}
-        <div className="mb-5 sm:mb-8 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-5 sm:mb-8 flex flex-col gap-3 rounded-xl border border-white/12 bg-zinc-950 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-semibold text-slate-800">
+            <p className="text-sm font-semibold text-white">
               Template library
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-zinc-400">
               Pick the card structure first. Fine tune colors, fields, and
               orientation in the generator.
             </p>
@@ -196,17 +196,17 @@ export default function Templates() {
             <button
               key={t.id}
               onClick={() => handleSelectTemplate(t)}
-              className="group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-[#2563EB]/30 transition-all duration-300 overflow-hidden text-left focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20"
+              className="group bg-zinc-950 rounded-xl border border-white/12 hover:shadow-lg hover:border-cyan-300/30 transition-all duration-300 overflow-hidden text-left focus:outline-none focus:ring-2 focus:ring-cyan-300/20"
             >
               {/* Card Preview */}
               <div
                 className={`${t.id === "custom" ? "h-full" : "h-44"} relative overflow-hidden`}
               >
                 {t.id === "custom" ? (
-                  <div className="h-full min-h-44 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center gap-3 bg-slate-50 group-hover:border-[#2563EB]/40 transition-colors text-center px-4">
-                    <div className="w-14 h-14 bg-[#2563EB]/10 rounded-full flex items-center justify-center group-hover:bg-[#2563EB]/20 transition-colors">
+                  <div className="h-full min-h-44 border-2 border-dashed border-zinc-700 rounded-xl flex flex-col items-center justify-center gap-3 bg-zinc-900 group-hover:border-cyan-300/40 transition-colors text-center px-4">
+                    <div className="w-14 h-14 bg-cyan-300/10 rounded-full flex items-center justify-center group-hover:bg-cyan-300/20 transition-colors">
                       <svg
-                        className="w-6 h-6 text-[#2563EB]"
+                        className="w-6 h-6 text-cyan-300"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -219,7 +219,7 @@ export default function Templates() {
                         />
                       </svg>
                     </div>
-                    <span className="text-sm font-semibold text-slate-600">
+                    <span className="text-sm font-semibold text-zinc-300">
                       {t.name}
                     </span>
                     <StatusBadge tone="slate">{t.bestFor}</StatusBadge>
@@ -288,7 +288,7 @@ export default function Templates() {
                       </StatusBadge>
                     ))}
                   </div>
-                  <div className="mt-4 text-xs font-semibold text-[#2563EB] opacity-0 transition group-hover:opacity-100">
+                  <div className="mt-4 text-xs font-semibold text-cyan-300 opacity-0 transition group-hover:opacity-100">
                     Use this template
                   </div>
                 </div>
@@ -299,14 +299,14 @@ export default function Templates() {
       </main>
 
       {/* ─── Footer ─── */}
-      <footer className="border-t border-slate-200 bg-white py-4 sm:py-6 px-4 sm:px-6">
+      <footer className="border-t border-white/12 bg-black py-4 sm:py-6 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BrandLogoLink
               imageClassName="h-7 w-auto"
-              textClassName="text-sm font-medium text-slate-600"
+              textClassName="text-sm font-medium text-zinc-300"
             />
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-zinc-500">
               &copy; {new Date().getFullYear()} All rights reserved.
             </span>
           </div>
@@ -316,14 +316,14 @@ export default function Templates() {
       {/* ─── Organization Config Modal ─── */}
       {showOrgModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md sm:mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-slate-200">
-              <h3 className="text-lg font-bold text-slate-900">
+          <div className="bg-zinc-950 border border-white/12 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md sm:mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-white/12">
+              <h3 className="text-lg font-bold text-white">
                 Organization Details
               </h3>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-sm text-zinc-400 mt-1">
                 Configure your organization info for the{" "}
-                <span className="font-medium text-slate-700">
+                <span className="font-medium text-cyan-300">
                   {selectedTemplate?.name}
                 </span>{" "}
                 template.
@@ -332,7 +332,7 @@ export default function Templates() {
 
             <div className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-300 mb-1">
                   Organization Name *
                 </label>
                 <input
@@ -345,12 +345,12 @@ export default function Templates() {
                     }))
                   }
                   placeholder="e.g. TinkerSpace Academy"
-                  className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2.5 px-3 outline-none"
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 text-sm focus:border-cyan-300 focus:ring-cyan-300/30 py-2.5 px-3 outline-none focus:ring-2"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-300 mb-1">
                   Logo URL
                 </label>
                 <input
@@ -363,16 +363,16 @@ export default function Templates() {
                     }))
                   }
                   placeholder="https://example.com/logo.png"
-                  className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2.5 px-3 outline-none"
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 text-sm focus:border-cyan-300 focus:ring-cyan-300/30 py-2.5 px-3 outline-none focus:ring-2"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">
+                <p className="text-[10px] text-zinc-500 mt-1">
                   Direct link to your organization&apos;s logo (PNG/SVG
                   recommended)
                 </p>
               </div>
 
               {orgConfig.logoUrl && (
-                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <div className="flex items-center gap-3 p-3 bg-zinc-900 rounded-lg border border-white/12">
                   <img
                     src={orgConfig.logoUrl}
                     alt="Logo preview"
@@ -381,20 +381,20 @@ export default function Templates() {
                       e.target.style.display = "none";
                     }}
                   />
-                  <span className="text-xs text-slate-500">Logo preview</span>
+                  <span className="text-xs text-zinc-400">Logo preview</span>
                 </div>
               )}
 
               {/* ── Watermark Settings (optional, collapsed by default) ── */}
-              <div className="pt-3 border-t border-slate-200 space-y-4">
+              <div className="pt-3 border-t border-white/12 space-y-4">
                 <button
                   type="button"
                   onClick={() => setShowWatermark((v) => !v)}
-                  className="w-full flex items-center justify-between text-sm font-semibold text-slate-700 hover:text-[#2563EB] transition-colors"
+                  className="w-full flex items-center justify-between text-sm font-semibold text-zinc-300 hover:text-cyan-300 transition-colors"
                 >
                   <span className="flex items-center gap-2">
                     <svg
-                      className="w-4 h-4 text-slate-400"
+                          className="w-4 h-4 text-zinc-500"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -407,7 +407,7 @@ export default function Templates() {
                       />
                     </svg>
                     Add Watermark
-                    <span className="text-[10px] text-slate-400 font-normal">
+                    <span className="text-[10px] text-zinc-500 font-normal">
                       (optional)
                     </span>
                   </span>
@@ -429,7 +429,7 @@ export default function Templates() {
                 {showWatermark && (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                      <label className="block text-sm font-medium text-zinc-300 mb-1">
                         Text Watermark
                       </label>
                       <input
@@ -442,11 +442,11 @@ export default function Templates() {
                           }))
                         }
                         placeholder="e.g. CONFIDENTIAL, org name..."
-                        className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2.5 px-3 outline-none"
+                        className="w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 text-sm focus:border-cyan-300 focus:ring-cyan-300/30 py-2.5 px-3 outline-none focus:ring-2"
                       />
                       {watermark.text && (
                         <div className="mt-2 flex items-center gap-2">
-                          <label className="text-[11px] text-slate-500 shrink-0">
+                          <label className="text-[11px] text-zinc-500 shrink-0">
                             Opacity
                           </label>
                           <input
@@ -463,7 +463,7 @@ export default function Templates() {
                             }
                             className="flex-1 h-1 accent-[#2563EB]"
                           />
-                          <span className="text-[11px] text-slate-400 w-8 text-right">
+                          <span className="text-[11px] text-zinc-500 w-8 text-right">
                             {Math.round(watermark.textOpacity * 100)}%
                           </span>
                         </div>
@@ -471,7 +471,7 @@ export default function Templates() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                      <label className="block text-sm font-medium text-zinc-300 mb-1">
                         Image Watermark URL
                       </label>
                       <input
@@ -484,11 +484,11 @@ export default function Templates() {
                           }))
                         }
                         placeholder="https://example.com/watermark.png"
-                        className="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#2563EB] focus:ring-[#2563EB] py-2.5 px-3 outline-none"
+                        className="w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 text-sm focus:border-cyan-300 focus:ring-cyan-300/30 py-2.5 px-3 outline-none focus:ring-2"
                       />
                       {watermark.imageUrl && (
                         <div className="mt-2 flex items-center gap-2">
-                          <label className="text-[11px] text-slate-500 shrink-0">
+                          <label className="text-[11px] text-zinc-500 shrink-0">
                             Opacity
                           </label>
                           <input
@@ -505,7 +505,7 @@ export default function Templates() {
                             }
                             className="flex-1 h-1 accent-[#2563EB]"
                           />
-                          <span className="text-[11px] text-slate-400 w-8 text-right">
+                          <span className="text-[11px] text-zinc-500 w-8 text-right">
                             {Math.round(watermark.imageOpacity * 100)}%
                           </span>
                         </div>
@@ -516,7 +516,7 @@ export default function Templates() {
               </div>
             </div>
 
-            <div className="p-6 border-t border-slate-200 flex gap-3 justify-end">
+            <div className="p-6 border-t border-white/12 flex gap-3 justify-end">
               <Button
                 onClick={() => {
                   setShowOrgModal(false);

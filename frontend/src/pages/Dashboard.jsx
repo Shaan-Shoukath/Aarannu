@@ -83,8 +83,8 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f6f6f8] flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-2 border-[#2563EB] border-t-transparent rounded-full" />
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-2 border-cyan-300 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -114,14 +114,14 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-white font-['Public_Sans',sans-serif]">
+    <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-black font-['Public_Sans',sans-serif]">
       {/* ─── Sidebar ─── */}
-      <aside className="w-64 shrink-0 border-r border-slate-200 bg-[#F9FAFB] hidden lg:flex flex-col justify-between py-6 px-4">
+      <aside className="w-64 shrink-0 border-r border-white/12 bg-zinc-950 hidden lg:flex flex-col justify-between py-6 px-4">
         <div className="space-y-8">
           {/* User / Brand */}
           <div className="px-2">
             <BrandLogoLink imageClassName="h-10 w-auto" />
-            <p className="mt-2 text-xs text-slate-500 pl-0.5">
+            <p className="mt-2 text-xs text-zinc-400 pl-0.5">
               {isUnlimited ? "Admin Workspace" : "Aarannu Workspace"}
             </p>
           </div>
@@ -133,8 +133,8 @@ export default function Dashboard() {
                 onClick={link.onClick}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-left cursor-pointer ${
                   link.active
-                    ? "bg-[#2563EB]/15 text-[#2563EB]"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-[#2563EB]"
+                    ? "bg-cyan-300/15 text-cyan-300"
+                    : "text-zinc-400 hover:bg-white/5 hover:text-cyan-300"
                 }`}
               >
                 <svg
@@ -159,7 +159,7 @@ export default function Dashboard() {
         <div className="px-2 space-y-3">
           <button
             onClick={() => navigate("/tokens/purchase")}
-            className="w-full bg-[#2563EB] hover:bg-[#2563EB]/90 text-white text-sm font-semibold py-2.5 rounded-lg shadow-lg shadow-[#2563EB]/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full bg-cyan-300 hover:bg-white text-black text-sm font-semibold py-2.5 rounded-lg shadow-lg shadow-cyan-300/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <svg
               className="w-4 h-4"
@@ -178,7 +178,7 @@ export default function Dashboard() {
           </button>
           <button
             onClick={handleSignOut}
-            className="w-full text-slate-500 hover:text-red-600 text-xs py-1.5 rounded-lg hover:bg-red-50 transition cursor-pointer"
+            className="w-full text-zinc-400 hover:text-red-400 text-xs py-1.5 rounded-lg hover:bg-red-900/20 transition cursor-pointer"
           >
             Sign Out
           </button>
@@ -188,15 +188,15 @@ export default function Dashboard() {
       {/* ─── Main Content Wrapper ─── */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* ─── Top Header ─── */}
-        <header className="h-14 sm:h-16 border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 bg-white/80 backdrop-blur-md shrink-0">
+        <header className="h-14 sm:h-16 border-b border-white/12 flex items-center justify-between px-4 sm:px-6 lg:px-8 bg-black/90 backdrop-blur-md shrink-0">
           <div className="flex items-center gap-3 sm:gap-4">
             {/* Mobile brand */}
             <BrandLogoLink
               className="flex lg:hidden items-center"
               imageClassName="h-8 sm:h-9 w-auto"
-              textClassName="font-bold text-slate-900"
+              textClassName="font-bold text-white"
             />
-            <span className="hidden lg:block text-slate-900 font-bold text-lg">
+            <span className="hidden lg:block text-white font-bold text-lg">
               Dashboard
             </span>
           </div>
@@ -204,7 +204,7 @@ export default function Dashboard() {
             {/* Token Badge */}
             <button
               onClick={() => navigate("/tokens")}
-              className="flex items-center gap-2 px-3 py-1.5 bg-[#2563EB]/10 hover:bg-[#2563EB]/20 border border-[#2563EB]/20 rounded-lg text-[#2563EB] text-sm font-medium transition cursor-pointer"
+              className="flex items-center gap-2 px-3 py-1.5 bg-cyan-300/10 hover:bg-[#2563EB]/20 border border-cyan-300/20 rounded-lg text-cyan-300 text-sm font-medium transition cursor-pointer"
             >
               <svg
                 className="w-4 h-4"
@@ -228,13 +228,13 @@ export default function Dashboard() {
             {/* Mobile sign out */}
             <button
               onClick={handleSignOut}
-              className="lg:hidden px-3 py-1.5 text-sm text-slate-500 hover:text-red-600 rounded-lg transition cursor-pointer"
+              className="lg:hidden px-3 py-1.5 text-sm text-zinc-400 hover:text-red-400 rounded-lg transition cursor-pointer"
             >
               Sign Out
             </button>
             {/* Profile */}
-            <div className="hidden lg:flex w-8 h-8 rounded-full bg-slate-200 items-center justify-center overflow-hidden">
-              <span className="text-xs font-bold text-slate-600">
+            <div className="hidden lg:flex w-8 h-8 rounded-full bg-zinc-700 items-center justify-center overflow-hidden">
+              <span className="text-xs font-bold text-zinc-400">
                 {user?.user_metadata?.name?.charAt(0)?.toUpperCase() ||
                   user?.email?.charAt(0)?.toUpperCase() ||
                   "U"}
@@ -244,17 +244,17 @@ export default function Dashboard() {
         </header>
 
         {/* ─── Scrollable Content ─── */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8 bg-white">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8 bg-black">
           <div className="max-w-7xl mx-auto space-y-5 sm:space-y-6 lg:space-y-8">
             {/* ─── Welcome Header ─── */}
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
+              <h2 className="text-2xl sm:text-3xl font-bold text-white">
                 Welcome back
                 {user?.user_metadata?.name
                   ? `, ${user.user_metadata.name}`
                   : ""}
               </h2>
-              <p className="text-slate-500 mt-1">
+              <p className="text-zinc-400 mt-1">
                 Manage your organizations and ID card deployments from your
                 command center.
               </p>
@@ -265,9 +265,9 @@ export default function Dashboard() {
               {/* Card 1: Organization Manager */}
               <div
                 onClick={() => navigate("/org/new")}
-                className="group relative p-6 bg-white rounded-xl border border-slate-200 hover:border-[#2563EB]/30 hover:shadow-md transition-all overflow-hidden cursor-pointer"
+                className="group relative p-6 bg-zinc-950 rounded-xl border border-white/12 hover:border-cyan-300/30 hover:shadow-md transition-all overflow-hidden cursor-pointer"
               >
-                <div className="absolute -right-4 -top-4 text-[#2563EB]/5 group-hover:text-[#2563EB]/10 transition-colors">
+                <div className="absolute -right-4 -top-4 text-cyan-300/5 group-hover:text-cyan-300/10 transition-colors">
                   <svg
                     className="w-28 h-28"
                     fill="none"
@@ -284,7 +284,7 @@ export default function Dashboard() {
                 </div>
                 <div className="relative z-10 flex flex-col h-full justify-between">
                   <div>
-                    <div className="w-10 h-10 rounded-lg bg-[#2563EB]/10 text-[#2563EB] flex items-center justify-center mb-4">
+                    <div className="w-10 h-10 rounded-lg bg-cyan-300/10 text-cyan-300 flex items-center justify-center mb-4">
                       <svg
                         className="w-5 h-5"
                         fill="none"
@@ -299,10 +299,10 @@ export default function Dashboard() {
                         />
                       </svg>
                     </div>
-                    <h3 className="text-lg font-bold text-slate-900">
+                    <h3 className="text-lg font-bold text-white">
                       Organization Manager
                     </h3>
-                    <p className="text-sm text-slate-500 mt-2">
+                    <p className="text-sm text-zinc-400 mt-2">
                       Manage teams, invite collaborators, and define granular
                       permissions.
                     </p>
@@ -317,18 +317,18 @@ export default function Dashboard() {
                     ].map((f) => (
                       <span
                         key={f}
-                        className="px-2 py-0.5 bg-[#2563EB]/5 border border-[#2563EB]/10 rounded-full text-[10px] font-medium text-[#2563EB]"
+                        className="px-2 py-0.5 bg-cyan-300/5 border border-cyan-300/10 rounded-full text-[10px] font-medium text-cyan-300"
                       >
                         {f}
                       </span>
                     ))}
                   </div>
                   {orgs.length > 0 && (
-                    <p className="mt-3 text-xs text-[#2563EB] font-medium">
+                    <p className="mt-3 text-xs text-cyan-300 font-medium">
                       {orgs.length} org{orgs.length !== 1 ? "s" : ""} active →
                     </p>
                   )}
-                  <button className="mt-4 flex items-center gap-2 text-[#2563EB] text-sm font-semibold group-hover:underline">
+                  <button className="mt-4 flex items-center gap-2 text-cyan-300 text-sm font-semibold group-hover:underline">
                     Manage Team <span>→</span>
                   </button>
                 </div>
@@ -337,9 +337,9 @@ export default function Dashboard() {
               {/* Card 2: Quick Generate */}
               <div
                 onClick={() => navigate("/templates")}
-                className="group relative p-6 bg-white rounded-xl border border-slate-200 hover:border-[#2563EB]/30 hover:shadow-md transition-all overflow-hidden cursor-pointer"
+                className="group relative p-6 bg-zinc-950 rounded-xl border border-white/12 hover:border-cyan-300/30 hover:shadow-md transition-all overflow-hidden cursor-pointer"
               >
-                <div className="absolute -right-4 -top-4 text-[#2563EB]/5 group-hover:text-[#2563EB]/10 transition-colors">
+                <div className="absolute -right-4 -top-4 text-cyan-300/5 group-hover:text-cyan-300/10 transition-colors">
                   <svg
                     className="w-28 h-28"
                     fill="none"
@@ -356,7 +356,7 @@ export default function Dashboard() {
                 </div>
                 <div className="relative z-10 flex flex-col h-full justify-between">
                   <div>
-                    <div className="w-10 h-10 rounded-lg bg-[#2563EB]/10 text-[#2563EB] flex items-center justify-center mb-4">
+                    <div className="w-10 h-10 rounded-lg bg-cyan-300/10 text-cyan-300 flex items-center justify-center mb-4">
                       <svg
                         className="w-5 h-5"
                         fill="none"
@@ -371,10 +371,10 @@ export default function Dashboard() {
                         />
                       </svg>
                     </div>
-                    <h3 className="text-lg font-bold text-slate-900">
+                    <h3 className="text-lg font-bold text-white">
                       Quick Generate
                     </h3>
-                    <p className="text-sm text-slate-500 mt-2">
+                    <p className="text-sm text-zinc-400 mt-2">
                       Pick a template, enter data manually or import from
                       Sheets, preview and generate.
                     </p>
@@ -395,7 +395,7 @@ export default function Dashboard() {
                       </span>
                     ))}
                   </div>
-                  <button className="mt-4 flex items-center gap-2 text-[#2563EB] text-sm font-semibold group-hover:underline">
+                  <button className="mt-4 flex items-center gap-2 text-cyan-300 text-sm font-semibold group-hover:underline">
                     Start Generate <span>→</span>
                   </button>
                 </div>
@@ -404,7 +404,7 @@ export default function Dashboard() {
               {/* Token Balance Card */}
               <div
                 onClick={() => navigate("/tokens")}
-                className="p-6 bg-[#2563EB] rounded-xl text-white shadow-xl shadow-[#2563EB]/20 flex flex-col justify-between cursor-pointer hover:shadow-2xl transition-shadow"
+                className="p-6 bg-cyan-300 rounded-xl text-black shadow-xl shadow-cyan-300/20 flex flex-col justify-between cursor-pointer hover:shadow-2xl transition-shadow"
               >
                 <div>
                   <div className="flex justify-between items-center mb-4">
@@ -432,7 +432,7 @@ export default function Dashboard() {
                         ? tokenBalance
                         : "—"}
                   </p>
-                  <p className="text-sm text-white/80 mt-1">
+                  <p className="text-sm text-black/70 mt-1">
                     {isUnlimited ? "Unlimited tokens" : "tokens available"}
                   </p>
                 </div>
@@ -441,7 +441,7 @@ export default function Dashboard() {
                     e.stopPropagation();
                     navigate("/tokens/purchase");
                   }}
-                  className="mt-6 w-full bg-white/20 hover:bg-white/30 backdrop-blur-sm py-2 rounded-lg text-sm font-bold transition-all cursor-pointer"
+                  className="mt-6 w-full bg-black/20 hover:bg-black/30 backdrop-blur-sm py-2 rounded-lg text-sm font-bold transition-all cursor-pointer"
                 >
                   Refill Balance
                 </button>
@@ -453,16 +453,16 @@ export default function Dashboard() {
               {/* Quick Links */}
               <div className="lg:col-span-2 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                  <h3 className="text-base sm:text-lg font-bold text-white">
                     Quick Actions
                   </h3>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                   <button
                     onClick={() => navigate("/tokens")}
-                    className="bg-white border border-slate-200 hover:border-[#2563EB]/30 hover:shadow-sm rounded-xl p-4 text-left transition-all cursor-pointer group"
+                    className="bg-zinc-950 border border-white/12 hover:border-cyan-300/30 hover:shadow-sm rounded-xl p-4 text-left transition-all cursor-pointer group"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-3">
+                    <div className="w-9 h-9 rounded-lg bg-amber-900/20 text-amber-400 flex items-center justify-center mb-3">
                       <svg
                         className="w-5 h-5"
                         fill="none"
@@ -477,16 +477,16 @@ export default function Dashboard() {
                         />
                       </svg>
                     </div>
-                    <p className="text-lg font-bold text-slate-900">
+                    <p className="text-lg font-bold text-white">
                       {isUnlimited ? "∞" : (tokenBalance ?? "—")}
                     </p>
-                    <p className="text-xs text-slate-500">Token Balance</p>
+                    <p className="text-xs text-zinc-400">Token Balance</p>
                   </button>
                   <button
                     onClick={() => navigate("/tokens/purchase")}
-                    className="bg-white border border-slate-200 hover:border-[#2563EB]/30 hover:shadow-sm rounded-xl p-4 text-left transition-all cursor-pointer group"
+                    className="bg-zinc-950 border border-white/12 hover:border-cyan-300/30 hover:shadow-sm rounded-xl p-4 text-left transition-all cursor-pointer group"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-green-50 text-green-600 flex items-center justify-center mb-3">
+                    <div className="w-9 h-9 rounded-lg bg-green-900/20 text-green-400 flex items-center justify-center mb-3">
                       <svg
                         className="w-5 h-5"
                         fill="none"
@@ -501,14 +501,14 @@ export default function Dashboard() {
                         />
                       </svg>
                     </div>
-                    <p className="text-lg font-bold text-slate-900">Purchase</p>
-                    <p className="text-xs text-slate-500">Buy Tokens</p>
+                    <p className="text-lg font-bold text-white">Purchase</p>
+                    <p className="text-xs text-zinc-400">Buy Tokens</p>
                   </button>
                   <button
                     onClick={() => navigate("/org/new")}
-                    className="bg-white border border-slate-200 hover:border-[#2563EB]/30 hover:shadow-sm rounded-xl p-4 text-left transition-all cursor-pointer group"
+                    className="bg-zinc-950 border border-white/12 hover:border-cyan-300/30 hover:shadow-sm rounded-xl p-4 text-left transition-all cursor-pointer group"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3">
+                    <div className="w-9 h-9 rounded-lg bg-indigo-900/20 text-indigo-400 flex items-center justify-center mb-3">
                       <svg
                         className="w-5 h-5"
                         fill="none"
@@ -523,16 +523,16 @@ export default function Dashboard() {
                         />
                       </svg>
                     </div>
-                    <p className="text-lg font-bold text-slate-900">
+                    <p className="text-lg font-bold text-white">
                       {orgs.length}
                     </p>
-                    <p className="text-xs text-slate-500">Organizations</p>
+                    <p className="text-xs text-zinc-400">Organizations</p>
                   </button>
                   <button
                     onClick={() => navigate("/templates")}
-                    className="bg-white border border-slate-200 hover:border-[#2563EB]/30 hover:shadow-sm rounded-xl p-4 text-left transition-all cursor-pointer group"
+                    className="bg-zinc-950 border border-white/12 hover:border-cyan-300/30 hover:shadow-sm rounded-xl p-4 text-left transition-all cursor-pointer group"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mb-3">
+                    <div className="w-9 h-9 rounded-lg bg-purple-900/20 text-purple-400 flex items-center justify-center mb-3">
                       <svg
                         className="w-5 h-5"
                         fill="none"
@@ -547,8 +547,8 @@ export default function Dashboard() {
                         />
                       </svg>
                     </div>
-                    <p className="text-lg font-bold text-slate-900">Browse</p>
-                    <p className="text-xs text-slate-500">Templates</p>
+                    <p className="text-lg font-bold text-white">Browse</p>
+                    <p className="text-xs text-zinc-400">Templates</p>
                   </button>
                 </div>
               </div>
@@ -556,15 +556,15 @@ export default function Dashboard() {
               {/* Organizations List */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-slate-900">
+                  <h3 className="text-lg font-bold text-white">
                     Your Organizations
                   </h3>
                   <button
                     onClick={() => navigate("/org/new")}
-                    className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 transition-all cursor-pointer"
+                    className="p-1.5 rounded-lg border border-white/12 hover:bg-white/5 transition-all cursor-pointer"
                   >
                     <svg
-                      className="w-4 h-4 text-slate-500"
+                      className="w-4 h-4 text-zinc-400"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -579,13 +579,13 @@ export default function Dashboard() {
                   </button>
                 </div>
                 {orgs.length === 0 ? (
-                  <div className="p-6 bg-white border border-slate-200 rounded-xl text-center">
-                    <p className="text-sm text-slate-500">
+                  <div className="p-6 bg-zinc-950 border border-white/12 rounded-xl text-center">
+                    <p className="text-sm text-zinc-400">
                       No organizations yet
                     </p>
                     <button
                       onClick={() => navigate("/org/new")}
-                      className="mt-3 text-sm text-[#2563EB] font-medium hover:underline cursor-pointer"
+                      className="mt-3 text-sm text-cyan-300 font-medium hover:underline cursor-pointer"
                     >
                       + Create your first org
                     </button>
@@ -607,7 +607,7 @@ export default function Dashboard() {
                         <button
                           key={org.id}
                           onClick={() => navigate(`/org/${org.slug}/dashboard`)}
-                          className="w-full p-4 bg-white border border-slate-200 rounded-xl flex items-center justify-between hover:shadow-sm hover:border-[#2563EB]/20 transition-all cursor-pointer text-left"
+                          className="w-full p-4 bg-zinc-950 border border-white/12 rounded-xl flex items-center justify-between hover:shadow-sm hover:border-cyan-300/20 transition-all cursor-pointer text-left"
                         >
                           <div className="flex items-center gap-3">
                             <div
@@ -616,16 +616,16 @@ export default function Dashboard() {
                               {(org.name || "O").charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <p className="text-sm font-bold text-slate-900 leading-tight">
+                              <p className="text-sm font-bold text-white leading-tight">
                                 {org.name}
                               </p>
-                              <p className="text-xs text-slate-500">
+                              <p className="text-xs text-zinc-400">
                                 /{org.slug}
                               </p>
                             </div>
                           </div>
                           <svg
-                            className="w-4 h-4 text-slate-300"
+                            className="w-4 h-4 text-zinc-500"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -649,15 +649,15 @@ export default function Dashboard() {
       </div>
 
       {/* ─── Mobile Bottom Nav ─── */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 flex items-center justify-around px-2 py-1.5 safe-area-pb">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-zinc-950 border-t border-white/12 flex items-center justify-around px-2 py-1.5 safe-area-pb">
         {sidebarLinks.map((link) => (
           <button
             key={link.label}
             onClick={link.onClick}
             className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer min-w-15 ${
               link.active
-                ? "text-[#2563EB]"
-                : "text-slate-400 hover:text-slate-600"
+                ? "text-cyan-300"
+                : "text-slate-400 hover:text-zinc-400"
             }`}
           >
             <svg

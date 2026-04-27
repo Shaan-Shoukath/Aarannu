@@ -183,14 +183,14 @@ export default function RegistrationForm() {
   const renderField = (field) => {
     const key = field.field_key;
     const value = customFields[key] || "";
-    const bc = "w-full px-4 py-3 bg-slate-900/60 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all";
+    const bc = "w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-300/30 focus:border-cyan-300 transition-all";
 
     const label = (
       <>
-        <label className="block text-sm font-medium text-slate-300 mb-1.5">
+        <label className="block text-sm font-medium text-zinc-300 mb-1.5">
           {field.label}{field.required && <span className="text-red-400 ml-1">*</span>}
         </label>
-        {field.description && <p className="text-xs text-slate-500 mb-2">{field.description}</p>}
+        {field.description && <p className="text-xs text-zinc-500 mb-2">{field.description}</p>}
       </>
     );
 
@@ -207,8 +207,8 @@ export default function RegistrationForm() {
             <div className="space-y-2 mt-1">
               {(field.options || []).map((o, i) => (
                 <label key={i} className="flex items-center gap-2.5 cursor-pointer group">
-                  <input type="radio" name={`reg_${key}`} value={o} checked={value === o} onChange={() => updateCustomField(key, o)} required={field.required && !value} className="accent-indigo-500 w-4 h-4" />
-                  <span className="text-sm text-slate-300 group-hover:text-white transition">{o}</span>
+                  <input type="radio" name={`reg_${key}`} value={o} checked={value === o} onChange={() => updateCustomField(key, o)} required={field.required && !value} className="accent-cyan-300 w-4 h-4" />
+                  <span className="text-sm text-zinc-300 group-hover:text-white transition">{o}</span>
                 </label>
               ))}
             </div>
@@ -221,8 +221,8 @@ export default function RegistrationForm() {
             <div className="space-y-2 mt-1">
               {(field.options || []).map((o, i) => (
                 <label key={i} className="flex items-center gap-2.5 cursor-pointer group">
-                  <input type="checkbox" checked={(Array.isArray(customFields[key]) ? customFields[key] : []).includes(o)} onChange={() => toggleCheckbox(key, o)} className="accent-indigo-500 w-4 h-4" />
-                  <span className="text-sm text-slate-300 group-hover:text-white transition">{o}</span>
+                  <input type="checkbox" checked={(Array.isArray(customFields[key]) ? customFields[key] : []).includes(o)} onChange={() => toggleCheckbox(key, o)} className="accent-cyan-300 w-4 h-4" />
+                  <span className="text-sm text-zinc-300 group-hover:text-white transition">{o}</span>
                 </label>
               ))}
             </div>
@@ -235,17 +235,17 @@ export default function RegistrationForm() {
             <div className="relative">
               {uploadPreviews[key] ? (
                 <div className="relative">
-                  <img src={uploadPreviews[key]} alt="Upload" className="w-24 h-24 rounded-xl object-cover border-2 border-slate-600" />
+                  <img src={uploadPreviews[key]} alt="Upload" className="w-24 h-24 rounded-xl object-cover border-2 border-zinc-700" />
                   <button type="button" onClick={() => { setUploadPreviews(p => { const n = {...p}; delete n[key]; return n; }); setUploadPaths(p => { const n = {...p}; delete n[key]; return n; }); updateCustomField(key, ""); }}
                     className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full text-white text-xs flex items-center justify-center cursor-pointer">{"\u2715"}</button>
                 </div>
               ) : (
-                <label className="block border-2 border-dashed border-slate-600/50 rounded-xl p-6 text-center cursor-pointer hover:border-indigo-500/50 transition">
+                <label className="block border-2 border-dashed border-zinc-700 rounded-xl p-6 text-center cursor-pointer hover:border-cyan-300/40 transition">
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleFieldUpload(e.target.files[0], key, true)} />
                   {uploadingField === key ? (
-                    <div className="animate-spin h-6 w-6 border-2 border-indigo-400 border-t-transparent rounded-full mx-auto" />
+                    <div className="animate-spin h-6 w-6 border-2 border-cyan-300 border-t-transparent rounded-full mx-auto" />
                   ) : (
-                    <><div className="text-3xl mb-1">{"\uD83D\uDCF7"}</div><p className="text-xs text-slate-500">Click to upload photo</p><p className="text-[10px] text-slate-600 mt-1">JPG, PNG, WebP (max 5 MB)</p></>
+                    <><div className="text-3xl mb-1">{"\uD83D\uDCF7"}</div><p className="text-xs text-zinc-500">Click to upload photo</p><p className="text-[10px] text-zinc-600 mt-1">JPG, PNG, WebP (max 5 MB)</p></>
                   )}
                 </label>
               )}
@@ -257,19 +257,19 @@ export default function RegistrationForm() {
         return (
           <div key={key}>{label}
             {uploadPaths[key] ? (
-              <div className="flex items-center gap-2 bg-slate-900/40 border border-slate-700/30 rounded-lg px-3 py-2">
-                <span className="text-indigo-400">{"\uD83D\uDCCE"}</span>
-                <span className="text-sm text-slate-300 truncate flex-1">File uploaded</span>
+              <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2">
+                <span className="text-cyan-300">{"\uD83D\uDCCE"}</span>
+                <span className="text-sm text-zinc-300 truncate flex-1">File uploaded</span>
                 <button type="button" onClick={() => { setUploadPaths(p => { const n = {...p}; delete n[key]; return n; }); updateCustomField(key, ""); }}
                   className="text-red-400 hover:text-red-300 text-xs cursor-pointer">{"\u2715"}</button>
               </div>
             ) : (
-              <label className="block border-2 border-dashed border-slate-600/50 rounded-xl p-6 text-center cursor-pointer hover:border-indigo-500/50 transition">
+              <label className="block border-2 border-dashed border-zinc-700 rounded-xl p-6 text-center cursor-pointer hover:border-cyan-300/40 transition">
                 <input type="file" className="hidden" onChange={(e) => e.target.files?.[0] && handleFieldUpload(e.target.files[0], key, false)} />
                 {uploadingField === key ? (
-                  <div className="animate-spin h-6 w-6 border-2 border-indigo-400 border-t-transparent rounded-full mx-auto" />
+                  <div className="animate-spin h-6 w-6 border-2 border-cyan-300 border-t-transparent rounded-full mx-auto" />
                 ) : (
-                  <><div className="text-3xl mb-1">{"\uD83D\uDCCE"}</div><p className="text-xs text-slate-500">Click to upload file</p><p className="text-[10px] text-slate-600 mt-1">PDF, DOC, Images (max 5 MB)</p></>
+                  <><div className="text-3xl mb-1">{"\uD83D\uDCCE"}</div><p className="text-xs text-zinc-500">Click to upload file</p><p className="text-[10px] text-zinc-600 mt-1">PDF, DOC, Images (max 5 MB)</p></>
                 )}
               </label>
             )}
@@ -296,8 +296,8 @@ export default function RegistrationForm() {
   // Loading
   if (loading) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-2 border-indigo-400 border-t-transparent rounded-full" />
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-2 border-cyan-300 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -305,11 +305,11 @@ export default function RegistrationForm() {
   // Error / closed
   if (error && !project) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-black flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center">
           <div className="text-6xl mb-4">{"\uD83D\uDEAB"}</div>
           <h1 className="text-2xl font-bold text-white mb-2">Form Unavailable</h1>
-          <p className="text-slate-400">{error}</p>
+          <p className="text-zinc-400">{error}</p>
         </div>
       </div>
     );
@@ -318,7 +318,7 @@ export default function RegistrationForm() {
   // Spots full
   if (project?.spots_remaining === 0) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-black flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center">
           {org?.logo_url && <img src={org.logo_url} alt={org.name} className="w-16 h-16 rounded-xl object-cover mx-auto mb-4 ring-2 ring-slate-700" />}
           <div className="text-6xl mb-4">{"\uD83D\uDCCB"}</div>
@@ -332,7 +332,7 @@ export default function RegistrationForm() {
   // Success
   if (submitted) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-black flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center">
           {org?.logo_url && <img src={org.logo_url} alt={org.name} className="w-16 h-16 rounded-xl object-cover mx-auto mb-4 ring-2 ring-slate-700" />}
           <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center mx-auto mb-4">
@@ -341,8 +341,8 @@ export default function RegistrationForm() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-white mb-2">Registration Submitted!</h1>
-          <p className="text-slate-400 mb-2">Your registration for <span className="text-white font-medium">{project.name}</span> is pending approval.</p>
-          <p className="text-slate-500 text-sm">You&apos;ll receive an email once approved.</p>
+          <p className="text-zinc-400 mb-2">Your registration for <span className="text-white font-medium">{project.name}</span> is pending approval.</p>
+          <p className="text-zinc-500 text-sm">You&apos;ll receive an email once approved.</p>
         </div>
       </div>
     );
@@ -352,50 +352,50 @@ export default function RegistrationForm() {
   const customFormFields = formFields.filter(f => !f.is_system);
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-black flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         {/* Org branding */}
         <div className="text-center mb-5 sm:mb-6">
-          {org?.logo_url && <img src={org.logo_url} alt={org.name} className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover mx-auto mb-3 ring-2 ring-slate-700" />}
-          {org?.name && <p className="text-slate-400 text-xs sm:text-sm mb-1">{org.name}</p>}
+          {org?.logo_url && <img src={org.logo_url} alt={org.name} className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover mx-auto mb-3 ring-2 ring-white/20" />}
+          {org?.name && <p className="text-zinc-400 text-xs sm:text-sm mb-1">{org.name}</p>}
           <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">{project?.name || "Registration"}</h1>
           {project?.spots_remaining != null && (
-            <p className="text-xs text-slate-500 mt-1">{project.spots_remaining} spot{project.spots_remaining !== 1 ? "s" : ""} remaining</p>
+            <p className="text-xs text-zinc-500 mt-1">{project.spots_remaining} spot{project.spots_remaining !== 1 ? "s" : ""} remaining</p>
           )}
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-slate-800/60 backdrop-blur border border-slate-700/50 rounded-2xl p-4 sm:p-6 space-y-4 sm:space-y-5">
+        <form onSubmit={handleSubmit} className="bg-zinc-950 border border-white/12 rounded-2xl p-4 sm:p-6 space-y-4 sm:space-y-5">
           {/* System: Name */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Full Name <span className="text-red-400">*</span></label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Full Name <span className="text-red-400">*</span></label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="John Doe" required
-              className="w-full px-4 py-3 bg-slate-900/60 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all" />
+              className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-300/30 focus:border-cyan-300 transition-all" />
           </div>
 
           {/* System: Email */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Email <span className="text-red-400">*</span></label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Email <span className="text-red-400">*</span></label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="john@example.com" required
-              className="w-full px-4 py-3 bg-slate-900/60 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all" />
+              className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-300/30 focus:border-cyan-300 transition-all" />
           </div>
 
           {/* System: Photo Upload */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Photo <span className="text-slate-500 text-xs">(optional)</span></label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Photo <span className="text-zinc-500 text-xs">(optional)</span></label>
             {photoPreview ? (
               <div className="flex items-center gap-4">
-                <img src={photoPreview} alt="Photo" className="w-20 h-20 rounded-xl object-cover border-2 border-slate-600" />
+                <img src={photoPreview} alt="Photo" className="w-20 h-20 rounded-xl object-cover border-2 border-zinc-700" />
                 <button type="button" onClick={() => { setPhotoPreview(null); setPhotoPath(""); if (photoRef.current) photoRef.current.value = ""; }}
                   className="px-3 py-1.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg text-xs transition cursor-pointer">Remove</button>
               </div>
             ) : (
-              <label className="block border-2 border-dashed border-slate-600/50 rounded-xl p-5 text-center cursor-pointer hover:border-indigo-500/50 transition">
+              <label className="block border-2 border-dashed border-zinc-700 rounded-xl p-5 text-center cursor-pointer hover:border-cyan-300/40 transition">
                 <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
                 {photoUploading ? (
-                  <div className="animate-spin h-6 w-6 border-2 border-indigo-400 border-t-transparent rounded-full mx-auto" />
+                  <div className="animate-spin h-6 w-6 border-2 border-cyan-300 border-t-transparent rounded-full mx-auto" />
                 ) : (
-                  <><div className="text-3xl mb-1">{"\uD83D\uDCF7"}</div><p className="text-xs text-slate-500">Click to upload your photo</p><p className="text-[10px] text-slate-600 mt-1">JPG, PNG, WebP (max 5 MB)</p></>
+                  <><div className="text-3xl mb-1">{"\uD83D\uDCF7"}</div><p className="text-xs text-zinc-500">Click to upload your photo</p><p className="text-[10px] text-zinc-600 mt-1">JPG, PNG, WebP (max 5 MB)</p></>
                 )}
               </label>
             )}
@@ -420,7 +420,7 @@ export default function RegistrationForm() {
 
           {/* Submit */}
           <button type="submit" disabled={submitting || !name.trim() || photoUploading || uploadingField}
-            className="w-full py-3 bg-linear-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer">
+            className="w-full py-3 bg-cyan-300 hover:bg-white text-black font-semibold rounded-xl shadow-sm shadow-cyan-300/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer">
             {submitting ? (
               <span className="flex items-center justify-center gap-2">
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Submitting...
@@ -431,9 +431,11 @@ export default function RegistrationForm() {
 
         <Link
           to="/"
-          className="mt-4 inline-flex items-center justify-center gap-2 text-slate-500 hover:text-white transition"
+          className="mt-4 inline-flex items-center justify-center gap-2 text-zinc-500 hover:text-zinc-300 transition"
         >
-          <img src="/aarannu.png" alt="" className="h-7 w-auto" />
+          <span className="inline-flex shrink-0 overflow-hidden rounded-[22%]" style={{ lineHeight: 0 }}>
+              <img src="/aarannu.png" alt="" className="h-7 w-auto" />
+            </span>
           <span className="text-xs font-medium">Powered by Aarannu</span>
         </Link>
       </div>

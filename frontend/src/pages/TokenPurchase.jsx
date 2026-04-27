@@ -128,57 +128,55 @@ export default function TokenPurchase() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950/70 flex items-center justify-center px-4">
-        <div className="animate-spin rounded-full h-10 w-10 border-2 border-white border-t-transparent" />
+      <div className="min-h-screen bg-black flex items-center justify-center px-4">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-cyan-300 border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-slate-950 px-3 sm:px-4 py-6 sm:py-10 flex items-center justify-center">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.35),_transparent_40%),radial-gradient(circle_at_bottom,_rgba(239,68,68,0.2),_transparent_35%)]" />
-
-      <div className="relative w-full max-w-xl rounded-[28px] border border-white/15 bg-white shadow-2xl overflow-hidden">
-        <div className="bg-linear-to-r from-[#2563EB] to-[#ef4444] px-6 py-5 text-white">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/80">
+    <div className="min-h-screen bg-black px-3 sm:px-4 py-6 sm:py-10 flex items-center justify-center font-['Public_Sans',sans-serif]">
+      <div className="w-full max-w-xl rounded-2xl border border-white/12 bg-zinc-950 shadow-2xl overflow-hidden">
+        <div className="px-6 py-5 border-b border-white/12">
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-500">
             Buy Tokens
           </p>
-          <h1 className="mt-2 text-2xl font-bold">Open a Gmail draft</h1>
-          <p className="mt-2 text-sm text-white/85">
+          <h1 className="mt-2 text-2xl font-bold text-white">Open a Gmail draft</h1>
+          <p className="mt-2 text-sm text-zinc-400">
             We will prefill your token request and redirect you to Gmail so you
             can send it quickly.
           </p>
         </div>
 
         <div className="p-6 space-y-5">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <div className="rounded-xl border border-white/12 bg-zinc-900 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
               Request Summary
             </p>
-            <div className="mt-3 space-y-2 text-sm text-slate-700">
+            <div className="mt-3 space-y-2 text-sm text-zinc-300">
               <p>
-                <span className="font-semibold text-slate-900">Send to:</span>{" "}
+                <span className="font-semibold text-white">Send to:</span>{" "}
                 {contactEmail || "Not configured"}
               </p>
               {userEmail && (
                 <p>
-                  <span className="font-semibold text-slate-900">Account:</span>{" "}
+                  <span className="font-semibold text-white">Account:</span>{" "}
                   {userEmail}
                 </p>
               )}
               <p>
-                <span className="font-semibold text-slate-900">Balance:</span>{" "}
+                <span className="font-semibold text-white">Balance:</span>{" "}
                 {isUnlimited ? "Unlimited" : `${balance.toLocaleString()} tokens`}
               </p>
             </div>
           </div>
 
           {error ? (
-            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="rounded-xl border border-red-700 bg-red-900/30 px-4 py-3 text-sm text-red-400">
               {error}
             </div>
           ) : (
-            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+            <div className="rounded-xl border border-white/12 bg-zinc-900 px-4 py-3 text-sm text-zinc-400">
               Gmail will open with the subject and message already filled in.
             </div>
           )}
@@ -187,13 +185,13 @@ export default function TokenPurchase() {
             <button
               onClick={handleOpenGmail}
               disabled={!contactEmail}
-              className="flex-1 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex-1 rounded-xl bg-cyan-300 hover:bg-white px-5 py-3 text-sm font-semibold text-black transition shadow-sm shadow-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Open Gmail
             </button>
             <button
               onClick={() => navigate("/tokens")}
-              className="flex-1 rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="flex-1 rounded-xl border border-white/12 px-5 py-3 text-sm font-semibold text-zinc-300 transition hover:bg-white/5 hover:text-white"
             >
               Back to Tokens
             </button>
@@ -202,7 +200,7 @@ export default function TokenPurchase() {
           {contactEmail && (
             <button
               onClick={handleOpenMailApp}
-              className="w-full text-sm font-medium text-[#2563EB] transition hover:underline"
+              className="w-full text-sm font-medium text-cyan-300 transition hover:text-white hover:underline"
             >
               Use the default mail app instead
             </button>

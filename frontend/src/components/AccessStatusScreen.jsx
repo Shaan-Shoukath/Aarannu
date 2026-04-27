@@ -3,22 +3,22 @@ import BrandLogoLink from "./BrandLogoLink";
 
 const TONE_STYLES = {
   pending: {
-    iconBg: "bg-amber-100",
-    iconFg: "text-amber-600",
+    iconBg: "bg-amber-900/30",
+    iconFg: "text-amber-300",
     primary:
-      "bg-[#2563EB] text-white hover:bg-[#2563EB]/90 shadow-lg shadow-[#2563EB]/20",
+      "bg-cyan-300 text-black font-bold hover:bg-white shadow-lg shadow-cyan-300/20",
   },
   blocked: {
-    iconBg: "bg-slate-100",
-    iconFg: "text-slate-600",
+    iconBg: "bg-zinc-800",
+    iconFg: "text-zinc-300",
     primary:
-      "bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-900/10",
+      "bg-zinc-700 text-white font-bold hover:bg-zinc-600 shadow-lg",
   },
   error: {
-    iconBg: "bg-red-100",
-    iconFg: "text-red-600",
+    iconBg: "bg-red-900/30",
+    iconFg: "text-red-400",
     primary:
-      "bg-red-600 text-white hover:bg-red-500 shadow-lg shadow-red-600/20",
+      "bg-red-500 text-white font-bold hover:bg-red-400 shadow-lg shadow-red-500/20",
   },
 };
 
@@ -66,7 +66,7 @@ function Action({ label, to, onClick, primary = false, className = "" }) {
 
   const baseClassName = primary
     ? "inline-flex items-center justify-center rounded-lg px-5 py-2.5 text-sm font-medium transition"
-    : "inline-flex items-center justify-center rounded-lg border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50";
+    : "inline-flex items-center justify-center rounded-lg border border-white/12 px-5 py-2.5 text-sm font-medium text-zinc-300 transition hover:bg-white/10";
   const resolvedClassName = `${baseClassName} ${className}`.trim();
 
   if (to) {
@@ -100,8 +100,8 @@ export default function AccessStatusScreen({
   const primaryClassName = styles.primary;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white font-['Public_Sans',sans-serif] px-4 py-8 sm:p-8">
-      <div className="w-full max-w-md rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 text-center shadow-xl shadow-slate-200/60">
+    <div className="min-h-screen flex items-center justify-center bg-black font-['Public_Sans',sans-serif] px-4 py-8 sm:p-8">
+      <div className="w-full max-w-md rounded-2xl sm:rounded-3xl border border-white/12 bg-zinc-950 p-6 sm:p-8 text-center shadow-xl shadow-black/60">
         <BrandLogoLink
           className="mx-auto mb-6 sm:mb-8"
           imageClassName="h-12 sm:h-14 w-auto"
@@ -114,9 +114,9 @@ export default function AccessStatusScreen({
           <StatusIcon tone={tone} />
         </div>
 
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{title}</h1>
-        <p className="mt-3 text-sm leading-6 text-slate-500">{message}</p>
-        {details && <p className="mt-3 text-xs leading-5 text-slate-400">{details}</p>}
+        <h1 className="text-xl sm:text-2xl font-bold text-white">{title}</h1>
+        <p className="mt-3 text-sm leading-6 text-zinc-400">{message}</p>
+        {details && <p className="mt-3 text-xs leading-5 text-zinc-500">{details}</p>}
 
         <div className="mt-6 sm:mt-8 flex flex-col gap-3">
           <Action

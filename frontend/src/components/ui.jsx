@@ -9,13 +9,13 @@ export function Button({
 }) {
   const variants = {
     primary:
-      "bg-[#2563EB] text-white hover:bg-[#1d4ed8] shadow-sm shadow-[#2563EB]/20",
+      "bg-cyan-300 text-black hover:bg-white shadow-sm shadow-cyan-300/20",
     secondary:
-      "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50",
-    dark: "bg-slate-900 text-white hover:bg-slate-800 shadow-sm",
+      "bg-zinc-800 text-zinc-200 border border-white/12 hover:bg-zinc-700",
+    dark: "bg-zinc-900 text-white hover:bg-zinc-800 shadow-sm",
     danger:
       "bg-red-600 text-white hover:bg-red-700 shadow-sm shadow-red-600/20",
-    ghost: "text-slate-600 hover:text-[#2563EB] hover:bg-[#2563EB]/5",
+    ghost: "text-zinc-400 hover:text-cyan-300 hover:bg-cyan-300/5",
   };
 
   const sizes = {
@@ -42,11 +42,11 @@ export function Button({
 export function Field({ label, hint, children, className = "" }) {
   return (
     <label className={cx("block space-y-1.5", className)}>
-      <span className="block text-xs font-semibold text-slate-700">
+      <span className="block text-xs font-semibold text-zinc-300">
         {label}
       </span>
       {children}
-      {hint && <span className="block text-[10px] text-slate-400">{hint}</span>}
+      {hint && <span className="block text-[10px] text-zinc-500">{hint}</span>}
     </label>
   );
 }
@@ -55,7 +55,7 @@ export function Input({ className = "", ...props }) {
   return (
     <input
       className={cx(
-        "w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-[#2563EB] focus:bg-white focus:ring-2 focus:ring-[#2563EB]/10",
+        "w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white placeholder-zinc-500 outline-none transition focus:border-cyan-300 focus:bg-zinc-900 focus:ring-2 focus:ring-cyan-300/20",
         className,
       )}
       {...props}
@@ -67,7 +67,7 @@ export function Select({ className = "", children, ...props }) {
   return (
     <select
       className={cx(
-        "w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-[#2563EB] focus:bg-white focus:ring-2 focus:ring-[#2563EB]/10",
+        "w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white outline-none transition focus:border-cyan-300 focus:bg-zinc-900 focus:ring-2 focus:ring-cyan-300/20",
         className,
       )}
       {...props}
@@ -79,11 +79,11 @@ export function Select({ className = "", children, ...props }) {
 
 export function StatusBadge({ children, tone = "slate", className = "" }) {
   const tones = {
-    slate: "border-slate-200 bg-slate-50 text-slate-600",
-    blue: "border-blue-200 bg-blue-50 text-blue-700",
-    green: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    amber: "border-amber-200 bg-amber-50 text-amber-700",
-    red: "border-red-200 bg-red-50 text-red-700",
+    slate: "border-zinc-700 bg-zinc-800 text-zinc-300",
+    blue: "border-cyan-300/20 bg-cyan-300/10 text-cyan-300",
+    green: "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
+    amber: "border-amber-500/20 bg-amber-500/10 text-amber-400",
+    red: "border-red-500/20 bg-red-500/10 text-red-400",
   };
 
   return (
@@ -101,11 +101,11 @@ export function StatusBadge({ children, tone = "slate", className = "" }) {
 
 export function EmptyState({ icon, title, description, action }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white/60 px-6 py-12 text-center">
-      {icon && <div className="mb-3 text-slate-300">{icon}</div>}
-      <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-700 bg-zinc-950 px-6 py-12 text-center">
+      {icon && <div className="mb-3 text-zinc-500">{icon}</div>}
+      <h3 className="text-sm font-semibold text-white">{title}</h3>
       {description && (
-        <p className="mt-1 max-w-sm text-sm text-slate-400">{description}</p>
+        <p className="mt-1 max-w-sm text-sm text-zinc-400">{description}</p>
       )}
       {action && <div className="mt-4">{action}</div>}
     </div>

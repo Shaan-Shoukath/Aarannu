@@ -126,14 +126,14 @@ export default function OrgOnboarding() {
 
   if (step === "loading") {
     return (
-      <div className="min-h-screen bg-[#f6f6f8] flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-2 border-[#2563EB] border-t-transparent rounded-full" />
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-2 border-cyan-300 border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f6f8] font-['Public_Sans',sans-serif] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-black font-['Public_Sans',sans-serif] flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
@@ -142,10 +142,10 @@ export default function OrgOnboarding() {
             imageClassName="h-12 sm:h-14 w-auto"
             showText={false}
           />
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
             Aarannu Platform
           </h1>
-          <p className="text-sm sm:text-base text-slate-500 mt-2">
+          <p className="text-sm sm:text-base text-zinc-400 mt-2">
             {step === "select"
               ? "Select an organization or create a new one"
               : "Create your organization to get started"}
@@ -161,7 +161,7 @@ export default function OrgOnboarding() {
                 onClick={() =>
                   navigate(`/org/${om.organizations.slug}/dashboard`)
                 }
-                className="w-full bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-4 hover:border-[#2563EB]/30 hover:shadow-md transition-all group cursor-pointer"
+                className="w-full bg-zinc-900 border border-white/12 rounded-xl p-4 flex items-center gap-4 hover:border-cyan-300/30 hover:shadow-md transition-all group cursor-pointer"
               >
                 {om.organizations.logo_url ? (
                   <img
@@ -170,20 +170,20 @@ export default function OrgOnboarding() {
                     className="w-10 h-10 rounded-lg object-cover ring-1 ring-slate-200"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-lg bg-[#2563EB] flex items-center justify-center text-white font-bold text-lg">
+                  <div className="w-10 h-10 rounded-lg bg-cyan-300 flex items-center justify-center text-black font-bold text-lg">
                     {om.organizations.name.charAt(0).toUpperCase()}
                   </div>
                 )}
                 <div className="flex-1 text-left">
-                  <p className="text-slate-900 font-semibold group-hover:text-[#2563EB] transition-colors">
+                  <p className="text-white font-semibold group-hover:text-cyan-300 transition-colors">
                     {om.organizations.name}
                   </p>
-                  <p className="text-slate-500 text-sm">
+                  <p className="text-zinc-400 text-sm">
                     /{om.organizations.slug} · {om.role}
                   </p>
                 </div>
                 <svg
-                  className="w-5 h-5 text-slate-400 group-hover:text-[#2563EB] transition-colors"
+                  className="w-5 h-5 text-zinc-500 group-hover:text-cyan-300 transition-colors"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -200,7 +200,7 @@ export default function OrgOnboarding() {
 
             <button
               onClick={() => setStep("create")}
-              className="w-full border-2 border-dashed border-slate-300 rounded-xl p-4 text-slate-500 hover:text-[#2563EB] hover:border-[#2563EB]/40 transition-all cursor-pointer"
+              className="w-full border-2 border-dashed border-zinc-700 rounded-xl p-4 text-zinc-400 hover:text-cyan-300 hover:border-cyan-300/40 transition-all cursor-pointer"
             >
               + Create New Organization
             </button>
@@ -211,10 +211,10 @@ export default function OrgOnboarding() {
         {step === "create" && (
           <form
             onSubmit={handleCreate}
-            className="bg-white border border-slate-200 rounded-2xl p-6 space-y-5 shadow-sm"
+            className="bg-zinc-950 border border-white/12 rounded-2xl p-6 space-y-5 shadow-sm"
           >
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
                 Organization Name
               </label>
               <input
@@ -223,16 +223,16 @@ export default function OrgOnboarding() {
                 onChange={(e) => handleNameChange(e.target.value)}
                 placeholder="Acme University"
                 required
-                className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] transition-all"
+                className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-300/30 focus:border-cyan-300 transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
                 Slug (URL identifier)
               </label>
               <div className="flex items-center gap-2">
-                <span className="text-slate-500 text-sm">/org/</span>
+                <span className="text-zinc-400 text-sm">/org/</span>
                 <input
                   type="text"
                   value={orgSlug}
@@ -246,7 +246,7 @@ export default function OrgOnboarding() {
                   placeholder="acme-university"
                   required
                   minLength={3}
-                  className="flex-1 px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] transition-all"
+                  className="flex-1 px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-300/30 focus:border-cyan-300 transition-all"
                 />
               </div>
               {/* Slug status indicator */}
@@ -264,8 +264,8 @@ export default function OrgOnboarding() {
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-red-600 text-sm">{error}</p>
+              <div className="bg-red-900/30 border border-red-700 rounded-lg p-3">
+                <p className="text-red-400 text-sm">{error}</p>
               </div>
             )}
 
@@ -274,7 +274,7 @@ export default function OrgOnboarding() {
               disabled={
                 loading || slugAvailable === false || orgSlug.length < 3
               }
-              className="w-full py-2.5 bg-[#2563EB] text-white font-semibold rounded-lg hover:bg-[#2563EB]/90 shadow-lg shadow-[#2563EB]/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+              className="w-full py-2.5 bg-cyan-300 hover:bg-white text-black font-semibold rounded-lg shadow-lg shadow-cyan-300/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
             >
               {loading ? "Creating…" : "Create Organization"}
             </button>
@@ -283,7 +283,7 @@ export default function OrgOnboarding() {
               <button
                 type="button"
                 onClick={() => setStep("select")}
-                className="w-full py-2 text-slate-500 text-sm hover:text-[#2563EB] transition-colors cursor-pointer"
+                className="w-full py-2 text-zinc-400 text-sm hover:text-cyan-300 transition-colors cursor-pointer"
               >
                 ← Back to My Organizations
               </button>
@@ -295,7 +295,7 @@ export default function OrgOnboarding() {
         <div className="text-center mt-6">
           <button
             onClick={handleSignOut}
-            className="text-sm text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
+            className="text-sm text-zinc-500 hover:text-red-400 transition-colors cursor-pointer"
           >
             Sign Out
           </button>

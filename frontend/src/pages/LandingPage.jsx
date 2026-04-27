@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import HolographicCardScene from "../components/HolographicCardScene";
+import BrandLogoLink from "../components/BrandLogoLink";
 
 const benefits = [
   ["Easy import", "Bring members from Google Sheets without retyping."],
@@ -19,20 +20,12 @@ export default function LandingPage() {
     <div className="min-h-screen overflow-x-hidden bg-black font-['Public_Sans',sans-serif] text-white">
       <header className="sticky top-0 z-50 border-b border-white/12 bg-black/90 backdrop-blur-xl">
         <div className="mx-auto flex min-h-20 max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <Link
-            to="/"
-            className="flex min-w-0 items-center gap-3 rounded-lg focus:outline-none focus:ring-4 focus:ring-cyan-300/40"
-            aria-label="Aarannu home"
-          >
-            <img
-              src="/aarannu.png"
-              alt=""
-              className="h-10 w-auto rounded-md brightness-125 contrast-125"
-            />
-            <span className="truncate text-xl font-black tracking-[0.2em] text-white sm:text-2xl">
-              AARANNU
-            </span>
-          </Link>
+          <BrandLogoLink
+            imageClassName="h-10 w-auto"
+            textClassName="truncate text-xl font-black tracking-[0.2em] text-white sm:text-2xl"
+            className="rounded-lg focus:outline-none focus:ring-4 focus:ring-cyan-300/40 min-w-0"
+            label="AARANNU"
+          />
 
           <nav className="flex shrink-0 items-center gap-2 sm:gap-3">
             <Link
@@ -188,15 +181,12 @@ export default function LandingPage() {
 
       <footer className="border-t border-white/12 bg-black px-4 py-8 sm:px-6">
         <div className="mx-auto flex max-w-7xl flex-col gap-5 text-base text-zinc-400 md:flex-row md:items-center md:justify-between">
-          <Link
-            to="/"
-            className="flex items-center gap-3 rounded-lg focus:outline-none focus:ring-4 focus:ring-cyan-300/40"
-          >
-            <img src="/aarannu.png" alt="" className="h-8 w-auto" />
-            <span className="font-black tracking-[0.2em] text-zinc-100">
-              AARANNU
-            </span>
-          </Link>
+          <BrandLogoLink
+            imageClassName="h-8 w-auto"
+            textClassName="font-black tracking-[0.2em] text-zinc-100"
+            className="rounded-lg focus:outline-none focus:ring-4 focus:ring-cyan-300/40"
+            label="AARANNU"
+          />
           <p>Copyright 2026 Aarannu. Built for clearer identity workflows.</p>
         </div>
       </footer>

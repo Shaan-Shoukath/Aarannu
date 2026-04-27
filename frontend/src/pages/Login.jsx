@@ -341,29 +341,29 @@ export default function Login() {
   // ── Step 1: enter email ──────────────────────────────────────────────────
   if (forgotStep === "email") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8] font-['Public_Sans',sans-serif] px-4 py-8 sm:p-8">
+      <div className="min-h-screen flex items-center justify-center bg-black font-['Public_Sans',sans-serif] px-4 py-8 sm:p-8">
         <div className="w-full max-w-md space-y-6 sm:space-y-8">
           <div className="text-center">
             <BrandLogoLink className="justify-center mb-6" imageClassName="h-12 w-auto" />
-            <div className="w-14 h-14 bg-[#1152d4]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-7 h-7 text-[#1152d4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-14 h-14 bg-cyan-300/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">Reset your password</h1>
-            <p className="text-slate-500 text-sm">Enter your email and we&apos;ll send you a verification code.</p>
+            <h1 className="text-2xl font-bold text-white mb-2">Reset your password</h1>
+            <p className="text-zinc-400 text-sm">Enter your email and we&apos;ll send you a verification code.</p>
           </div>
 
           <form onSubmit={handleForgotSendOtp} className="space-y-5">
             {error && (
-              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
+              <div className="p-3 rounded-lg bg-red-900/30 border border-red-700 text-red-400 text-sm">{error}</div>
             )}
             <div>
-              <label htmlFor="forgot-email" className="block text-sm font-medium text-slate-700 mb-1">
+              <label htmlFor="forgot-email" className="block text-sm font-medium text-zinc-300 mb-1">
                 Email address
               </label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-zinc-500">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
@@ -376,14 +376,14 @@ export default function Login() {
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
                   placeholder="name@company.com"
-                  className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] sm:text-sm py-2.5 outline-none"
+                  className="pl-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-cyan-300 sm:text-sm py-2.5 outline-none"
                 />
               </div>
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#1152d4] hover:bg-[#1152d4]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1152d4] transition-all duration-200 shadow-lg shadow-[#1152d4]/25 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-black bg-cyan-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-300 transition-all duration-200 shadow-lg shadow-cyan-300/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
@@ -396,8 +396,8 @@ export default function Login() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-slate-500">
-            <button type="button" onClick={forgotBackToLogin} className="text-[#1152d4] hover:underline font-medium">
+          <p className="text-center text-sm text-zinc-400">
+            <button type="button" onClick={forgotBackToLogin} className="text-cyan-300 hover:underline font-medium">
               Back to login
             </button>
           </p>
@@ -409,31 +409,31 @@ export default function Login() {
   // ── Step 2: enter OTP ────────────────────────────────────────────────────
   if (forgotStep === "otp") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8] font-['Public_Sans',sans-serif] px-4 py-8 sm:p-8">
+      <div className="min-h-screen flex items-center justify-center bg-black font-['Public_Sans',sans-serif] px-4 py-8 sm:p-8">
         <div className="w-full max-w-md space-y-6 sm:space-y-8">
           <div className="text-center">
             <BrandLogoLink className="justify-center mb-6" imageClassName="h-12 w-auto" />
-            <div className="w-14 h-14 bg-[#1152d4]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-7 h-7 text-[#1152d4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-14 h-14 bg-cyan-300/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">Check your email</h1>
-            <p className="text-slate-500 text-sm">
+            <h1 className="text-2xl font-bold text-white mb-2">Check your email</h1>
+            <p className="text-zinc-400 text-sm">
               Enter the verification code sent to{" "}
-              <span className="font-medium text-slate-700">{forgotEmail}</span>
+              <span className="font-medium text-zinc-200">{forgotEmail}</span>
             </p>
           </div>
 
           <form onSubmit={handleForgotVerifyOtp} className="space-y-5">
             {error && (
-              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
+              <div className="p-3 rounded-lg bg-red-900/30 border border-red-700 text-red-400 text-sm">{error}</div>
             )}
             {forgotOtpMessage && (
-              <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm">{forgotOtpMessage}</div>
+              <div className="p-3 rounded-lg bg-emerald-900/30 border border-emerald-700 text-emerald-400 text-sm">{forgotOtpMessage}</div>
             )}
             <div>
-              <label htmlFor="forgot-otp" className="block text-sm font-medium text-slate-700 mb-1">
+              <label htmlFor="forgot-otp" className="block text-sm font-medium text-zinc-300 mb-1">
                 Verification Code
               </label>
               <input
@@ -446,16 +446,16 @@ export default function Login() {
                 value={forgotOtp}
                 onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
                 placeholder="000000"
-                className="block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] sm:text-sm py-3 outline-none tracking-[0.5em] text-center font-mono text-xl"
+                className="block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-cyan-300 sm:text-sm py-3 outline-none tracking-[0.5em] text-center font-mono text-xl"
               />
             </div>
-            <p className="text-xs text-slate-500 text-center">
+            <p className="text-xs text-zinc-400 text-center">
               Didn&apos;t receive the code?{" "}
               <button
                 type="button"
                 onClick={handleForgotResendOtp}
                 disabled={loading}
-                className="text-[#1152d4] hover:underline font-medium"
+                className="text-cyan-300 hover:underline font-medium"
               >
                 Resend code
               </button>
@@ -463,7 +463,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#1152d4] hover:bg-[#1152d4]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1152d4] transition-all duration-200 shadow-lg shadow-[#1152d4]/25 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-black bg-cyan-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-300 transition-all duration-200 shadow-lg shadow-cyan-300/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
@@ -476,11 +476,11 @@ export default function Login() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-slate-500">
+          <p className="text-center text-sm text-zinc-400">
             <button
               type="button"
               onClick={() => { setForgotStep("email"); setForgotOtp(""); setError(""); setForgotOtpMessage(""); }}
-              className="text-[#1152d4] hover:underline font-medium"
+              className="text-cyan-300 hover:underline font-medium"
             >
               Back
             </button>
@@ -493,29 +493,29 @@ export default function Login() {
   // ── Step 3: set new password ─────────────────────────────────────────────
   if (forgotStep === "newpass") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8] font-['Public_Sans',sans-serif] px-4 py-8 sm:p-8">
+      <div className="min-h-screen flex items-center justify-center bg-black font-['Public_Sans',sans-serif] px-4 py-8 sm:p-8">
         <div className="w-full max-w-md space-y-6 sm:space-y-8">
           <div className="text-center">
             <BrandLogoLink className="justify-center mb-6" imageClassName="h-12 w-auto" />
-            <div className="w-14 h-14 bg-[#1152d4]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-7 h-7 text-[#1152d4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-14 h-14 bg-cyan-300/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">Set new password</h1>
-            <p className="text-slate-500 text-sm">Choose a strong password for your account.</p>
+            <h1 className="text-2xl font-bold text-white mb-2">Set new password</h1>
+            <p className="text-zinc-400 text-sm">Choose a strong password for your account.</p>
           </div>
 
           <form onSubmit={handleForgotSetPassword} className="space-y-5">
             {error && (
-              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
+              <div className="p-3 rounded-lg bg-red-900/30 border border-red-700 text-red-400 text-sm">{error}</div>
             )}
             <div>
-              <label htmlFor="new-password" className="block text-sm font-medium text-slate-700 mb-1">
+              <label htmlFor="new-password" className="block text-sm font-medium text-zinc-300 mb-1">
                 New password
               </label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-zinc-500">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
@@ -528,12 +528,12 @@ export default function Login() {
                   value={forgotPassword}
                   onChange={(e) => setForgotPassword(e.target.value)}
                   placeholder="Min 8 characters"
-                  className="pl-10 pr-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] sm:text-sm py-2.5 outline-none"
+                  className="pl-10 pr-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-cyan-300 sm:text-sm py-2.5 outline-none"
                 />
                 <button
                   type="button"
                   onClick={() => setForgotShowPass(!forgotShowPass)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-500 hover:text-zinc-300"
                 >
                   {forgotShowPass ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -550,11 +550,11 @@ export default function Login() {
             </div>
 
             <div>
-              <label htmlFor="confirm-password" className="block text-sm font-medium text-slate-700 mb-1">
+              <label htmlFor="confirm-password" className="block text-sm font-medium text-zinc-300 mb-1">
                 Confirm password
               </label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-zinc-500">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
@@ -567,12 +567,12 @@ export default function Login() {
                   value={forgotConfirm}
                   onChange={(e) => setForgotConfirm(e.target.value)}
                   placeholder="Repeat your password"
-                  className="pl-10 pr-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] sm:text-sm py-2.5 outline-none"
+                  className="pl-10 pr-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-cyan-300 sm:text-sm py-2.5 outline-none"
                 />
                 <button
                   type="button"
                   onClick={() => setForgotShowConfirm(!forgotShowConfirm)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-500 hover:text-zinc-300"
                 >
                   {forgotShowConfirm ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -591,7 +591,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#1152d4] hover:bg-[#1152d4]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1152d4] transition-all duration-200 shadow-lg shadow-[#1152d4]/25 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-black bg-cyan-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-300 transition-all duration-200 shadow-lg shadow-cyan-300/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
@@ -610,16 +610,16 @@ export default function Login() {
 
   if (otpStep) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8] font-['Public_Sans',sans-serif] px-4 py-8 sm:p-8">
+      <div className="min-h-screen flex items-center justify-center bg-black font-['Public_Sans',sans-serif] px-4 py-8 sm:p-8">
         <div className="w-full max-w-md space-y-6 sm:space-y-8">
           <div className="text-center">
             <BrandLogoLink
               className="justify-center mb-6"
               imageClassName="h-12 w-auto"
             />
-            <div className="w-14 h-14 bg-[#1152d4]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-14 h-14 bg-cyan-300/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg
-                className="w-7 h-7 text-[#1152d4]"
+                className="w-7 h-7 text-cyan-300"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -632,23 +632,23 @@ export default function Login() {
                 />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">
+            <h1 className="text-2xl font-bold text-white mb-2">
               Two-Factor Verification
             </h1>
-            <p className="text-slate-500 text-sm">
+            <p className="text-zinc-400 text-sm">
               Enter the 6-digit code sent to{" "}
-              <span className="font-medium text-slate-700">{email}</span>
+              <span className="font-medium text-zinc-200">{email}</span>
             </p>
           </div>
 
           <form onSubmit={handleVerifyOtp} className="space-y-5">
             {error && (
-              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+              <div className="p-3 rounded-lg bg-red-900/30 border border-red-700 text-red-400 text-sm">
                 {error}
               </div>
             )}
             {otpMessage && (
-              <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm">
+              <div className="p-3 rounded-lg bg-emerald-900/30 border border-emerald-700 text-emerald-400 text-sm">
                 {otpMessage}
               </div>
             )}
@@ -656,7 +656,7 @@ export default function Login() {
             <div>
               <label
                 htmlFor="otp-code"
-                className="block text-sm font-medium text-slate-700 mb-1"
+                className="block text-sm font-medium text-zinc-300 mb-1"
               >
                 Verification Code
               </label>
@@ -672,17 +672,17 @@ export default function Login() {
                   setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 8))
                 }
                 placeholder="000000"
-                className="block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] sm:text-sm py-3 outline-none tracking-[0.5em] text-center font-mono text-xl"
+                className="block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-cyan-300 sm:text-sm py-3 outline-none tracking-[0.5em] text-center font-mono text-xl"
               />
             </div>
 
-            <p className="text-xs text-slate-500 text-center">
+            <p className="text-xs text-zinc-400 text-center">
               Didn&apos;t receive the code?{" "}
               <button
                 type="button"
                 onClick={handleResendOtp}
                 disabled={loading}
-                className="text-[#1152d4] hover:underline font-medium"
+                className="text-cyan-300 hover:underline font-medium"
               >
                 Resend code
               </button>
@@ -691,7 +691,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#1152d4] hover:bg-[#1152d4]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1152d4] transition-all duration-200 shadow-lg shadow-[#1152d4]/25 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-black bg-cyan-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-300 transition-all duration-200 shadow-lg shadow-cyan-300/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <svg
@@ -719,7 +719,7 @@ export default function Login() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-slate-500">
+          <p className="text-center text-sm text-zinc-400">
             <button
               type="button"
               onClick={() => {
@@ -728,7 +728,7 @@ export default function Login() {
                 setError("");
                 setOtpMessage("");
               }}
-              className="text-[#1152d4] hover:underline font-medium"
+              className="text-cyan-300 hover:underline font-medium"
             >
               Back to login
             </button>
@@ -749,15 +749,15 @@ export default function Login() {
     .card-float:hover { animation: none; transform: rotate(0deg) scale(1.05); transition: transform 2.5s ease-in-out; }
   `}</style>
   <div className="min-h-screen flex bg-black font-['Public_Sans',sans-serif]">
-      <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-slate-900 items-center justify-center">
+      <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-zinc-950 items-center justify-center">
         {/* Back to home */}
         <a href="/" className="absolute top-6 left-6 z-30 flex items-center gap-1.5 text-white/60 hover:text-white text-sm font-medium transition-colors">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
           Back to home
         </a>
         <div className="absolute inset-0 z-0">
-          <div className="absolute -top-20 -left-20 w-150 h-150 bg-linear-to-br from-[#1152d4] via-blue-600 to-transparent rounded-full blur-[100px] opacity-60" />
-          <div className="absolute -bottom-20 -right-20 w-150 h-150 bg-linear-to-tl from-[#1152d4] via-blue-800 to-transparent rounded-full blur-[100px] opacity-40" />
+          <div className="absolute -top-20 -left-20 w-150 h-150 bg-linear-to-br from-cyan-400 via-cyan-600 to-transparent rounded-full blur-[100px] opacity-40" />
+          <div className="absolute -bottom-20 -right-20 w-150 h-150 bg-linear-to-tl from-cyan-500 via-cyan-800 to-transparent rounded-full blur-[100px] opacity-25" />
           <div
             className="absolute inset-0 bg-slate-900/40 z-10"
             style={{
@@ -779,9 +779,11 @@ export default function Login() {
             </div>
 
             <div className="absolute top-4 left-6 right-6 flex items-center gap-2 z-10">
-              <img src="/aarannu.png" alt="" className="h-8 w-auto" />
+              <span className="inline-flex shrink-0 overflow-hidden rounded-[22%]" style={{ lineHeight: 0 }}>
+                <img src="/aarannu.png" alt="" className="h-8 w-auto" />
+              </span>
               <div className="flex flex-col leading-tight">
-                <span className="text-[10px] font-bold text-[#1152d4] uppercase tracking-wide">
+                <span className="text-[10px] font-bold text-cyan-300 uppercase tracking-wide">
                   Aarannu
                 </span>
                 <span className="text-[8px] text-slate-500 font-medium">
@@ -869,7 +871,7 @@ export default function Login() {
 
       <div className="w-full lg:w-1/2 flex flex-col justify-center items-center px-4 py-6 sm:p-8 lg:p-12 bg-black relative">
         {/* Mobile back to home */}
-        <a href="/" className="lg:hidden absolute top-4 left-4 flex items-center gap-1 text-zinc-400 hover:text-[#1152d4] text-sm font-medium transition-colors">
+        <a href="/" className="lg:hidden absolute top-4 left-4 flex items-center gap-1 text-zinc-400 hover:text-cyan-300 text-sm font-medium transition-colors">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
           Home
         </a>
@@ -912,7 +914,7 @@ export default function Login() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@company.com"
-                    className="pl-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-cyan-300 focus:ring-cyan-300 sm:text-sm py-2.5 outline-none"
                   />
                 </div>
               </div>
@@ -933,7 +935,7 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Password"
-                    className="pl-10 pr-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-[#1152d4] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 pr-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-cyan-300 sm:text-sm py-2.5 outline-none"
                   />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-500 hover:text-zinc-300">
                     {showPassword ? (
@@ -948,15 +950,15 @@ export default function Login() {
 
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-2">
               <div className="flex items-center">
-                <input id="remember-me" type="checkbox" className="h-4 w-4 text-[#1152d4] focus:ring-[#1152d4] border-zinc-600 rounded bg-zinc-900" />
+                <input id="remember-me" type="checkbox" className="h-4 w-4 text-cyan-300 focus:ring-cyan-300 border-zinc-600 rounded bg-zinc-900" />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-zinc-400">Keep me logged in for 30 days</label>
               </div>
-              <button type="button" onClick={() => { setForgotEmail(email); setError(""); setSuccessMessage(""); setForgotStep("email"); }} className="text-sm font-medium text-[#1152d4] hover:text-[#1152d4]/80 transition-colors text-left sm:text-right py-2 px-1">
+              <button type="button" onClick={() => { setForgotEmail(email); setError(""); setSuccessMessage(""); setForgotStep("email"); }} className="text-sm font-medium text-cyan-300 hover:text-white transition-colors text-left sm:text-right py-2 px-1">
                 Forgot password?
               </button>
             </div>
 
-            <button type="submit" disabled={loading} className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#1152d4] hover:bg-[#1152d4]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1152d4] focus:ring-offset-black transition-all duration-200 shadow-lg shadow-[#1152d4]/25 disabled:opacity-50 disabled:cursor-not-allowed">
+            <button type="submit" disabled={loading} className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-black bg-cyan-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-300 focus:ring-offset-black transition-all duration-200 shadow-lg shadow-cyan-300/20 disabled:opacity-50 disabled:cursor-not-allowed">
               {loading ? (
                 <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
               ) : (<><span>Sign in</span><span>&rarr;</span></>)}
@@ -965,7 +967,7 @@ export default function Login() {
 
           <p className="text-center text-sm text-zinc-500">
             Don&apos;t have an account?{" "}
-            <Link to="/signup" className="font-semibold text-[#1152d4] hover:text-[#1152d4]/80 transition-colors">Get started for free</Link>
+            <Link to="/signup" className="font-semibold text-cyan-300 hover:text-white transition-colors">Get started for free</Link>
           </p>
 
           <div className="flex items-center justify-center gap-4 pt-2">

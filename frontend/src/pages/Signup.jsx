@@ -220,8 +220,8 @@ export default function Signup() {
             imageClassName="h-14 w-auto"
             showText={false}
           />
-          <div className="w-16 h-16 bg-[#1152d4]/10 rounded-full flex items-center justify-center mx-auto">
-            <svg className="w-8 h-8 text-[#1152d4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-16 h-16 bg-cyan-300/10 rounded-full flex items-center justify-center mx-auto">
+            <svg className="w-8 h-8 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
@@ -229,7 +229,7 @@ export default function Signup() {
           <p className="text-zinc-400">
             Your Aarannu workspace is ready. You can start exploring immediately, and your 50 free starter tokens have been added to your account.
           </p>
-          <Link to="/dashboard" className="inline-flex items-center px-6 py-2.5 bg-[#1152d4] text-white text-sm font-medium rounded-lg hover:bg-[#1152d4]/90 transition-colors shadow-lg shadow-[#1152d4]/25">
+          <Link to="/dashboard" className="inline-flex items-center px-6 py-2.5 bg-[#1152d4] text-white text-sm font-medium rounded-lg hover:bg-[#1152d4]/90 transition-colors shadow-lg shadow-cyan-300/20">
             Go to Dashboard
           </Link>
         </div>
@@ -259,12 +259,12 @@ export default function Signup() {
 
           <form onSubmit={handleVerifyOtp} className="space-y-5">
             {error && (
-              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+              <div className="p-3 rounded-lg bg-red-900/30 border border-red-700 text-red-400 text-sm">
                 {error}
               </div>
             )}
             {otpMessage && (
-              <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm">
+              <div className="p-3 rounded-lg bg-emerald-900/30 border border-emerald-700 text-emerald-400 text-sm">
                 {otpMessage}
               </div>
             )}
@@ -272,12 +272,12 @@ export default function Signup() {
             <div>
               <label
                 htmlFor="otp-code"
-                className="block text-sm font-medium text-slate-700 mb-1"
+                className="block text-sm font-medium text-zinc-300 mb-1"
               >
                 Verification Code
               </label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-zinc-500">
                   <svg
                     className="w-5 h-5"
                     fill="none"
@@ -304,18 +304,18 @@ export default function Signup() {
                     setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))
                   }
                   placeholder="Enter 6-digit code"
-                  className="pl-10 block w-full rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none tracking-widest text-center font-mono text-lg"
+                  className="pl-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-cyan-300 focus:ring-cyan-300 sm:text-sm py-2.5 outline-none tracking-widest text-center font-mono text-lg"
                 />
               </div>
             </div>
 
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-zinc-400">
               Didn&apos;t receive the code?{" "}
               <button
                 type="button"
                 onClick={handleResendOtp}
                 disabled={loading}
-                className="text-[#1152d4] hover:underline font-medium"
+                className="text-cyan-300 hover:underline font-medium"
               >
                 Resend code
               </button>
@@ -324,7 +324,7 @@ export default function Signup() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#1152d4] hover:bg-[#1152d4]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1152d4] transition-all duration-200 shadow-lg shadow-[#1152d4]/25 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-black bg-cyan-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-300 transition-all duration-200 shadow-lg shadow-cyan-300/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <svg
@@ -361,7 +361,7 @@ export default function Signup() {
                 setError("");
                 setOtpMessage("");
               }}
-              className="text-[#1152d4] hover:underline font-medium"
+              className="text-cyan-300 hover:underline font-medium"
             >
               &larr; Back to signup form
             </button>
@@ -383,10 +383,10 @@ export default function Signup() {
     `}</style>
     <div className="min-h-screen flex bg-black font-['Public_Sans',sans-serif]">
       {/* ─── Left Panel: Animated ID Card ─── */}
-      <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-slate-900 items-center justify-center">
+      <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-zinc-950 items-center justify-center">
         <div className="absolute inset-0 z-0">
-          <div className="absolute -top-20 -left-20 w-[600px] h-[600px] bg-gradient-to-br from-[#1152d4] via-blue-600 to-transparent rounded-full blur-[100px] opacity-60" />
-          <div className="absolute -bottom-20 -right-20 w-[600px] h-[600px] bg-gradient-to-tl from-[#1152d4] via-blue-800 to-transparent rounded-full blur-[100px] opacity-40" />
+          <div className="absolute -top-20 -left-20 w-[600px] h-[600px] bg-gradient-to-br from-cyan-400 via-cyan-600 to-transparent rounded-full blur-[100px] opacity-40" />
+          <div className="absolute -bottom-20 -right-20 w-[600px] h-[600px] bg-gradient-to-tl from-cyan-500 via-cyan-800 to-transparent rounded-full blur-[100px] opacity-25" />
           <div className="absolute inset-0 bg-slate-900/40 z-10" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
         </div>
 
@@ -397,9 +397,11 @@ export default function Signup() {
               <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-gradient-to-tr from-[#7C3AED] to-purple-400 rounded-full blur-2xl opacity-10" />
             </div>
             <div className="absolute top-4 left-6 right-6 flex items-center gap-2 z-10">
-              <img src="/aarannu.png" alt="" className="h-8 w-auto" />
+              <span className="inline-flex shrink-0 overflow-hidden rounded-[22%]" style={{ lineHeight: 0 }}>
+                <img src="/aarannu.png" alt="" className="h-8 w-auto" />
+              </span>
               <div className="flex flex-col leading-tight">
-                <span className="text-[10px] font-bold text-[#1152d4] uppercase tracking-wide">Aarannu</span>
+                <span className="text-[10px] font-bold text-cyan-300 uppercase tracking-wide">Aarannu</span>
                 <span className="text-[8px] text-slate-500 font-medium">Community Edition</span>
               </div>
             </div>
@@ -449,7 +451,7 @@ export default function Signup() {
       {/* ─── Right Panel: Signup Form ─── */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center items-center px-4 py-6 sm:p-8 lg:p-12 bg-black relative overflow-y-auto">
         {/* Mobile back to home */}
-        <a href="/" className="lg:hidden absolute top-4 left-4 flex items-center gap-1 text-zinc-400 hover:text-[#1152d4] text-sm font-medium transition-colors z-10">
+        <a href="/" className="lg:hidden absolute top-4 left-4 flex items-center gap-1 text-zinc-400 hover:text-cyan-300 text-sm font-medium transition-colors z-10">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
           Home
         </a>
@@ -509,7 +511,7 @@ export default function Signup() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Alex Morgan"
-                    className="pl-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-cyan-300 focus:ring-cyan-300 sm:text-sm py-2.5 outline-none"
                   />
                 </div>
               </div>
@@ -544,7 +546,7 @@ export default function Signup() {
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
                     placeholder="Member (default)"
-                    className="pl-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-cyan-300 focus:ring-cyan-300 sm:text-sm py-2.5 outline-none"
                   />
                 </div>
               </div>
@@ -581,7 +583,7 @@ export default function Signup() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@company.com"
-                    className="pl-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-cyan-300 focus:ring-cyan-300 sm:text-sm py-2.5 outline-none"
                   />
                 </div>
               </div>
@@ -617,12 +619,12 @@ export default function Signup() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Min. 8 characters"
-                    className="pl-10 pr-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 pr-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-cyan-300 focus:ring-cyan-300 sm:text-sm py-2.5 outline-none"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-500 hover:text-zinc-300"
                   >
                     {showPassword ? (
                       <svg
@@ -694,7 +696,7 @@ export default function Signup() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Re-enter password"
-                    className="pl-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-[#1152d4] focus:ring-[#1152d4] sm:text-sm py-2.5 outline-none"
+                    className="pl-10 block w-full rounded-lg border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 shadow-sm focus:border-cyan-300 focus:ring-cyan-300 sm:text-sm py-2.5 outline-none"
                   />
                 </div>
               </div>
@@ -704,7 +706,7 @@ export default function Signup() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-[#1152d4] hover:bg-[#1152d4]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1152d4] focus:ring-offset-black transition-all duration-200 shadow-lg shadow-[#1152d4]/25 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-black bg-cyan-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-300 focus:ring-offset-black transition-all duration-200 shadow-lg shadow-cyan-300/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <svg
@@ -737,7 +739,7 @@ export default function Signup() {
             Already have an account?{" "}
             <Link
               to="/login"
-              className="font-medium text-[#1152d4] hover:text-[#1152d4]/80 transition-colors"
+              className="font-medium text-cyan-300 hover:text-white transition-colors"
             >
               Sign in
             </Link>
