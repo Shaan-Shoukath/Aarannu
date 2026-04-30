@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import { useAuth } from "../contexts/useAuth";
 import { downloadBlob } from "../utils/downloadHelpers";
 import BulkGenerator from "../components/BulkGenerator";
 import { renderCardPdfWithBestSupport } from "../utils/cardPdfSupport";
@@ -28,6 +29,7 @@ import { DEFAULT_CARD_FONT_FAMILY } from "../utils/textSupport";
 export default function Generate() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   // Template info from /templates page
   const templateId = location.state?.template || "custom";
@@ -41,11 +43,6 @@ export default function Generate() {
     imageUrl: "",
     imageOpacity: 0.06,
   };
-
-  const [user, setUser] = useState(null);
-  // member is fetched for the approval check, value not rendered
-  const [, setMember] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   // Members to generate IDs for
   const [members, setMembers] = useState([]);
@@ -131,7 +128,7 @@ export default function Generate() {
   const [gradientOpacity, setGradientOpacity] = useState(0.55);
 
   // Whether to upload generated cards to Supabase cloud storage
-  const [uploadToCloud, setUploadToCloud] = useState(false);
+  const [uploadToCloud] = useState(true);
 
   // Local file uploads for logos/signatures (base64 data URLs)
   const [localLogoUrl, setLocalLogoUrl] = useState("");
@@ -218,7 +215,7 @@ export default function Generate() {
     },
     {
       label: "Generate",
-      value: uploadToCloud ? "Cloud on" : "Local PDFs",
+      value: "Token recorded",
       active: members.length > 0,
     },
   ];
@@ -234,39 +231,6 @@ export default function Generate() {
     { value: "Verdana, sans-serif", label: "Verdana" },
     { value: "'Trebuchet MS', sans-serif", label: "Trebuchet MS" },
   ];
-
-  const checkAccess = async () => {
-    setLoading(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    setUser(user);
-
-    if (!user) {
-      navigate("/login", { replace: true });
-      return;
-    }
-
-    const { data: memberData } = await supabase
-      .from("members")
-      .select("*")
-      .eq("user_id", user.id)
-      .single();
-
-    setMember(memberData);
-
-    if (!memberData?.approved) {
-      navigate("/dashboard", { replace: true });
-      return;
-    }
-
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    checkAccess();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     const incomingMembers = location.state?.members;
@@ -436,39 +400,43 @@ export default function Generate() {
    */
   const uploadCardToBackend = async (pngBlob, memberName) => {
     if (!pngBlob) return;
-    try {
-      // Convert blob to base64
-      const reader = new FileReader();
-      const base64 = await new Promise((resolve, reject) => {
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(pngBlob);
-      });
+    // Convert blob to base64
+    const reader = new FileReader();
+    const base64 = await new Promise((resolve, reject) => {
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(pngBlob);
+    });
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error("You need to sign in again before generating cards.");
+    }
 
-      const API = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const API =
+      import.meta.env.VITE_BACKEND_URL ||
+      import.meta.env.VITE_API_URL ||
+      "http://localhost:5000";
 
-      const res = await fetch(`${API}/api/cards/upload`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          image: base64,
-          memberName: memberName || "card",
-          expiryDays: 365,
-        }),
-      });
+    const res = await fetch(`${API}/api/cards/upload`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        image: base64,
+        memberName: memberName || "card",
+        expiryDays: 365,
+        requestId: `single-card:${user?.id}:${memberName || "card"}:${Date.now()}`,
+      }),
+    });
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        console.warn("Cloud save failed:", err.error || res.statusText);
-      }
-    } catch (err) {
-      console.warn("Cloud save failed (card still downloaded locally):", err);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || err.error || res.statusText);
     }
   };
 
@@ -506,11 +474,9 @@ export default function Generate() {
         /[^a-zA-Z0-9]/g,
         "_",
       );
-      downloadBlob(blob, `${safeName}_ID.pdf`);
-
-      // Upload to cloud
-      setDownloadStatus("Uploading to cloud...");
+      setDownloadStatus("Recording token usage...");
       await uploadCardToBackend(blob, previewData.name);
+      downloadBlob(blob, `${safeName}_ID.pdf`);
       setDownloadStatus("Done!");
     } catch (err) {
       console.error("PDF download failed:", err);
@@ -762,32 +728,6 @@ export default function Generate() {
   }
 
   /* Card preview is now rendered as a PDF via pdfCardRenderer */
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f6f6f8]">
-        <svg
-          className="animate-spin h-8 w-8 text-[#2563EB]"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-          />
-        </svg>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#f6f6f8] font-['Public_Sans',sans-serif] flex flex-col">
@@ -2388,7 +2328,7 @@ export default function Generate() {
                           </p>
                         </div>
 
-                        {/* Cloud Upload Toggle */}
+                        {/* Cloud Upload Status */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <svg
@@ -2406,28 +2346,16 @@ export default function Generate() {
                             </svg>
                             <div>
                               <label className="text-xs font-medium text-slate-700">
-                                Upload to Supabase
+                                Token-recorded storage
                               </label>
                               <p className="text-[10px] text-slate-400">
-                                Store cards in cloud for Dashboard access
+                                Every generated card is saved through the backend
                               </p>
                             </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => setUploadToCloud((v) => !v)}
-                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                              uploadToCloud ? "bg-indigo-500" : "bg-slate-300"
-                            }`}
-                          >
-                            <span
-                              className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform duration-200 ease-in-out ${
-                                uploadToCloud
-                                  ? "translate-x-5"
-                                  : "translate-x-0"
-                              }`}
-                            />
-                          </button>
+                          <span className="rounded-full bg-indigo-100 px-2 py-1 text-[10px] font-semibold text-indigo-700">
+                            Required
+                          </span>
                         </div>
 
                         {/* Email info */}

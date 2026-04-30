@@ -163,15 +163,18 @@ describe("checkTokens middleware", () => {
     expect(req.tokensRequired).toBe(7);
   });
 
-  test("skips check when resolved count is invalid (NaN/zero/negative)", async () => {
+  test("returns 400 when resolved count is invalid (NaN/zero/negative)", async () => {
     const middleware = checkTokens("body.invalid.path");
     const req = mockReq();
     const res = mockRes();
 
     await middleware(req, res, mockNext);
 
-    // When count is unresolvable, skip check and let controller handle validation
-    expect(mockNext).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ code: "INVALID_TOKEN_COST" }),
+    );
+    expect(mockNext).not.toHaveBeenCalled();
   });
 
   // ── Auth check ──────────────────────────────────────────

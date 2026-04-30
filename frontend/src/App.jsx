@@ -9,6 +9,7 @@ import RenderCard from "./pages/RenderCard";
 import TokenDashboard from "./pages/TokenDashboard";
 import TokenPurchase from "./pages/TokenPurchase";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { AuthProvider } from "./contexts/AuthContext";
 
 // ── SaaS Platform Pages ──────────────────────────────────────
 import OrgOnboarding from "./pages/OrgOnboarding";
@@ -43,7 +44,8 @@ import EventDetail from "./pages/EventDetail";
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
+      <AuthProvider>
+        <Routes>
         {/* ── Public routes ────────────────────── */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
@@ -157,7 +159,8 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         {/* ── Catch-all redirect ──────────────── */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

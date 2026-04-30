@@ -403,12 +403,141 @@ const getPackages = async () => {
   return { packages: data || [], error };
 };
 
+const deductTokensAtomic = async (
+  userId,
+  amount,
+  description = "Card generation",
+  referenceId = null,
+  orgId = null,
+) => {
+  if (isAdmin(userId)) {
+    console.log(
+      `[tokenService] Admin bypass: skipping ${amount} token deduction for ${userId}`,
+    );
+    return {
+      wallet: { balance: Infinity, lifetime_used: 0, lifetime_purchased: 0 },
+      transaction: {
+        id: "admin-bypass",
+        amount: 0,
+        type: "usage",
+        description: "Admin - no deduction",
+      },
+      error: null,
+    };
+  }
+
+  if (!Number.isInteger(amount) || amount <= 0) {
+    return {
+      wallet: null,
+      transaction: null,
+      error: { message: "Amount must be a positive integer" },
+    };
+  }
+
+  const { data, error } = await supabase.rpc("deduct_tokens_atomic", {
+    p_user_id: userId,
+    p_org_id: orgId,
+    p_amount: amount,
+    p_description: description,
+    p_reference_id: referenceId,
+  });
+
+  if (error) {
+    const message = error.message || "";
+    const match = message.match(/INSUFFICIENT_TOKENS:(\d+)/);
+    if (message.includes("INSUFFICIENT_TOKENS")) {
+      const available = match ? Number(match[1]) : 0;
+      return {
+        wallet: null,
+        transaction: null,
+        error: {
+          message: `Insufficient tokens. Required: ${amount}, Available: ${available}`,
+          code: "INSUFFICIENT_TOKENS",
+        },
+      };
+    }
+
+    return { wallet: null, transaction: null, error };
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+  return {
+    wallet: {
+      id: row?.wallet_id,
+      balance: row?.balance,
+      lifetime_used: row?.lifetime_used,
+    },
+    transaction: {
+      id: row?.transaction_id,
+      amount: -amount,
+      type: "usage",
+      description,
+      reference_id: referenceId,
+    },
+    error: null,
+  };
+};
+
+const addTokensAtomic = async (
+  userId,
+  amount,
+  type = "purchase",
+  description = "Token purchase",
+  referenceId = null,
+  orgId = null,
+) => {
+  if (!Number.isInteger(amount) || amount <= 0) {
+    return {
+      wallet: null,
+      transaction: null,
+      error: { message: "Amount must be a positive integer" },
+    };
+  }
+
+  const { data, error } = await supabase.rpc("credit_tokens_atomic", {
+    p_user_id: userId,
+    p_org_id: orgId,
+    p_amount: amount,
+    p_type: type,
+    p_description: description,
+    p_reference_id: referenceId,
+  });
+
+  if (error) return { wallet: null, transaction: null, error };
+
+  const row = Array.isArray(data) ? data[0] : data;
+  return {
+    wallet: {
+      id: row?.wallet_id,
+      balance: row?.balance,
+      lifetime_purchased: row?.lifetime_purchased,
+      lifetime_used: row?.lifetime_used,
+    },
+    transaction: {
+      id: row?.transaction_id,
+      amount,
+      type,
+      description,
+      reference_id: referenceId,
+    },
+    error: null,
+  };
+};
+
+const refundTokensAtomic = async (
+  userId,
+  amount,
+  description = "Auto-refund - generation failed",
+  referenceId = null,
+  orgId = null,
+) => addTokensAtomic(userId, amount, "refund", description, referenceId, orgId);
+
 module.exports = {
   getOrCreateWallet,
   getBalance,
-  deductTokens,
-  addTokens,
-  refundTokens,
+  deductTokens: deductTokensAtomic,
+  addTokens: addTokensAtomic,
+  refundTokens: refundTokensAtomic,
   getTransactions,
   getAnalytics,
   getPackages,

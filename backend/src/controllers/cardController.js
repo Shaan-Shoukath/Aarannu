@@ -11,6 +11,7 @@
 
 const { supabase } = require("../config/supabaseClient");
 const { getExpiryDate } = require("../utils/expiryHelper");
+const { deductTokens, refundTokens } = require("../services/tokenService");
 
 /**
  * POST /api/cards/upload
@@ -30,7 +31,7 @@ const uploadCard = async (req, res, next) => {
       return res.status(401).json({ error: "Authentication required." });
     }
 
-    const { image, memberName, expiryDays } = req.body;
+    const { image, memberName, expiryDays, requestId } = req.body;
 
     if (!image || typeof image !== "string") {
       return res
@@ -38,8 +39,16 @@ const uploadCard = async (req, res, next) => {
         .json({ error: "Missing 'image' field (base64 PNG string)." });
     }
 
+    const dataUrlMatch = image.match(/^data:([^;]+);base64,(.*)$/);
+    const contentType = dataUrlMatch?.[1] || "image/png";
+    if (!["image/png", "image/jpeg", "image/webp", "application/pdf"].includes(contentType)) {
+      return res.status(400).json({
+        error: "Unsupported card file type. Use PNG, JPEG, WebP, or PDF.",
+      });
+    }
+
     // Decode base64 to buffer
-    const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
+    const base64Data = dataUrlMatch ? dataUrlMatch[2] : image;
     const buffer = Buffer.from(base64Data, "base64");
 
     // Enforce size limit (10 MB)
@@ -49,20 +58,55 @@ const uploadCard = async (req, res, next) => {
         .json({ error: "Image too large. Maximum size is 10 MB." });
     }
 
-    // Build storage path: {userId}/{safeName}_{timestamp}.png
+    const tokenReference =
+      requestId ||
+      `card_upload_${userId}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+    const { error: tokenErr } = await deductTokens(
+      userId,
+      1,
+      `Card upload - ${memberName || "card"}`,
+      tokenReference,
+    );
+    if (tokenErr) {
+      const status = tokenErr.code === "INSUFFICIENT_TOKENS" ? 402 : 500;
+      return res.status(status).json({
+        error:
+          tokenErr.code === "INSUFFICIENT_TOKENS"
+            ? "Insufficient Tokens"
+            : "Token Error",
+        message: tokenErr.message,
+      });
+    }
+
+    // Build storage path: {userId}/{safeName}_{timestamp}.{ext}
     const safeName = (memberName || "card").replace(/[^a-zA-Z0-9]/g, "_");
-    const filePath = `${userId}/${safeName}_${Date.now()}.png`;
+    const ext =
+      contentType === "application/pdf"
+        ? "pdf"
+        : contentType === "image/jpeg"
+          ? "jpg"
+          : contentType === "image/webp"
+            ? "webp"
+            : "png";
+    const filePath = `${userId}/${safeName}_${Date.now()}.${ext}`;
 
     // Upload to Supabase Storage
     const { error: uploadErr } = await supabase.storage
       .from("id-cards")
       .upload(filePath, buffer, {
-        contentType: "image/png",
+        contentType,
         upsert: false,
       });
 
     if (uploadErr) {
       console.error("[cardController] Upload failed:", uploadErr);
+      await refundTokens(
+        userId,
+        1,
+        `Refund - card upload failed: ${uploadErr.message}`,
+        tokenReference,
+      );
       return res
         .status(502)
         .json({ error: "Failed to upload card to storage." });
@@ -86,6 +130,12 @@ const uploadCard = async (req, res, next) => {
       console.error("[cardController] DB insert failed:", insertErr);
       // Attempt to clean up the orphaned storage file
       await supabase.storage.from("id-cards").remove([filePath]);
+      await refundTokens(
+        userId,
+        1,
+        `Refund - card metadata failed: ${insertErr.message}`,
+        tokenReference,
+      );
       return res
         .status(500)
         .json({ error: "Failed to save card metadata." });

@@ -53,9 +53,10 @@ function checkTokens(required = 1) {
 
       needed = Number(needed);
       if (!Number.isFinite(needed) || needed <= 0) {
-        // If we can't determine the count, let the request through
-        // (the controller will handle validation)
-        return next();
+        return res.status(400).json({
+          error: "Unable to determine token cost for this request.",
+          code: "INVALID_TOKEN_COST",
+        });
       }
 
       const userId = req.user?.id || req.user?.sub;

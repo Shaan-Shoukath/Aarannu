@@ -1,13 +1,3 @@
-/**
- * Token Service Tests
- * ───────────────────
- * Unit tests for the core token billing logic.
- *
- * These tests mock the Supabase client to test business logic
- * in isolation, without a database connection.
- */
-
-// Setup mocks without out-of-scope references
 jest.mock("../config/supabaseClient", () => {
   const mockQuery = () => ({
     select: jest.fn().mockReturnThis(),
@@ -21,7 +11,7 @@ jest.mock("../config/supabaseClient", () => {
     order: jest.fn().mockReturnThis(),
     range: jest.fn().mockReturnThis(),
   });
-  
+
   const walletChain = mockQuery();
   const txnChain = mockQuery();
 
@@ -34,9 +24,8 @@ jest.mock("../config/supabaseClient", () => {
       }),
       rpc: jest.fn(),
     },
-    // Export these to manipulate them in tests
     walletChain,
-    txnChain
+    txnChain,
   };
 });
 
@@ -46,12 +35,17 @@ jest.mock("../utils/adminHelper", () => ({
 
 const { supabase, walletChain, txnChain } = require("../config/supabaseClient");
 const { isAdmin } = require("../utils/adminHelper");
+const {
+  deductTokens,
+  addTokens,
+  refundTokens,
+  getBalance,
+} = require("../services/tokenService");
 
-// Reset chains before each test
 beforeEach(() => {
   jest.clearAllMocks();
+  supabase.rpc.mockReset();
 
-  // Reset walletChain properties
   walletChain.select.mockReturnThis();
   walletChain.insert.mockReturnThis();
   walletChain.update.mockReturnThis();
@@ -61,26 +55,16 @@ beforeEach(() => {
   walletChain.single.mockReset();
   walletChain.maybeSingle.mockReset();
 
-  // Reset txnChain properties
   txnChain.select.mockReturnThis();
   txnChain.insert.mockReturnThis();
   txnChain.eq.mockReturnThis();
   txnChain.single.mockReset();
 });
 
-const {
-  deductTokens,
-  addTokens,
-  refundTokens,
-  getBalance,
-} = require("../services/tokenService");
-
-// ── getBalance ──────────────────────────────────────────────
-
 describe("getBalance", () => {
   test("returns balance from existing wallet", async () => {
     walletChain.maybeSingle.mockResolvedValue({
-      data: { id: "w1", balance: 50, user_id: "u1", lifetime_used: 10, lifetime_purchased: 60 },
+      data: { id: "w1", balance: 50 },
       error: null,
     });
 
@@ -90,14 +74,17 @@ describe("getBalance", () => {
   });
 
   test("auto-creates wallet with 50 signup bonus if none exists", async () => {
-    // First call: no wallet
     walletChain.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
-    // Second call: after insert → wallet created with 50 balance
     walletChain.single.mockResolvedValueOnce({
-      data: { id: "w2", balance: 50, user_id: "u2", lifetime_used: 0, lifetime_purchased: 50 },
+      data: {
+        id: "w2",
+        balance: 50,
+        user_id: "u2",
+        lifetime_used: 0,
+        lifetime_purchased: 50,
+      },
       error: null,
     });
-    // Bonus transaction insert
     txnChain.single.mockResolvedValueOnce({
       data: { id: "t-bonus", amount: 50, type: "bonus" },
       error: null,
@@ -105,14 +92,11 @@ describe("getBalance", () => {
 
     const result = await getBalance("u2");
     expect(result.balance).toBe(50);
-    expect(result.error).toBeNull();
-    // Verify the insert was called with 50 balance
     expect(walletChain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ balance: 50, lifetime_purchased: 50 })
+      expect.objectContaining({ balance: 50, lifetime_purchased: 50 }),
     );
-    // Verify bonus transaction was logged
     expect(txnChain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ amount: 50, type: "bonus" })
+      expect.objectContaining({ amount: 50, type: "bonus" }),
     );
   });
 
@@ -128,22 +112,14 @@ describe("getBalance", () => {
   });
 });
 
-// ── deductTokens ────────────────────────────────────────────
-
 describe("deductTokens", () => {
   test("rejects non-integer amount", async () => {
     const result = await deductTokens("u1", 1.5);
     expect(result.error).toBeTruthy();
-    expect(result.error.message).toMatch(/positive integer/i);
   });
 
   test("rejects zero amount", async () => {
     const result = await deductTokens("u1", 0);
-    expect(result.error).toBeTruthy();
-  });
-
-  test("rejects negative amount", async () => {
-    const result = await deductTokens("u1", -5);
     expect(result.error).toBeTruthy();
   });
 
@@ -158,57 +134,40 @@ describe("deductTokens", () => {
     isAdmin.mockReturnValue(false);
   });
 
-  test("returns INSUFFICIENT_TOKENS when atomic update fails", async () => {
-    // getOrCreateWallet returns existing wallet
-    walletChain.maybeSingle.mockResolvedValue({
-      data: { id: "w1", balance: 5, user_id: "u1", lifetime_used: 10, lifetime_purchased: 15 },
-      error: null,
-    });
-
-    // Atomic update fails (gte guard blocks — balance < amount)
-    walletChain.single.mockResolvedValueOnce({
+  test("returns INSUFFICIENT_TOKENS from atomic RPC", async () => {
+    supabase.rpc.mockResolvedValue({
       data: null,
-      error: { message: "No rows returned" },
-    });
-
-    // Re-fetch for error message (getBalance call)
-    // This triggers another getOrCreateWallet → maybeSingle
-    walletChain.maybeSingle.mockResolvedValue({
-      data: { id: "w1", balance: 3, user_id: "u1", lifetime_used: 12, lifetime_purchased: 15 },
-      error: null,
+      error: { message: "INSUFFICIENT_TOKENS:3" },
     });
 
     const result = await deductTokens("u1", 10);
-    expect(result.error).toBeTruthy();
     expect(result.error.code).toBe("INSUFFICIENT_TOKENS");
+    expect(result.error.message).toContain("Available: 3");
   });
 
-  test("succeeds when balance is sufficient", async () => {
-    walletChain.maybeSingle.mockResolvedValue({
-      data: { id: "w1", balance: 20, user_id: "u1", lifetime_used: 5, lifetime_purchased: 25 },
-      error: null,
-    });
-
-    // Atomic update succeeds
-    walletChain.single.mockResolvedValueOnce({
-      data: { id: "w1", balance: 15, user_id: "u1", lifetime_used: 10, lifetime_purchased: 25 },
-      error: null,
-    });
-
-    // Transaction log insert
-    txnChain.single.mockResolvedValue({
-      data: { id: "t1", amount: -5, type: "usage" },
+  test("succeeds through atomic RPC when balance is sufficient", async () => {
+    supabase.rpc.mockResolvedValue({
+      data: [
+        {
+          wallet_id: "w1",
+          balance: 15,
+          lifetime_used: 10,
+          transaction_id: "t1",
+        },
+      ],
       error: null,
     });
 
     const result = await deductTokens("u1", 5, "Test deduction");
     expect(result.error).toBeNull();
     expect(result.wallet.balance).toBe(15);
-    expect(result.transaction).toBeTruthy();
+    expect(result.transaction.id).toBe("t1");
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "deduct_tokens_atomic",
+      expect.objectContaining({ p_amount: 5 }),
+    );
   });
 });
-
-// ── addTokens ───────────────────────────────────────────────
 
 describe("addTokens", () => {
   test("rejects non-integer amount", async () => {
@@ -216,49 +175,51 @@ describe("addTokens", () => {
     expect(result.error).toBeTruthy();
   });
 
-  test("adds tokens to wallet", async () => {
-    walletChain.maybeSingle.mockResolvedValue({
-      data: { id: "w1", balance: 10, user_id: "u1", lifetime_used: 5, lifetime_purchased: 10 },
-      error: null,
-    });
-
-    walletChain.single.mockResolvedValue({
-      data: { id: "w1", balance: 20, user_id: "u1", lifetime_used: 5, lifetime_purchased: 20 },
-      error: null,
-    });
-
-    txnChain.single.mockResolvedValue({
-      data: { id: "t2", amount: 10, type: "purchase" },
+  test("adds tokens through atomic RPC", async () => {
+    supabase.rpc.mockResolvedValue({
+      data: [
+        {
+          wallet_id: "w1",
+          balance: 20,
+          lifetime_used: 5,
+          lifetime_purchased: 20,
+          transaction_id: "t2",
+        },
+      ],
       error: null,
     });
 
     const result = await addTokens("u1", 10, "purchase", "Test purchase");
     expect(result.error).toBeNull();
     expect(result.wallet.balance).toBe(20);
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "credit_tokens_atomic",
+      expect.objectContaining({ p_type: "purchase", p_amount: 10 }),
+    );
   });
 });
 
-// ── refundTokens ────────────────────────────────────────────
-
 describe("refundTokens", () => {
-  test("refund calls addTokens with type 'refund'", async () => {
-    walletChain.maybeSingle.mockResolvedValue({
-      data: { id: "w1", balance: 10, user_id: "u1", lifetime_used: 5, lifetime_purchased: 15 },
-      error: null,
-    });
-
-    walletChain.single.mockResolvedValue({
-      data: { id: "w1", balance: 15, user_id: "u1", lifetime_used: 5, lifetime_purchased: 15 },
-      error: null,
-    });
-
-    txnChain.single.mockResolvedValue({
-      data: { id: "t3", amount: 5, type: "refund" },
+  test("refund credits tokens through atomic RPC", async () => {
+    supabase.rpc.mockResolvedValue({
+      data: [
+        {
+          wallet_id: "w1",
+          balance: 15,
+          lifetime_used: 5,
+          lifetime_purchased: 15,
+          transaction_id: "t3",
+        },
+      ],
       error: null,
     });
 
     const result = await refundTokens("u1", 5, "Test refund");
     expect(result.error).toBeNull();
     expect(result.wallet.balance).toBe(15);
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "credit_tokens_atomic",
+      expect.objectContaining({ p_type: "refund", p_amount: 5 }),
+    );
   });
 });

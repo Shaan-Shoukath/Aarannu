@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AccessStatusScreen from "../components/AccessStatusScreen";
 import BrandLogoLink from "../components/BrandLogoLink";
@@ -37,16 +37,39 @@ export default function Login() {
   const [forgotShowPass, setForgotShowPass] = useState(false);
   const [forgotShowConfirm, setForgotShowConfirm] = useState(false);
 
-  // Handle magic link callbacks — Supabase sets the session in the URL hash
+  // Cached/active session state — shown as account widget instead of auto-redirect
+  const [existingSession, setExistingSession] = useState(null);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef(null);
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate("/dashboard", { replace: true });
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) navigate("/dashboard", { replace: true });
+    if (!accountMenuOpen) return;
+    const handler = (e) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target)) {
+        setAccountMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [accountMenuOpen]);
+
+  // INITIAL_SESSION → show account widget; SIGNED_IN (new login) → redirect
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "INITIAL_SESSION") {
+        if (session) setExistingSession(session.user);
+      } else if (event === "SIGNED_IN") {
+        navigate("/dashboard", { replace: true });
+      }
     });
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setExistingSession(null);
+    setAccountMenuOpen(false);
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -875,6 +898,56 @@ export default function Login() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
           Home
         </a>
+
+        {/* Existing session account widget — top-right of right panel */}
+        {existingSession && (
+          <div ref={accountMenuRef} className="absolute top-4 right-4 z-50">
+            <button
+              onClick={() => setAccountMenuOpen((o) => !o)}
+              className="flex items-center gap-2 bg-zinc-900 border border-zinc-700 hover:border-cyan-300/50 rounded-full pl-1 pr-3 py-1 transition-colors group"
+            >
+              <span className="w-7 h-7 rounded-full bg-cyan-300 flex items-center justify-center text-black text-xs font-bold shrink-0">
+                {(existingSession.email?.[0] ?? "?").toUpperCase()}
+              </span>
+              <span className="text-zinc-300 text-xs font-medium group-hover:text-white transition-colors max-w-[140px] truncate">
+                {existingSession.email}
+              </span>
+              <svg className={`w-3.5 h-3.5 text-zinc-500 transition-transform ${accountMenuOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {accountMenuOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl overflow-hidden">
+                <div className="px-4 py-3 border-b border-zinc-800">
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold mb-0.5">Signed in as</p>
+                  <p className="text-sm text-white font-medium truncate">{existingSession.email}</p>
+                </div>
+                <div className="p-2 space-y-1">
+                  <button
+                    onClick={() => navigate("/dashboard")}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-white hover:bg-cyan-300/10 hover:text-cyan-300 transition-colors text-left"
+                  >
+                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Go to Dashboard
+                  </button>
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:bg-red-900/20 hover:text-red-400 transition-colors text-left"
+                  >
+                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Sign out
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="w-full max-w-md lg:max-w-110 space-y-6 sm:space-y-8 mt-8 lg:mt-0">
           <div className="text-center lg:text-left">
             <BrandLogoLink

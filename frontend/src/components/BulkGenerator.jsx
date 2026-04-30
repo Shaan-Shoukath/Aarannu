@@ -6,13 +6,6 @@ import { supabase } from "../lib/supabaseClient";
 import { safeFileName } from "../utils/downloadHelpers";
 import { renderCardPdfWithBestSupport } from "../utils/cardPdfSupport";
 
-/** Build a unique storage path – extracted to avoid React compiler purity check */
-function buildFilePath(userId, memberName) {
-  const timestamp = Date.now();
-  const safeName = (memberName || "unnamed").replace(/[^a-zA-Z0-9]/g, "_");
-  return `${userId}/${safeName}_${timestamp}.png`;
-}
-
 function buildMemberResultKey(member, rowNumber) {
   return [
     member?.projectMemberId || "local",
@@ -145,6 +138,50 @@ export default function BulkGenerator({
       customFields,
     };
     return renderCardPdfWithBestSupport(payload);
+  };
+
+  const uploadGeneratedCardToBackend = async (pdfBlob, member, rowNumber) => {
+    const reader = new FileReader();
+    const base64 = await new Promise((resolve, reject) => {
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(pdfBlob);
+    });
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      throw new Error("You need to sign in again before generating cards.");
+    }
+
+    const backendUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const res = await fetch(`${backendUrl}/api/cards/upload`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        image: base64,
+        memberName: member?.name || "card",
+        expiryDays: 365,
+        requestId: [
+          "bulk-card",
+          userId,
+          projectId || "legacy",
+          member?.projectMemberId || member?.id_number || rowNumber,
+          rowNumber,
+        ].join(":"),
+      }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || errData.error || `HTTP ${res.status}`);
+    }
+
+    return res.json();
   };
 
   const persistProjectMembershipIds = useCallback(async (processedMembers) => {
@@ -302,54 +339,13 @@ export default function BulkGenerator({
             rowNumber,
           };
 
-          // Attempt cloud upload (non-blocking for local download)
+          // Persist through the backend so token usage is recorded.
           let cloudWarning = "";
-          if (uploadToCloud) {
-            try {
-              setProgress((prev) => ({ ...prev, step: "upload" }));
-              const filePath = buildFilePath(userId, member.name).replace('.png', '.pdf');
-              const { error: uploadError } = await supabase.storage
-                .from("id-cards")
-                .upload(filePath, pdfBlob, {
-                  contentType: "application/pdf",
-                  upsert: false,
-                });
-
-              if (uploadError) {
-                cloudWarning = `Upload: ${uploadError.message}`;
-                console.warn(
-                  `Cloud upload failed for ${member.name}:`,
-                  uploadError.message,
-                );
-              } else {
-                const expiresAt = new Date();
-                expiresAt.setDate(expiresAt.getDate() + 365);
-
-                const { error: insertError } = await supabase
-                  .from("generated_ids")
-                  .insert({
-                    user_id: userId,
-                    file_url: filePath,
-                    expires_at: expiresAt.toISOString(),
-                  });
-
-                if (insertError) {
-                  cloudWarning = `DB: ${insertError.message}`;
-                  console.warn(
-                    `DB insert failed for ${member.name}:`,
-                    insertError.message,
-                  );
-                }
-              }
-            } catch (cloudErr) {
-              cloudWarning = `Cloud: ${cloudErr.message}`;
-              console.warn(
-                `Cloud save failed for ${member.name}:`,
-                cloudErr.message,
-              );
-            }
-          } else {
-            cloudWarning = "Skipped (upload disabled)";
+          try {
+            setProgress((prev) => ({ ...prev, step: "upload" }));
+            await uploadGeneratedCardToBackend(pdfBlob, member, rowNumber);
+          } catch (cloudErr) {
+            throw new Error(`Token/accounting save failed: ${cloudErr.message}`);
           }
 
           const cardTime = ((Date.now() - cardStart) / 1000).toFixed(1);
@@ -1049,9 +1045,7 @@ export default function BulkGenerator({
             </svg>
             <div>
               <p className="text-xs font-medium text-slate-700 leading-none">
-                {uploadToCloud
-                  ? "Uploads to Supabase"
-                  : "Local only (no upload)"}
+                Token-recorded generation
               </p>
               <p className="text-[10px] text-slate-400 mt-0.5">
                 {(() => {

@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../lib/supabaseClient";
 import BrandLogoLink from "../components/BrandLogoLink";
 import { Button, StatusBadge } from "../components/ui";
 
@@ -52,7 +51,6 @@ const TEMPLATES = [
 
 export default function Templates() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [showOrgModal, setShowOrgModal] = useState(false);
   const [orgConfig, setOrgConfig] = useState({
@@ -66,35 +64,6 @@ export default function Templates() {
     imageUrl: "",
     imageOpacity: 0.06,
   });
-
-  const checkAccess = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      navigate("/login", { replace: true });
-      return;
-    }
-
-    const { data: memberData } = await supabase
-      .from("members")
-      .select("*")
-      .eq("user_id", user.id)
-      .single();
-
-    if (!memberData?.approved) {
-      navigate("/dashboard", { replace: true });
-      return;
-    }
-
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    checkAccess();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const handleSelectTemplate = (template) => {
     setSelectedTemplate(template);
@@ -112,32 +81,6 @@ export default function Templates() {
       },
     });
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
-        <svg
-          className="animate-spin h-8 w-8 text-cyan-300"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-          />
-        </svg>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-black font-['Public_Sans',sans-serif] flex flex-col text-white">
