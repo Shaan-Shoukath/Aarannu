@@ -66,9 +66,10 @@ async function renderPdfViaBackend(payload) {
 }
 
 export async function renderCardPdfWithBestSupport(payload) {
-  if (!needsBrowserRenderedPdf(payload)) {
+  try {
+    return await renderPdfViaBackend(payload);
+  } catch (err) {
+    console.warn("Backend card renderer unavailable; falling back to PDFKit.", err);
     return generateCardPdf(payload);
   }
-
-  return renderPdfViaBackend(payload);
 }

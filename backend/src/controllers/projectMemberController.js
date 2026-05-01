@@ -17,7 +17,7 @@ const FRONTEND_URL = (
   process.env.FRONTEND_URL || "http://localhost:5173"
 ).replace(/\/+$/, "");
 
-const buildVerificationUrl = (cardId) => `${FRONTEND_URL}/verify/${cardId}`;
+const buildVerificationUrl = (cardId) => `${FRONTEND_URL}/members/${cardId}`;
 
 const buildDeliveryState = (member, card) => {
   if (!card?.id) {

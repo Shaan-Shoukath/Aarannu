@@ -270,6 +270,24 @@ async function generateQRDataUrl(value) {
   }
 }
 
+function getVerificationUrl(params) {
+  const data = params?.data || {};
+  const id =
+    data.card_id ||
+    data.cardId ||
+    data.delivery_card_id ||
+    data.id_number ||
+    "unknown";
+  const path = `/members/${encodeURIComponent(id)}`;
+  if (data.verification_url || data.verificationUrl || data.delivery_verification_url) {
+    return data.verification_url || data.verificationUrl || data.delivery_verification_url;
+  }
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return `${window.location.origin}${path}`;
+  }
+  return path;
+}
+
 async function loadImages(params) {
   const { data = {}, logoUrl, watermark = {}, signatureUrl } = params;
   const [photo, logo, watermarkImg, signature] = await Promise.all([
@@ -278,7 +296,7 @@ async function loadImages(params) {
     fetchImageAsDataUrl(watermark?.imageUrl || null),
     fetchImageAsDataUrl(signatureUrl || null),
   ]);
-  const qr = await generateQRDataUrl(data.id_number);
+  const qr = await generateQRDataUrl(getVerificationUrl(params));
   return {
     photo: dataUrlToBuffer(photo),
     logo: dataUrlToBuffer(logo),
@@ -295,6 +313,387 @@ function safeAddImage(doc, imgBuf, x, y, w, h) {
   } catch {
     /* skip unreadable images */
   }
+}
+
+function safeCoverImage(doc, imgBuf, x, y, w, h) {
+  if (!imgBuf) return;
+  try {
+    doc.image(imgBuf, x, y, {
+      cover: [w, h],
+      align: "center",
+      valign: "center",
+    });
+  } catch {
+    safeAddImage(doc, imgBuf, x, y, w, h);
+  }
+}
+
+function drawCardShell(doc, cx, cy, cw, ch, radius, gc, opts = {}) {
+  const cardBg = opts.bgColor || "#ffffff";
+  const useFullGradient = Boolean(opts.fullGradientBg);
+  const opacity = Math.max(0.08, Math.min(1, Number(opts.gradientOpacity) || 0.55));
+  const gradientStyle = opts.gradientStyle || "diagonal";
+  doc.save();
+  doc.roundedRect(cx, cy, cw, ch, radius).fill(cardBg);
+  doc.restore();
+  if (useFullGradient) {
+    doc.save();
+    doc.roundedRect(cx, cy, cw, ch, radius).clip();
+    doc.fillOpacity(opacity);
+    if (gradientStyle === "split") {
+      doc.rect(cx, cy, cw * 0.42, ch).fill(gc.start);
+      doc.rect(cx + cw * 0.42, cy, cw * 0.16, ch).fill("#ffffff");
+      doc.rect(cx + cw * 0.58, cy, cw * 0.42, ch).fill(gc.end);
+    } else if (gradientStyle === "ribbon") {
+      drawGradientH(doc, cx, cy, cw, ch, gc.start, gc.end, 100);
+    } else {
+      drawDiagonalGradient(doc, cx, cy, cw, ch, gc.start, gc.end);
+    }
+    doc.restore();
+  }
+  doc.save();
+  doc.fillOpacity(useFullGradient ? 0.34 : 0.5);
+  doc
+    .moveTo(cx + cw - 36 * MM, cy + 5 * MM)
+    .lineTo(cx + cw, cy + 5 * MM)
+    .lineTo(cx + cw - 10 * MM, cy + 27 * MM)
+    .lineTo(cx + cw - 45 * MM, cy + 27 * MM)
+    .closePath()
+    .fill("#ffffff");
+  doc
+    .moveTo(cx - 20 * MM, cy + ch - 18 * MM)
+    .lineTo(cx + 35 * MM, cy + ch - 18 * MM)
+    .lineTo(cx + 25 * MM, cy + ch + 5 * MM)
+    .lineTo(cx - 30 * MM, cy + ch + 5 * MM)
+    .closePath()
+    .fill("#ffffff");
+  doc.roundedRect(cx, cy, cw, ch, radius).strokeColor("#d7deea").lineWidth(0.7).stroke();
+  doc.restore();
+}
+
+function drawLogoMark(doc, images, x, y, size, text, gc, fonts) {
+  doc.save();
+  doc.roundedRect(x, y, size, size, 4).fill("#ffffff");
+  doc.roundedRect(x, y, size, size, 4).strokeColor("#dbe4f0").lineWidth(0.5).stroke();
+  doc.restore();
+  if (images.logo) {
+    safeAddImage(doc, images.logo, x + 1.2 * MM, y + 1.2 * MM, size - 2.4 * MM, size - 2.4 * MM);
+    return;
+  }
+  doc.font(fonts.bold).fontSize(7).fillColor(gc.start);
+  doc.text(text, x, y + size / 2 - 3, { width: size, align: "center", lineBreak: false });
+}
+
+function drawProfessionalFront(doc, params, images, fonts) {
+  const {
+    data = {},
+    orgName = "",
+    gradientColors: gc = { start: "#2563EB", end: "#ef4444" },
+    cardStyles: cs = {},
+    orientation = "horizontal",
+    fieldVisibility: fv = {},
+    customFields = [],
+    watermark = {},
+    fullGradientBg = false,
+    gradientOpacity = 0.55,
+  } = params;
+  const isVert = orientation === "vertical";
+  const card = isVert ? CARD_V : CARD_H;
+  const cx = PAD;
+  const cy = PAD;
+  const cw = card.w;
+  const ch = card.h;
+  const radius = Math.min((cs.borderRadius || 12) * 0.75, 12);
+  const {
+    name = "Full Name",
+    role = "Member",
+    id_number = "0000 0000 0000",
+    dob = "",
+    gender = "",
+    blood_group = "",
+    customValues = {},
+  } = data;
+  const orgDisplayName = uppercaseLatinOnly(orgName || "Community ID");
+  const displayName = uppercaseLatinOnly(name);
+  const displayRole = uppercaseLatinOnly(role);
+  const membershipIdText = normalizeDisplayText(id_number);
+  const frontFields = (customFields || []).filter((f) => f.side === "front");
+  const getCustomFieldDisplayValue = (label) =>
+    uppercaseLatinOnly(customValues[label] || "-");
+
+  const textColor = cs.fontColor || "#0f172a";
+  const accentColor = cs.accentColor || gc.start || "#2563EB";
+  const mutedColor = textColor === "#ffffff" ? "#e2e8f0" : "#64748b";
+  const panelFill = "#ffffff";
+  const softFill = fullGradientBg ? "#ffffff" : "#f8fafc";
+  const nameScale = (Number(cs.nameFontSize) || 20) / 20;
+  const valueScale = (Number(cs.valueFontSize) || 14) / 14;
+  const labelScale = (Number(cs.labelFontSize) || 9) / 9;
+  const photoScaleF = Math.max(0.65, Math.min(1.25, (Number(cs.photoScale) || 100) / 100));
+
+  drawCardShell(doc, cx, cy, cw, ch, radius, gc, {
+    bgColor: cs.bgColor,
+    fullGradientBg,
+    gradientOpacity,
+    gradientStyle: cs.gradientStyle,
+  });
+
+  const margin = isVert ? 4 * MM : 5 * MM;
+  const logoSize = 9 * MM;
+  const logoText = firstGrapheme(orgDisplayName || "A") || "A";
+  const headerY = cy + 5 * MM;
+  drawLogoMark(doc, images, cx + margin, headerY, logoSize, logoText, gc, fonts);
+
+  doc.font(fonts.bold).fontSize((isVert ? 8 : 10.5) * Math.min(nameScale, 1.15)).fillColor(textColor);
+  doc.text(orgDisplayName, cx + margin + logoSize + 2 * MM, headerY + 1.1 * MM, {
+    width: cw - margin * 2 - logoSize * 2 - 4 * MM,
+    align: "center",
+    ellipsis: true,
+    lineBreak: false,
+  });
+  doc.font(fonts.bold).fontSize(4.2 * labelScale).fillColor(mutedColor);
+  doc.text("DIGITAL IDENTITY CARD", cx + margin + logoSize + 2 * MM, headerY + 5.4 * MM, {
+    width: cw - margin * 2 - logoSize * 2 - 4 * MM,
+    align: "center",
+    lineBreak: false,
+  });
+
+  const bodyTop = headerY + 13 * MM;
+  const photoW = (isVert ? 25 * MM : 23 * MM) * photoScaleF;
+  const photoH = (isVert ? 29 * MM : 27 * MM) * photoScaleF;
+  const photoX = isVert ? cx + (cw - photoW) / 2 : cx + margin;
+  const photoY = bodyTop;
+  doc.save();
+  doc.roundedRect(photoX - 1 * MM, photoY - 1 * MM, photoW + 2 * MM, photoH + 2 * MM, 6).fill("#ffffff");
+  doc.roundedRect(photoX - 1 * MM, photoY - 1 * MM, photoW + 2 * MM, photoH + 2 * MM, 6).strokeColor("#cbd5e1").lineWidth(0.6).stroke();
+  doc.restore();
+  if (images.photo) {
+    safeCoverImage(doc, images.photo, photoX, photoY, photoW, photoH);
+  } else {
+    doc.save();
+    doc.roundedRect(photoX, photoY, photoW, photoH, 5).fill("#f1f5f9");
+    doc.restore();
+    doc.font(fonts.bold).fontSize(6 * valueScale).fillColor(mutedColor);
+    doc.text("No Photo", photoX, photoY + photoH / 2 - 3, { width: photoW, align: "center" });
+  }
+
+  if (!isVert) {
+    doc.save();
+    doc.roundedRect(photoX, photoY + photoH + 2.5 * MM, photoW, 6 * MM, 4).fill(panelFill);
+    doc.roundedRect(photoX, photoY + photoH + 2.5 * MM, photoW, 6 * MM, 4).strokeColor("#e2e8f0").lineWidth(0.4).stroke();
+    doc.restore();
+    doc.font(fonts.bold).fontSize(3.5 * labelScale).fillColor(mutedColor);
+    doc.text("ROLE", photoX, photoY + photoH + 3.4 * MM, { width: photoW, align: "center", lineBreak: false });
+    doc.font(fonts.bold).fontSize(4.8 * valueScale).fillColor(accentColor);
+    doc.text(displayRole, photoX + 1 * MM, photoY + photoH + 5.2 * MM, {
+      width: photoW - 2 * MM,
+      align: "center",
+      ellipsis: true,
+      lineBreak: false,
+    });
+  }
+
+  const detailX = isVert ? cx + margin : photoX + photoW + 6 * MM;
+  const detailY = isVert ? photoY + photoH + 5 * MM : bodyTop + 1 * MM;
+  const detailW = isVert ? cw - margin * 2 : cx + cw - margin - detailX;
+
+  doc.save();
+  doc.roundedRect(detailX - 2 * MM, detailY - 2 * MM, detailW + 4 * MM, isVert ? 47 * MM : 33 * MM, 5).fill(panelFill);
+  doc.roundedRect(detailX - 2 * MM, detailY - 2 * MM, detailW + 4 * MM, isVert ? 47 * MM : 33 * MM, 5).strokeColor("#e2e8f0").lineWidth(0.4).stroke();
+  doc.restore();
+
+  doc.font(fonts.bold).fontSize(4.4 * labelScale).fillColor(accentColor);
+  doc.text("FULL NAME", detailX, detailY, { lineBreak: false });
+  doc.font(fonts.bold).fontSize((isVert ? 11 : 13) * nameScale).fillColor(textColor);
+  doc.text(displayName, detailX, detailY + 3 * MM, {
+    width: detailW,
+    height: isVert ? 10 * MM : 8 * MM,
+    ellipsis: true,
+  });
+
+  let y = detailY + (isVert ? 13 * MM : 12 * MM);
+  if (fv.role !== false && isVert) {
+    doc.save();
+    doc.roundedRect(detailX, y, Math.min(detailW, 34 * MM), 6 * MM, 9).fill("#eff6ff");
+    doc.restore();
+    doc.font(fonts.bold).fontSize(6 * valueScale).fillColor(accentColor);
+    doc.text(displayRole, detailX + 2.5 * MM, y + 1.8 * MM, {
+      width: Math.min(detailW, 30 * MM),
+      ellipsis: true,
+      lineBreak: false,
+    });
+    y += 9 * MM;
+  }
+
+  doc.save();
+  doc.roundedRect(detailX, y, detailW, 8 * MM, 4).fill(fullGradientBg ? panelFill : "#eff6ff");
+  doc.roundedRect(detailX, y, detailW, 8 * MM, 4).strokeColor("#dbeafe").lineWidth(0.35).stroke();
+  doc.restore();
+  doc.font(fonts.bold).fontSize(4.1 * labelScale).fillColor(accentColor);
+  doc.text("MEMBER ID", detailX + 2 * MM, y + 1.2 * MM, { lineBreak: false });
+  doc.font(containsMalayalam(membershipIdText) ? fonts.bold : "Courier-Bold").fontSize(10 * valueScale).fillColor(textColor);
+  doc.text(membershipIdText, detailX + 2 * MM, y + 4 * MM, { width: detailW - 4 * MM, lineBreak: false });
+  y += 9 * MM;
+
+  const fieldPairs = [];
+  if (fv.dob !== false && dob) fieldPairs.push(["DOB", uppercaseLatinOnly(dob)]);
+  if (fv.gender !== false && gender) fieldPairs.push(["GENDER", uppercaseLatinOnly(gender)]);
+  if (fv.blood_group !== false && blood_group) fieldPairs.push(["BLOOD", uppercaseLatinOnly(blood_group)]);
+  frontFields.slice(0, 2).forEach((f) => fieldPairs.push([uppercaseLatinOnly(f.label), getCustomFieldDisplayValue(f.label)]));
+  const colW = detailW / 2;
+  fieldPairs.slice(0, 4).forEach(([label, value], index) => {
+    const fx = detailX + (index % 2) * colW;
+    const fy = y + Math.floor(index / 2) * 8 * MM;
+    doc.save();
+    doc.roundedRect(fx, fy, colW - 2 * MM, 6.5 * MM, 3).fill(softFill);
+    doc.roundedRect(fx, fy, colW - 2 * MM, 6.5 * MM, 3).strokeColor("#e2e8f0").lineWidth(0.3).stroke();
+    doc.restore();
+    doc.font(fonts.bold).fontSize(4.2 * labelScale).fillColor(mutedColor);
+    doc.text(label, fx + 1.3 * MM, fy + 1 * MM, { width: colW - 4 * MM, lineBreak: false });
+    doc.font(fonts.bold).fontSize(6.2 * valueScale).fillColor(textColor);
+    doc.text(value, fx + 1.3 * MM, fy + 3.5 * MM, { width: colW - 4 * MM, ellipsis: true, lineBreak: false });
+  });
+
+  const footerY = cy + ch - 7 * MM;
+  doc.save();
+  doc.moveTo(cx + margin, footerY - 2 * MM).lineTo(cx + cw - margin, footerY - 2 * MM).strokeColor("#e2e8f0").lineWidth(0.5).stroke();
+  doc.restore();
+  doc.font(fonts.bold).fontSize(4 * labelScale).fillColor(mutedColor);
+  doc.text("VALID AS PER SUBSCRIPTION PLAN", cx + margin, footerY, { lineBreak: false });
+  doc.text("VERIFY ON BACK", cx + margin, footerY, { width: cw - margin * 2, align: "right", lineBreak: false });
+
+  drawWatermark(doc, cx, cy, cw, ch, watermark, gc, fonts);
+}
+
+function drawProfessionalBack(doc, params, images, fonts) {
+  const {
+    data = {},
+    orgName = "",
+    gradientColors: gc = { start: "#2563EB", end: "#ef4444" },
+    cardStyles: cs = {},
+    orientation = "horizontal",
+    fieldVisibility: fv = {},
+    customFields = [],
+    validityText = "Valid as per subscription plan",
+    watermark = {},
+    fullGradientBg = false,
+    gradientOpacity = 0.55,
+  } = params;
+  const isVert = orientation === "vertical";
+  const card = isVert ? CARD_V : CARD_H;
+  const cx = PAD;
+  const cy = PAD;
+  const cw = card.w;
+  const ch = card.h;
+  const radius = Math.min((cs.borderRadius || 12) * 0.75, 12);
+  const margin = isVert ? 4 * MM : 5 * MM;
+  const { address = "", customValues = {} } = data;
+  const backFields = (customFields || []).filter((f) => f.side === "back");
+  const getBackFieldValue = (label) => uppercaseLatinOnly(customValues[label] || "-");
+  const orgDisplayName = uppercaseLatinOnly(orgName || "Community ID");
+  const logoText = firstGrapheme(orgDisplayName || "A") || "A";
+  const textColor = cs.fontColor || "#0f172a";
+  const accentColor = cs.accentColor || gc.start || "#2563EB";
+  const mutedColor = textColor === "#ffffff" ? "#e2e8f0" : "#64748b";
+  const panelFill = "#ffffff";
+  const valueScale = (Number(cs.valueFontSize) || 14) / 14;
+  const labelScale = (Number(cs.labelFontSize) || 9) / 9;
+
+  drawCardShell(doc, cx, cy, cw, ch, radius, gc, {
+    bgColor: cs.bgColor,
+    fullGradientBg,
+    gradientOpacity,
+    gradientStyle: cs.gradientStyle,
+  });
+  const headerY = cy + 5 * MM;
+  const logoSize = 8 * MM;
+  drawLogoMark(doc, images, cx + margin, headerY, logoSize, logoText, gc, fonts);
+  doc.font(fonts.bold).fontSize((isVert ? 7.5 : 9) * valueScale).fillColor(textColor);
+  doc.text(orgDisplayName, cx + margin + logoSize + 2 * MM, headerY + 1 * MM, {
+    width: cw - margin * 2 - logoSize * 2 - 4 * MM,
+    align: "center",
+    ellipsis: true,
+    lineBreak: false,
+  });
+  doc.font(fonts.bold).fontSize(3.9 * labelScale).fillColor(mutedColor);
+  doc.text("VERIFICATION DETAILS", cx + margin + logoSize + 2 * MM, headerY + 4.8 * MM, {
+    width: cw - margin * 2 - logoSize * 2 - 4 * MM,
+    align: "center",
+    lineBreak: false,
+  });
+  doc.save();
+  doc.moveTo(cx + margin, headerY + 11 * MM).lineTo(cx + cw - margin, headerY + 11 * MM).strokeColor("#e2e8f0").lineWidth(0.45).stroke();
+  doc.restore();
+
+  const qrSize = isVert ? 22 * MM : 20 * MM;
+  const qrX = isVert ? cx + (cw - qrSize) / 2 : cx + cw - margin - qrSize - 2 * MM;
+  const qrY = isVert ? cy + ch - margin - qrSize - 9 * MM : headerY + 18 * MM;
+
+  let y = headerY + 16 * MM;
+  const textW = isVert ? cw - margin * 2 : qrX - margin - (cx + margin);
+  const panelH = isVert ? ch - 42 * MM : 28 * MM;
+  doc.save();
+  doc.roundedRect(cx + margin, y - 3 * MM, textW, panelH, 5).fill(panelFill);
+  doc.roundedRect(cx + margin, y - 3 * MM, textW, panelH, 5).strokeColor("#e2e8f0").lineWidth(0.4).stroke();
+  doc.restore();
+  const contentX = cx + margin + 3 * MM;
+  const contentW = textW - 6 * MM;
+  if (fv.address !== false) {
+    doc.font(fonts.bold).fontSize(5 * labelScale).fillColor(accentColor);
+    doc.text("ADDRESS", contentX, y, { lineBreak: false });
+    y += 3.5 * MM;
+    doc.font(fonts.regular).fontSize(6.3 * valueScale).fillColor(textColor);
+    doc.text(uppercaseLatinOnly(address || "Address not provided"), contentX, y, {
+      width: contentW,
+      lineGap: 1,
+    });
+    y = doc.y + 4 * MM;
+  }
+  doc.font(fonts.bold).fontSize(5 * labelScale).fillColor(accentColor);
+  doc.text("ISSUING AUTHORITY", contentX, y, { lineBreak: false });
+  y += 3.5 * MM;
+  doc.font(fonts.bold).fontSize(7 * valueScale).fillColor(textColor);
+  doc.text(orgDisplayName, contentX, y, {
+    width: contentW,
+    ellipsis: true,
+    lineBreak: false,
+  });
+  y += 7 * MM;
+  backFields.slice(0, 3).forEach((f) => {
+    doc.font(fonts.bold).fontSize(4.4 * labelScale).fillColor(mutedColor);
+    doc.text(uppercaseLatinOnly(f.label), contentX, y, { width: contentW, lineBreak: false });
+    doc.font(fonts.bold).fontSize(6 * valueScale).fillColor(textColor);
+    doc.text(getBackFieldValue(f.label), contentX, y + 3 * MM, { width: contentW, ellipsis: true, lineBreak: false });
+    y += 7 * MM;
+  });
+
+  doc.save();
+  doc.roundedRect(qrX - 3 * MM, qrY - 5 * MM, qrSize + 6 * MM, qrSize + 14 * MM, 5).fill(fullGradientBg ? panelFill : "#eff6ff");
+  doc.roundedRect(qrX - 3 * MM, qrY - 5 * MM, qrSize + 6 * MM, qrSize + 14 * MM, 5).strokeColor("#dbeafe").lineWidth(0.5).stroke();
+  doc.roundedRect(qrX - 1.5 * MM, qrY - 1.5 * MM, qrSize + 3 * MM, qrSize + 3 * MM, 4).fill("#ffffff");
+  doc.roundedRect(qrX - 1.5 * MM, qrY - 1.5 * MM, qrSize + 3 * MM, qrSize + 3 * MM, 4).strokeColor("#dbe4f0").lineWidth(0.5).stroke();
+  doc.restore();
+  if (images.qr) safeAddImage(doc, images.qr, qrX, qrY, qrSize, qrSize);
+  doc.font(fonts.bold).fontSize(4 * labelScale).fillColor(mutedColor);
+  doc.text("SCAN FOR VERIFICATION", qrX - 3 * MM, qrY + qrSize + 3 * MM, {
+    width: qrSize + 6 * MM,
+    align: "center",
+    lineBreak: false,
+  });
+
+  const footerY = cy + ch - 7 * MM;
+  doc.save();
+  doc.moveTo(cx + margin, footerY - 2 * MM).lineTo(cx + cw - margin, footerY - 2 * MM).strokeColor("#e2e8f0").lineWidth(0.5).stroke();
+  doc.restore();
+  doc.font(fonts.bold).fontSize(4 * labelScale).fillColor(mutedColor);
+  doc.text(orgDisplayName, cx + margin, footerY, { lineBreak: false });
+  doc.text(uppercaseLatinOnly(validityText), cx + margin, footerY, {
+    width: cw - margin * 2,
+    align: "right",
+    lineBreak: false,
+  });
+
+  drawWatermark(doc, cx, cy, cw, ch, watermark, gc, fonts);
 }
 
 // ── Template Constants ───────────────────────────────
@@ -329,6 +728,11 @@ function drawFront(doc, params, images, fonts) {
     fullGradientBg = true,
     gradientOpacity = 0.55,
   } = params;
+
+  if (params?.template !== "__legacy_pdf") {
+    drawProfessionalFront(doc, params, images, fonts);
+    return;
+  }
 
   const isVert = orientation === "vertical";
   const card = isVert ? CARD_V : CARD_H;
@@ -764,6 +1168,11 @@ function drawBack(doc, params, images, fonts) {
     validityText = "Valid as per subscription plan",
     watermark = {},
   } = params;
+
+  if (params?.template !== "__legacy_pdf") {
+    drawProfessionalBack(doc, params, images, fonts);
+    return;
+  }
 
   const isVert = orientation === "vertical";
   const card = isVert ? CARD_V : CARD_H;

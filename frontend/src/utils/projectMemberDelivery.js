@@ -225,6 +225,12 @@ export function buildDeliveryPayload({ member, project, org }) {
       email: member?.email || "",
       role: customFields.role || "Member",
       id_number: extractMembershipId(member) || buildFallbackIdNumber(member),
+      card_id: member?.delivery_card_id || "",
+      verification_url:
+        member?.delivery_verification_url ||
+        (member?.delivery_card_id
+          ? `${window.location.origin}/members/${member.delivery_card_id}`
+          : ""),
       dob: customFields.dob || "",
       gender: customFields.gender || "",
       blood_group:

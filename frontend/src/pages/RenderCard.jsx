@@ -2,9 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import PDFDocument from "pdfkit/js/pdfkit.standalone";
 import blobStream from "blob-stream";
 import IDCard from "../components/IDCard";
-import CorporateCard from "../components/CorporateCard";
-import EventCard from "../components/EventCard";
-import StudentCard from "../components/StudentCard";
 import {
   DEFAULT_CARD_FONT_FAMILY,
   withMalayalamFontFallback,
@@ -188,29 +185,16 @@ export default function RenderCard() {
 
   const templateMap = {
     custom: IDCard,
-    corporate: CorporateCard,
-    event: EventCard,
-    student: StudentCard,
+    corporate: IDCard,
+    event: IDCard,
+    student: IDCard,
   };
   const CardComponent = templateMap[template] || IDCard;
-
-  // Compute contrasting background: white for dark cards, dark for light cards
-  const contrastBg = (() => {
-    const bg = cardStyles.bgColor || "#ffffff";
-    // Parse hex to RGB
-    const hex = bg.replace("#", "");
-    const r = parseInt(hex.substring(0, 2), 16) || 255;
-    const g = parseInt(hex.substring(2, 4), 16) || 255;
-    const b = parseInt(hex.substring(4, 6), 16) || 255;
-    // Relative luminance (sRGB)
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return luminance > 0.5 ? "#1a1a2e" : "#ffffff";
-  })();
 
   return (
     <div
       data-render-ready={ready ? "true" : "false"}
-      className="min-h-screen"
+      className="min-h-screen bg-white p-0"
       style={{ fontFamily: resolvedCardStyles.fontFamily }}
     >
       {/* FRONT — Puppeteer screenshots this element directly */}
@@ -218,13 +202,13 @@ export default function RenderCard() {
         id="card-front"
         style={{
           display: "inline-block",
-          background: contrastBg,
-          padding: "12px",
-          borderRadius: "4px",
+          background: "transparent",
+          padding: 0,
         }}
       >
         <CardComponent
           data={data}
+          template={template}
           showBack={false}
           renderSide="front"
           orgName={orgName}
@@ -247,14 +231,14 @@ export default function RenderCard() {
         id="card-back"
         style={{
           display: "inline-block",
-          marginTop: "32px",
-          background: contrastBg,
-          padding: "12px",
-          borderRadius: "4px",
+          marginTop: "24px",
+          background: "transparent",
+          padding: 0,
         }}
       >
         <CardComponent
           data={data}
+          template={template}
           showBack={true}
           renderSide="back"
           orgName={orgName}

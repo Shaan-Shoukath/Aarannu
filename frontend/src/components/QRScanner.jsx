@@ -3,11 +3,11 @@ import { Html5QrcodeScanner } from "html5-qrcode";
 
 /**
  * Extracts a card UUID from scanned QR text.
- * Handles both raw UUIDs and full verify URLs.
+ * Handles raw UUIDs and /members/:id or /verify/:id URLs.
  */
 function extractCardId(text) {
   const urlMatch = text.match(
-    /\/verify\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i
+    /\/(?:members|verify)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i
   );
   if (urlMatch) return urlMatch[1];
 

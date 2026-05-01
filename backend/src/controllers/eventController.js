@@ -24,6 +24,24 @@ const csvSafe = (val) => {
   return str;
 };
 
+const extractCardId = (rawValue) => {
+  const value = String(rawValue || "").trim();
+  if (!value) return "";
+
+  try {
+    const url = new URL(value);
+    const match = url.pathname.match(/\/(?:members|verify)\/([^/?#]+)/i);
+    if (match?.[1]) return decodeURIComponent(match[1]);
+  } catch {
+    // Not a URL; fall through to path/raw parsing.
+  }
+
+  const pathMatch = value.match(/\/(?:members|verify)\/([^/?#]+)/i);
+  if (pathMatch?.[1]) return decodeURIComponent(pathMatch[1]);
+
+  return value;
+};
+
 /**
  * Fetch event and verify the requesting user has at least minRole in the event's org.
  * Returns { event, role } on success, or writes an error response and returns null.
@@ -156,7 +174,7 @@ const checkin = async (req, res, next) => {
     const result = await authorizeEventRequest(req, res, "member");
     if (!result) return;
 
-    const { cardId } = req.body;
+    const cardId = extractCardId(req.body?.cardId || req.body?.qrData || req.body?.value);
     if (!cardId) {
       return res.status(400).json({ error: "cardId is required." });
     }
@@ -240,10 +258,11 @@ const exportCheckins = async (req, res, next) => {
       const ws = XLSX.utils.json_to_sheet(
         rows.map((c) => ({
           Name: c.member_name,
-          Email: c.member_email || "",
-          "Check-in Time": c.checked_in_at
+          "Member ID": c.member_id || "",
+          Time: c.checked_in_at
             ? new Date(c.checked_in_at).toLocaleString("en-IN")
             : "",
+          Status: "CHECKED_IN",
         }))
       );
       const wb = XLSX.utils.book_new();
@@ -261,15 +280,16 @@ const exportCheckins = async (req, res, next) => {
     }
 
     // CSV
-    const csvRows = [["Name", "Email", "Check-in Time"].join(",")];
+    const csvRows = [["Name", "Member ID", "Time", "Status"].join(",")];
     rows.forEach((c) => {
       csvRows.push(
         [
           csvSafe(c.member_name),
-          csvSafe(c.member_email),
+          csvSafe(c.member_id),
           csvSafe(
             c.checked_in_at ? new Date(c.checked_in_at).toLocaleString("en-IN") : ""
           ),
+          csvSafe("CHECKED_IN"),
         ].join(",")
       );
     });

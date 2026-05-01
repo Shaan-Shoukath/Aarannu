@@ -28,36 +28,130 @@ const BLOCKED_HOSTS = [
   "169.254.169.254",
 ];
 
-/**
- * Convert common Google Drive sharing URLs to direct-download URLs.
- * Supports:
- *   - https://drive.google.com/file/d/FILE_ID/view?usp=sharing
- *   - https://drive.google.com/open?id=FILE_ID
- *   - Already-direct: https://drive.google.com/uc?export=view&id=FILE_ID
- */
-function normalizeDriveUrl(rawUrl) {
+function getDriveFileId(rawUrl) {
   try {
     const url = new URL(rawUrl);
     const host = url.hostname;
 
     if (host === "drive.google.com" || host === "www.drive.google.com") {
-      // /file/d/FILE_ID/...
       const fileMatch = url.pathname.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-      if (fileMatch) {
-        return `https://drive.google.com/uc?export=view&id=${fileMatch[1]}`;
-      }
-      // /open?id=FILE_ID
-      const openId = url.searchParams.get("id");
-      if (openId) {
-        return `https://drive.google.com/uc?export=view&id=${openId}`;
-      }
+      if (fileMatch) return fileMatch[1];
+      return url.searchParams.get("id");
     }
 
-    // lh3.googleusercontent.com links already work directly
-    return rawUrl;
+    return null;
   } catch {
-    return rawUrl;
+    return null;
   }
+}
+
+function validateProxyUrl(rawUrl) {
+  try {
+    const parsed = new URL(rawUrl);
+    if (
+      BLOCKED_HOSTS.includes(parsed.hostname) ||
+      parsed.hostname.endsWith(".local")
+    ) {
+      return "Proxying to internal addresses is not allowed.";
+    }
+    if (/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(parsed.hostname)) {
+      return "Proxying to private IP addresses is not allowed.";
+    }
+    return null;
+  } catch {
+    return "Invalid URL.";
+  }
+}
+
+function buildImageCandidates(rawUrl) {
+  const driveId = getDriveFileId(rawUrl);
+  if (!driveId) return [rawUrl];
+
+  return [
+    `https://drive.google.com/thumbnail?id=${driveId}&sz=w1600`,
+    `https://drive.usercontent.google.com/download?id=${driveId}&export=view&authuser=0`,
+    `https://drive.google.com/uc?export=view&id=${driveId}`,
+    `https://drive.google.com/uc?export=download&id=${driveId}`,
+    rawUrl,
+  ];
+}
+
+function detectImageContentType(buffer, fallback = "") {
+  if (fallback.startsWith("image/")) return fallback;
+  if (!buffer || buffer.length < 12) return "";
+
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return "image/jpeg";
+  }
+  if (
+    buffer[0] === 0x89 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x4e &&
+    buffer[3] === 0x47
+  ) {
+    return "image/png";
+  }
+  if (
+    buffer[0] === 0x47 &&
+    buffer[1] === 0x49 &&
+    buffer[2] === 0x46 &&
+    buffer[3] === 0x38
+  ) {
+    return "image/gif";
+  }
+  if (
+    buffer[0] === 0x52 &&
+    buffer[1] === 0x49 &&
+    buffer[2] === 0x46 &&
+    buffer[3] === 0x46 &&
+    buffer[8] === 0x57 &&
+    buffer[9] === 0x45 &&
+    buffer[10] === 0x42 &&
+    buffer[11] === 0x50
+  ) {
+    return "image/webp";
+  }
+  return "";
+}
+
+async function fetchImageCandidate(targetUrl) {
+  const response = await fetch(targetUrl, {
+    redirect: "follow",
+    signal: AbortSignal.timeout(15000),
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+    },
+  });
+
+  if (!response.ok) {
+    return { ok: false, status: response.status };
+  }
+
+  const contentLength = parseInt(
+    response.headers.get("content-length") || "0",
+    10,
+  );
+  if (contentLength > MAX_IMAGE_SIZE) {
+    return { ok: false, status: 413 };
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  if (buffer.length > MAX_IMAGE_SIZE) {
+    return { ok: false, status: 413 };
+  }
+
+  const contentType = detectImageContentType(
+    buffer,
+    response.headers.get("content-type") || "",
+  );
+  if (!contentType) {
+    return { ok: false, status: 415 };
+  }
+
+  return { ok: true, buffer, contentType };
 }
 
 router.get("/image", apiLimiter, async (req, res) => {
@@ -67,94 +161,34 @@ router.get("/image", apiLimiter, async (req, res) => {
     return res.status(400).json({ error: "Missing 'url' query parameter." });
   }
 
-  // Validate URL and block internal/private addresses (SSRF protection)
-  try {
-    const parsed = new URL(url);
-    if (
-      BLOCKED_HOSTS.includes(parsed.hostname) ||
-      parsed.hostname.endsWith(".local")
-    ) {
-      return res.status(403).json({
-        error: "Proxying to internal addresses is not allowed.",
-      });
-    }
-    // Block private IP ranges
-    if (/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(parsed.hostname)) {
-      return res.status(403).json({
-        error: "Proxying to private IP addresses is not allowed.",
-      });
-    }
-  } catch {
-    return res.status(400).json({ error: "Invalid URL." });
+  const validationError = validateProxyUrl(url);
+  if (validationError) {
+    const status = validationError === "Invalid URL." ? 400 : 403;
+    return res.status(status).json({ error: validationError });
   }
 
   try {
-    const targetUrl = normalizeDriveUrl(url);
-
-    // Use native fetch (Node 18+)
-    const response = await fetch(targetUrl, {
-      redirect: "follow",
-      signal: AbortSignal.timeout(15000), // 15s timeout
-      headers: {
-        // Pretend to be a browser so Google Drive serves the file
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      },
-    });
-
-    if (!response.ok) {
-      return res.status(502).json({
-        error: `Upstream returned ${response.status}`,
-      });
-    }
-
-    const contentType = response.headers.get("content-type") || "";
-
-    // Only allow image types
-    if (!contentType.startsWith("image/")) {
-      return res.status(415).json({
-        error:
-          "URL did not return an image. Make sure the file is publicly shared.",
-      });
-    }
-
-    // Stream the body, enforcing a size cap
-    const contentLength = parseInt(
-      response.headers.get("content-length") || "0",
-      10,
-    );
-    if (contentLength > MAX_IMAGE_SIZE) {
-      return res.status(413).json({ error: "Image too large (max 10 MB)." });
-    }
-
-    // Set CORS + caching headers
-    res.set({
-      "Content-Type": contentType,
-      "Cache-Control": "public, max-age=3600",
-      "Access-Control-Allow-Origin": "*",
-    });
-
-    // Pipe the response body
-    const reader = response.body.getReader();
-    let totalBytes = 0;
-
-    const pump = async () => {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          res.end();
-          return;
-        }
-        totalBytes += value.length;
-        if (totalBytes > MAX_IMAGE_SIZE) {
-          res.destroy(new Error("Image exceeded size limit."));
-          return;
-        }
-        res.write(value);
+    let lastStatus = 502;
+    for (const targetUrl of buildImageCandidates(url)) {
+      const result = await fetchImageCandidate(targetUrl);
+      if (!result.ok) {
+        lastStatus = result.status || lastStatus;
+        continue;
       }
-    };
 
-    await pump();
+      res.set({
+        "Content-Type": result.contentType,
+        "Content-Length": String(result.buffer.length),
+        "Cache-Control": "public, max-age=3600",
+        "Access-Control-Allow-Origin": "*",
+      });
+      return res.end(result.buffer);
+    }
+
+    return res.status(lastStatus === 413 ? 413 : 415).json({
+      error:
+        "URL did not return a public image. For Google Drive, set sharing to 'Anyone with the link' and use the file share URL.",
+    });
   } catch (err) {
     if (!res.headersSent) {
       res.status(500).json({

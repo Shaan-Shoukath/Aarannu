@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../contexts/useAuth";
 import { downloadBlob } from "../utils/downloadHelpers";
 import BulkGenerator from "../components/BulkGenerator";
+import IDCard from "../components/IDCard";
 import { renderCardPdfWithBestSupport } from "../utils/cardPdfSupport";
 import {
   extractMembershipId,
@@ -22,7 +23,7 @@ import { DEFAULT_CARD_FONT_FAMILY } from "../utils/textSupport";
  *  4. Bulk-generate and upload all cards.
  *
  * Receives via location.state:
- *  - template: "custom" | "corporate" | "event" | "student"
+ *  - template: "custom" | "corporate"
  *  - orgName: string
  *  - logoUrl: string
  */
@@ -88,32 +89,25 @@ export default function Generate() {
 
   // Gradient colors
   const [gradientStart, setGradientStart] = useState(
-    ["corporate", "custom"].includes(templateId)
-      ? "#2563EB"
-      : templateId === "student"
-        ? "#f97316"
-        : "#f59e0b",
+    ["corporate", "custom"].includes(templateId) ? "#2563EB" : "#2563EB",
   );
   const [gradientEnd, setGradientEnd] = useState(
-    ["corporate", "custom"].includes(templateId)
-      ? "#ef4444"
-      : templateId === "student"
-        ? "#9333ea"
-        : "#6366f1",
+    ["corporate", "custom"].includes(templateId) ? "#ef4444" : "#ef4444",
   );
   const gradientColors = { start: gradientStart, end: gradientEnd };
 
   // Card styling customization
   const [cardStyles, setCardStyles] = useState({
-    bgColor: templateId === "event" ? "#1e1b4b" : "#ffffff",
-    fontColor: templateId === "event" ? "#e0e7ff" : "#1e293b",
+    bgColor: "#ffffff",
+    fontColor: "#1e293b",
     fontFamily: DEFAULT_CARD_FONT_FAMILY,
-    accentColor: templateId === "event" ? "#818cf8" : "#64748b",
+    accentColor: "#64748b",
     borderRadius: 12,
     nameFontSize: 20, // px – name / heading
     valueFontSize: 14, // px – detail values (dob, gender, id)
     labelFontSize: 9, // px – field labels (uppercase tiny)
     photoScale: 100, // % – photo size scale (50-150)
+    gradientStyle: "diagonal", // diagonal | split | ribbon | glass
   });
   const handleStyleChange = (key, value) =>
     setCardStyles((prev) => ({ ...prev, [key]: value }));
@@ -150,11 +144,7 @@ export default function Generate() {
 
   // Validity text shown on the back of the card
   const [validityText, setValidityText] = useState(
-    templateId === "event"
-      ? "Valid for event duration only"
-      : templateId === "student"
-        ? "Valid for current academic session"
-        : "Valid as per subscription plan",
+    "Valid as per subscription plan",
   );
 
   // Ref to the bulk generator section so we can scroll to it after import
@@ -187,10 +177,8 @@ export default function Generate() {
   ];
 
   const TEMPLATE_LABELS = {
-    custom: "Custom",
-    corporate: "Corporate Standard",
-    event: "Event Access",
-    student: "Student ID",
+    custom: "Corporate / Custom",
+    corporate: "Corporate / Custom Plus",
   };
 
   const emailEnabledCount = members.filter((member) => member.sendEmail).length;
@@ -205,7 +193,7 @@ export default function Generate() {
     },
     {
       label: "Design",
-      value: TEMPLATE_LABELS[templateId],
+      value: TEMPLATE_LABELS[templateId] || TEMPLATE_LABELS.custom,
       active: true,
     },
     {
@@ -219,6 +207,9 @@ export default function Generate() {
       active: members.length > 0,
     },
   ];
+  const previewScale = orientation === "vertical" ? 0.58 : 0.6;
+  const previewWidth = orientation === "vertical" ? 340 : 540;
+  const previewHeight = orientation === "vertical" ? 540 : 340;
 
   /** Available font families for card styling */
   const FONT_FAMILIES = [
@@ -231,6 +222,59 @@ export default function Generate() {
     { value: "Verdana, sans-serif", label: "Verdana" },
     { value: "'Trebuchet MS', sans-serif", label: "Trebuchet MS" },
   ];
+  const GRADIENT_STYLES = [
+    { value: "diagonal", label: "Diagonal", preview: "linear-gradient(135deg, #2563EB, #ffffff 48%, #ef4444)" },
+    { value: "split", label: "Split", preview: "linear-gradient(115deg, #2563EB 0 42%, #ffffff 42% 58%, #ef4444 58%)" },
+    { value: "ribbon", label: "Ribbon", preview: "linear-gradient(90deg, #2563EB, #7c3aed, #ef4444)" },
+    { value: "glass", label: "Glass", preview: "linear-gradient(145deg, #2563EB33, #ffffff, #ef444433)" },
+  ];
+  const applyDesignPreset = (preset) => {
+    const presets = {
+      official: {
+        gradientStart: "#2563EB",
+        gradientEnd: "#EF4444",
+        accentColor: "#2563EB",
+        bgColor: "#ffffff",
+        fontColor: "#0f172a",
+        gradientStyle: "split",
+        fullGradientBg: true,
+        gradientOpacity: 0.5,
+      },
+      premium: {
+        gradientStart: "#1D4ED8",
+        gradientEnd: "#E11D48",
+        accentColor: "#1D4ED8",
+        bgColor: "#f8fafc",
+        fontColor: "#111827",
+        gradientStyle: "ribbon",
+        fullGradientBg: true,
+        gradientOpacity: 0.32,
+      },
+      clean: {
+        gradientStart: "#0EA5E9",
+        gradientEnd: "#F43F5E",
+        accentColor: "#0369A1",
+        bgColor: "#ffffff",
+        fontColor: "#111827",
+        gradientStyle: "glass",
+        fullGradientBg: true,
+        gradientOpacity: 0.22,
+      },
+    };
+    const next = presets[preset];
+    if (!next) return;
+    setGradientStart(next.gradientStart);
+    setGradientEnd(next.gradientEnd);
+    setFullGradientBg(next.fullGradientBg);
+    setGradientOpacity(next.gradientOpacity);
+    setCardStyles((prev) => ({
+      ...prev,
+      bgColor: next.bgColor,
+      fontColor: next.fontColor,
+      accentColor: next.accentColor,
+      gradientStyle: next.gradientStyle,
+    }));
+  };
 
   useEffect(() => {
     const incomingMembers = location.state?.members;
@@ -398,14 +442,14 @@ export default function Generate() {
    * This routes through authentication, rate limiting, and the
    * middleware pipeline — instead of calling Supabase directly.
    */
-  const uploadCardToBackend = async (pngBlob, memberName) => {
-    if (!pngBlob) return;
+  const uploadCardToBackend = async (cardBlob, memberName) => {
+    if (!cardBlob) return;
     // Convert blob to base64
     const reader = new FileReader();
     const base64 = await new Promise((resolve, reject) => {
       reader.onload = () => resolve(reader.result);
       reader.onerror = reject;
-      reader.readAsDataURL(pngBlob);
+      reader.readAsDataURL(cardBlob);
     });
 
     const {
@@ -474,10 +518,13 @@ export default function Generate() {
         /[^a-zA-Z0-9]/g,
         "_",
       );
-      setDownloadStatus("Recording token usage...");
-      await uploadCardToBackend(blob, previewData.name);
       downloadBlob(blob, `${safeName}_ID.pdf`);
-      setDownloadStatus("Done!");
+      setDownloadStatus("Downloaded. Recording token usage...");
+      uploadCardToBackend(blob, previewData.name).catch((err) => {
+        console.warn("Card downloaded, but backend recording failed:", err);
+        setDownloadStatus(`Downloaded. Storage skipped: ${err.message}`);
+      });
+      setTimeout(() => setDownloadStatus("Done!"), 250);
     } catch (err) {
       console.error("PDF download failed:", err);
       setDownloadStatus(`Error: ${err.message}`);
@@ -743,7 +790,7 @@ export default function Generate() {
             <span className="hidden sm:inline">Bulk ID Generator </span>
             <span className="sm:hidden">ID Generator </span>
             <span className="text-slate-400 font-normal ml-1 sm:ml-2 text-xs sm:text-sm">
-              | {TEMPLATE_LABELS[templateId]}
+              | {TEMPLATE_LABELS[templateId] || TEMPLATE_LABELS.custom}
             </span>
           </h1>
         </div>
@@ -1340,6 +1387,56 @@ export default function Generate() {
                 These colors control the decorative gradients on your ID cards.
                 Click the color swatch or type a hex code.
               </p>
+
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: "official", label: "Official" },
+                  { id: "premium", label: "Premium" },
+                  { id: "clean", label: "Clean" },
+                ].map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => applyDesignPreset(preset.id)}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+
+              <div>
+                <label className="mb-2 block text-xs font-medium text-slate-700">
+                  Gradient Style
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {GRADIENT_STYLES.map((style) => (
+                    <button
+                      key={style.value}
+                      type="button"
+                      onClick={() => handleStyleChange("gradientStyle", style.value)}
+                      className={`rounded-lg border p-2 text-left transition ${
+                        cardStyles.gradientStyle === style.value
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-slate-200 bg-white hover:border-slate-300"
+                      }`}
+                    >
+                      <span
+                        className="mb-1 block h-8 rounded-md"
+                        style={{
+                          background: style.preview
+                            .replaceAll("#2563EB", gradientStart)
+                            .replaceAll("#ef4444", gradientEnd)
+                            .replaceAll("#EF4444", gradientEnd),
+                        }}
+                      />
+                      <span className="text-xs font-semibold text-slate-700">
+                        {style.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               {/* Full Gradient Background Toggle */}
               <div className="flex items-center justify-between mt-3 p-3 rounded-lg border border-slate-200 bg-slate-50/50">
@@ -2003,30 +2100,46 @@ export default function Generate() {
                 {previewData && (
                   <div className="space-y-4">
                     <h3 className="text-sm font-semibold text-slate-500 text-center uppercase tracking-wider">
-                      PDF Preview
+                      Live Card Preview
                     </h3>
 
-                    {/* PDF Preview Iframe */}
-                    {pdfBlobUrl ? (
-                      <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white">
-                        <iframe
-                          src={pdfBlobUrl}
-                          title="Card PDF Preview"
-                          className="w-full border-0"
-                          style={{ height: orientation === "vertical" ? "550px" : "380px" }}
-                        />
-                      </div>
-                    ) : pdfGenerating ? (
-                      <div className="flex items-center justify-center py-16">
-                        <div className="text-center space-y-3">
-                          <svg className="animate-spin h-8 w-8 text-[#2563EB] mx-auto" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                          <p className="text-sm text-slate-500">Generating PDF...</p>
+                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                      <div
+                        className="mx-auto overflow-visible"
+                        style={{
+                          width: `${previewWidth * previewScale}px`,
+                          height: `${(previewHeight * 2 + 20) * previewScale}px`,
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: `${previewWidth}px`,
+                            transform: `scale(${previewScale})`,
+                            transformOrigin: "top left",
+                          }}
+                        >
+                          <IDCard
+                            data={previewData}
+                            showBack
+                            orgName={orgName}
+                            logoUrl={effectiveLogoUrl}
+                            customFields={customFieldDefs}
+                            watermark={watermark}
+                            gradientColors={gradientColors}
+                            cardStyles={cardStyles}
+                            orientation={orientation}
+                            validityText={validityText}
+                            fieldVisibility={fieldVisibility}
+                            fullGradientBg={fullGradientBg}
+                            gradientOpacity={gradientOpacity}
+                            template={templateId}
+                          />
                         </div>
                       </div>
-                    ) : null}
+                      <p className="mt-3 text-center text-[11px] text-slate-500">
+                        {pdfGenerating ? "Preparing PDF export..." : pdfBlobUrl ? "PDF export ready." : "Live preview updates instantly."}
+                      </p>
+                    </div>
 
                     {/* Download PDF button */}
                     <div className="flex items-center justify-center gap-3 flex-wrap">
@@ -2399,13 +2512,16 @@ export default function Generate() {
                       onComplete={handleGenerationComplete}
                       templateId={templateId}
                       orgName={orgName}
-                      logoUrl={logoUrl}
+                      logoUrl={effectiveLogoUrl}
                       customFields={customFieldDefs}
                       watermark={watermark}
                       gradientColors={gradientColors}
                       cardStyles={cardStyles}
                       orientation={orientation}
                       validityText={validityText}
+                      fullGradientBg={fullGradientBg}
+                      gradientOpacity={gradientOpacity}
+                      signatureUrl={signatureUrl}
                       rangeStart={rangeStart}
                       rangeEnd={rangeEnd === "" ? members.length : rangeEnd}
                       perPersonCap={perPersonCap === "" ? 0 : perPersonCap}

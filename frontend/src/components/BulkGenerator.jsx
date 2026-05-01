@@ -56,6 +56,9 @@ export default function BulkGenerator({
   },
   orientation = "horizontal",
   validityText = "Valid as per subscription plan",
+  fullGradientBg = false,
+  gradientOpacity = 0.55,
+  signatureUrl = "",
   rangeStart = 1,
   rangeEnd = 0, // 0 means "all"
   perPersonCap = 0, // 0 means "no limit"
@@ -136,6 +139,9 @@ export default function BulkGenerator({
       validityText,
       watermark,
       customFields,
+      signatureUrl,
+      fullGradientBg,
+      gradientOpacity,
     };
     return renderCardPdfWithBestSupport(payload);
   };

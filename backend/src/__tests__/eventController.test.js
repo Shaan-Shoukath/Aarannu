@@ -247,12 +247,14 @@ describe("exportCheckins handler", () => {
     {
       id: "ci-1",
       member_name: "Alice",
+      member_id: "member-1",
       member_email: "alice@example.com",
       checked_in_at: "2025-01-01T10:00:00Z",
     },
     {
       id: "ci-2",
       member_name: "Bob",
+      member_id: "member-2",
       member_email: "bob@example.com",
       checked_in_at: "2025-01-01T10:05:00Z",
     },
@@ -274,7 +276,7 @@ describe("exportCheckins handler", () => {
     );
   });
 
-  test("CSV response includes Name, Email, Check-in Time columns", async () => {
+  test("CSV response includes Name, Member ID, Time, Status columns", async () => {
     const req = mockReq({ query: { format: "csv" } });
     const res = mockRes();
 
@@ -282,10 +284,12 @@ describe("exportCheckins handler", () => {
 
     const csvBody = res.send.mock.calls[0][0];
     expect(csvBody).toMatch(/Name/);
-    expect(csvBody).toMatch(/Email/);
-    expect(csvBody).toMatch(/Check-in Time/);
+    expect(csvBody).toMatch(/Member ID/);
+    expect(csvBody).toMatch(/Time/);
+    expect(csvBody).toMatch(/Status/);
     expect(csvBody).toMatch(/Alice/);
-    expect(csvBody).toMatch(/alice@example\.com/);
+    expect(csvBody).toMatch(/member-1/);
+    expect(csvBody).toMatch(/CHECKED_IN/);
   });
 
   test("CSV response has correct Content-Disposition with event name", async () => {

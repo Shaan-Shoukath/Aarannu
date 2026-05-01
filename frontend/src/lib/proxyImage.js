@@ -11,7 +11,10 @@
  * Local / data-URI / blob URLs are returned as-is.
  */
 
-const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const BACKEND =
+  import.meta.env.VITE_BACKEND_URL ||
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:5000";
 
 /**
  * Returns true when the URL points to an external resource that

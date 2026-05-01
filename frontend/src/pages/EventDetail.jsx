@@ -123,7 +123,12 @@ export default function EventDetail() {
   };
 
   const handleExportXlsx = () => {
-    const rows = checkins.map((c) => ({ Name: c.member_name, Email: c.member_email || "", "Check-in Time": c.checked_in_at ? new Date(c.checked_in_at).toLocaleString("en-IN") : "" }));
+    const rows = checkins.map((c) => ({
+      Name: c.member_name,
+      "Member ID": c.member_id || "",
+      Time: c.checked_in_at ? new Date(c.checked_in_at).toLocaleString("en-IN") : "",
+      Status: "CHECKED_IN",
+    }));
     const ws = utils.json_to_sheet(rows);
     const wb = utils.book_new();
     utils.book_append_sheet(wb, ws, "Check-ins");

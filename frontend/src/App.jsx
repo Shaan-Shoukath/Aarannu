@@ -18,9 +18,21 @@ import ProjectCreate from "./pages/ProjectCreate";
 import ProjectDashboard from "./pages/ProjectDashboard";
 import RegistrationForm from "./pages/RegistrationForm";
 import VerifyCard from "./pages/VerifyCard";
+import MemberVerify from "./pages/MemberVerify";
 import BulkDashboard from "./pages/BulkDashboard";
 import EventsDashboard from "./pages/EventsDashboard";
 import EventDetail from "./pages/EventDetail";
+import ThemeToggle from "./components/ThemeToggle";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import { useLocation } from "react-router-dom";
+
+function GlobalThemeToggle() {
+  const location = useLocation();
+
+  if (location.pathname === "/") return null;
+
+  return <ThemeToggle compact variant="floating" />;
+}
 
 /**
  * App – Root Component
@@ -44,13 +56,16 @@ import EventDetail from "./pages/EventDetail";
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+        <GlobalThemeToggle />
         <Routes>
         {/* ── Public routes ────────────────────── */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/register/:projectId" element={<RegistrationForm />} />
         <Route path="/verify/:cardId" element={<VerifyCard />} />
+        <Route path="/members/:id" element={<MemberVerify />} />
         <Route path="/render-card" element={<RenderCard />} />
 
         {/* ── Legacy protected routes ──────────── */}
@@ -160,7 +175,8 @@ export default function App() {
         {/* ── Catch-all redirect ──────────────── */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
-      </AuthProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

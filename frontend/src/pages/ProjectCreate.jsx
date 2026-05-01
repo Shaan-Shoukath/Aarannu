@@ -291,10 +291,8 @@ export default function ProjectCreate() {
                   <label className="block text-sm text-slate-300 mb-1">Card Template</label>
                   <select value={template} onChange={(e) => setTemplate(e.target.value)}
                     className="w-full px-4 py-2.5 bg-slate-900/60 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all">
-                    <option value="custom">Geometric Gradient</option>
-                    <option value="corporate">Corporate</option>
-                    <option value="student">Student</option>
-                    <option value="event">Event</option>
+                    <option value="custom">Corporate / Custom</option>
+                    <option value="corporate">Corporate / Custom Plus</option>
                   </select>
                 </div>
                 <div>

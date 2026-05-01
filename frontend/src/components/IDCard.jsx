@@ -82,10 +82,15 @@ const IDCard = forwardRef(function IDCard(
   const resolvedFontFamily = withMalayalamFontFallback(
     cs.fontFamily || DEFAULT_CARD_FONT_FAMILY,
   );
-  const primaryTextColor = "#111111";
-  const secondaryTextColor = "#1a1a1a";
-  const labelTextColor = "#2f2f2f";
-  const mutedTextColor = "#3f3f46";
+  const primaryTextColor = cs.fontColor || "#0f172a";
+  const accentColor = cs.accentColor || gc.start || "#2563EB";
+  const subtleTextColor = primaryTextColor === "#ffffff" ? "#e2e8f0" : "#64748b";
+  const secondaryTextColor = primaryTextColor;
+  const labelTextColor = subtleTextColor;
+  const mutedTextColor = subtleTextColor;
+  const panelBg = fullGradientBg ? "rgba(255,255,255,0.86)" : "rgba(255,255,255,0.9)";
+  const softPanelBg = fullGradientBg ? "rgba(255,255,255,0.74)" : "#f8fafc";
+  const gradientLayerOpacity = Math.max(0.08, Math.min(1, Number(gradientOpacity) || 0.55));
   const orgDisplayName = uppercaseLatinOnly(orgName || "Community ID");
   const displayName = uppercaseLatinOnly(name);
   const displayRole = uppercaseLatinOnly(role);
@@ -100,10 +105,447 @@ const IDCard = forwardRef(function IDCard(
     displayMembershipId,
     resolvedFontFamily,
   );
+  const verificationId =
+    data?.card_id || data?.cardId || data?.delivery_card_id || id_number;
+  const verificationPath = `/members/${encodeURIComponent(verificationId || "unknown")}`;
+  const verificationUrl =
+    data?.verification_url ||
+    data?.verificationUrl ||
+    data?.delivery_verification_url ||
+    (typeof window !== "undefined"
+      ? `${window.location.origin}${verificationPath}`
+      : verificationPath);
+  const logoSrc = proxyImageUrl(logoUrl);
+  const cardRadius = Math.max(10, Number(cs.borderRadius) || 14);
+  const cardWidth = isVertical ? 340 : 540;
+  const cardHeight = isVertical ? 540 : 340;
+  const orgInitial = orgDisplayName.replace(/[^A-Z0-9]/g, "").charAt(0) || "A";
+  const photoScale = Math.max(0.65, Math.min(1.25, (Number(cs.photoScale) || 100) / 100));
+  const photoWidth = Math.round(Math.min(isVertical ? 138 : 126, Math.max(96, (isVertical ? 116 : 112) * photoScale)));
+  const photoHeight = Math.round(Math.min(isVertical ? 168 : 148, Math.max(118, photoWidth * 1.18)));
+  const labelFontSize = Number(cs.labelFontSize) || 9;
+  const valueFontSize = Number(cs.valueFontSize) || 14;
+  const nameFontSize = Math.min(Number(cs.nameFontSize) || 22, 28);
+  const gradientStyle = cs.gradientStyle || "diagonal";
+  const gradientBackgrounds = {
+    diagonal: `linear-gradient(135deg, ${gc.start} 0%, ${gc.end} 100%)`,
+    split: `linear-gradient(115deg, ${gc.start} 0 42%, rgba(255,255,255,0.9) 42% 58%, ${gc.end} 58% 100%)`,
+    ribbon: `linear-gradient(90deg, ${gc.start} 0%, ${accentColor} 45%, ${gc.end} 100%)`,
+    glass: `linear-gradient(145deg, ${gc.start}55 0%, rgba(255,255,255,0.95) 48%, ${gc.end}55 100%)`,
+  };
+  const activeGradient = gradientBackgrounds[gradientStyle] || gradientBackgrounds.diagonal;
+  const quietBackground = `linear-gradient(135deg, ${cs.bgColor || "#ffffff"} 0%, rgba(255,255,255,0.95) 52%, ${gc.end}12 100%)`;
+  const renderGradientGeometry = (reverse = false) => (
+    <>
+      <div
+        className="absolute inset-0"
+        style={{
+          background: fullGradientBg ? activeGradient : quietBackground,
+          opacity: fullGradientBg ? gradientLayerOpacity : 1,
+        }}
+      />
+      <div
+        className="absolute"
+        style={{
+          width: "280px",
+          height: "144px",
+          top: reverse ? "72px" : "34px",
+          right: reverse ? "-120px" : "-92px",
+          left: reverse ? "auto" : "auto",
+          transform: reverse ? "rotate(18deg)" : "rotate(-16deg)",
+          background: `linear-gradient(135deg, rgba(255,255,255,0.72), ${gc.start}24)`,
+          clipPath: "polygon(18% 0, 100% 0, 82% 100%, 0 100%)",
+          opacity: fullGradientBg ? 0.75 : 0.9,
+        }}
+      />
+      <div
+        className="absolute"
+        style={{
+          bottom: "-48px",
+          width: "328px",
+          height: "104px",
+          left: reverse ? "auto" : "-92px",
+          right: reverse ? "-92px" : "auto",
+          transform: reverse ? "rotate(-11deg)" : "rotate(11deg)",
+          background: `linear-gradient(90deg, ${gc.end}18, rgba(255,255,255,0.78), ${gc.start}18)`,
+          clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0 100%)",
+        }}
+      />
+    </>
+  );
+  const frontDetailItems = [
+    fv.dob && { label: "Date of Birth", value: displayDob || "N/A" },
+    fv.gender && { label: "Gender", value: displayGender || "N/A" },
+    ...frontFields.slice(0, 2).map((field) => ({
+      label: field.label,
+      value: getCustomFieldDisplayValue(field.label),
+    })),
+  ].filter(Boolean);
+  const imagePlaceholder = (label = "Image") => {
+    const safeLabel = String(label).slice(0, 16);
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="420" viewBox="0 0 320 420"><rect width="320" height="420" rx="24" fill="#f1f5f9"/><rect x="26" y="26" width="268" height="368" rx="20" fill="#ffffff" stroke="#cbd5e1" stroke-width="4"/><circle cx="160" cy="158" r="52" fill="#cbd5e1"/><path d="M72 330c20-58 56-86 88-86s68 28 88 86" fill="#cbd5e1"/><text x="160" y="378" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#64748b">${safeLabel}</text></svg>`;
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+  };
+  const imageFallback = (rawUrl, label) => (event) => {
+    const img = event.currentTarget;
+    if (!rawUrl || img.dataset.directFallback === "true") {
+      img.removeAttribute("crossorigin");
+      img.src = imagePlaceholder(label);
+      return;
+    }
+    img.dataset.directFallback = "true";
+    img.removeAttribute("crossorigin");
+    img.src = rawUrl;
+  };
 
   // Unique suffix for SVG gradient IDs – prevents collisions when
   // multiple card instances exist in the DOM simultaneously
   const uid = useId().replace(/:/g, "");
+
+  if (template !== "__legacy") {
+    return (
+      <div ref={ref} className="flex flex-col items-center gap-5">
+        {showFront && (
+          <div
+            className="relative overflow-hidden border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5"
+            style={{
+              width: `${cardWidth}px`,
+              height: `${cardHeight}px`,
+              borderRadius: `${cardRadius}px`,
+              color: primaryTextColor,
+              fontFamily: resolvedFontFamily,
+              backgroundColor: cs.bgColor || "#ffffff",
+            }}
+          >
+            {renderGradientGeometry(false)}
+
+            <div className="relative flex h-full flex-col px-7 py-6">
+              <header className="grid grid-cols-[56px_minmax(0,1fr)_56px] items-center gap-4 border-b border-white/45 pb-3">
+                <div className="flex justify-start">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+                    {logoUrl ? (
+                      <img
+                        src={logoSrc}
+                        alt={`${orgName || "Organization"} logo`}
+                        className="max-h-10 max-w-10 object-contain"
+                        crossOrigin="anonymous"
+                        onError={imageFallback(logoUrl, orgInitial)}
+                      />
+                    ) : (
+                      <span
+                        className="flex h-full w-full items-center justify-center text-sm font-black text-white"
+                        style={{
+                          background: `linear-gradient(135deg, ${gc.start}, ${gc.end})`,
+                          color: "#ffffff",
+                        }}
+                      >
+                        {orgInitial}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="min-w-0 text-center">
+                  <p className="truncate text-xl font-black leading-tight" style={{ color: primaryTextColor }}>
+                    {orgDisplayName}
+                  </p>
+                  <p
+                    className="mt-1 font-black uppercase tracking-[0.26em]"
+                    style={{ color: subtleTextColor, fontSize: `${Math.max(7, labelFontSize)}px` }}
+                  >
+                    Digital Identity Card
+                  </p>
+                </div>
+
+                <div />
+              </header>
+
+              <main className="grid flex-1 grid-cols-[144px_minmax(0,1fr)] items-stretch gap-5 py-4">
+                <section
+                  className="flex min-h-0 flex-col items-center justify-center rounded-xl border border-slate-200 p-3 shadow-sm"
+                  style={{ background: panelBg }}
+                >
+                  <div
+                    className="overflow-hidden rounded-xl border-[3px] border-white bg-slate-100 shadow-md ring-1 ring-slate-300"
+                    style={{ width: `${photoWidth}px`, height: `${photoHeight}px` }}
+                  >
+                    {photo_url ? (
+                      <img
+                        src={photoSrc}
+                        alt={`${name} profile`}
+                        className="h-full w-full object-cover"
+                        crossOrigin="anonymous"
+                        onError={imageFallback(photo_url, "No Photo")}
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-slate-100 to-slate-200 text-center text-xs font-semibold text-slate-500">
+                        No Photo
+                      </div>
+                    )}
+                  </div>
+                  {fv.role !== false && (
+                    <div
+                      className="mt-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-center"
+                      style={{ background: softPanelBg }}
+                    >
+                      <p
+                        className="font-black uppercase tracking-[0.18em]"
+                        style={{ color: subtleTextColor, fontSize: `${Math.max(7, labelFontSize - 1)}px` }}
+                      >
+                        Role
+                      </p>
+                      <p
+                        className="truncate font-black uppercase"
+                        style={{ color: accentColor, fontSize: `${Math.max(10, valueFontSize - 3)}px` }}
+                      >
+                        {displayRole}
+                      </p>
+                    </div>
+                  )}
+                </section>
+
+                <div className="flex min-w-0 flex-col justify-center">
+                  <section
+                    className="flex h-full flex-col justify-center rounded-xl border border-slate-200 p-4 shadow-sm"
+                    style={{ background: panelBg }}
+                  >
+                    <p
+                      className="font-black uppercase tracking-[0.22em]"
+                      style={{ color: accentColor, fontSize: `${labelFontSize}px` }}
+                    >
+                      Full Name
+                    </p>
+                    <h3
+                      className="mt-1 break-words font-black leading-tight"
+                      style={{ color: primaryTextColor, fontSize: `${nameFontSize}px` }}
+                    >
+                      {displayName}
+                    </h3>
+
+                    <div
+                      className="mt-4 rounded-lg border px-4 py-2.5"
+                      style={{
+                        background: fullGradientBg ? "rgba(255,255,255,0.82)" : `${accentColor}12`,
+                        borderColor: `${accentColor}2e`,
+                      }}
+                    >
+                      <p
+                        className="font-black uppercase tracking-[0.2em]"
+                        style={{ color: accentColor, fontSize: `${Math.max(7, labelFontSize - 1)}px` }}
+                      >
+                        Member ID
+                      </p>
+                      <p
+                        className="mt-1 font-black tracking-[0.09em]"
+                        style={{
+                          color: primaryTextColor,
+                          fontFamily: membershipIdFontFamily,
+                          fontSize: `${Math.max(15, valueFontSize + 4)}px`,
+                        }}
+                      >
+                        {displayMembershipId}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-3">
+                      {frontDetailItems.slice(0, 4).map((item) => (
+                        <div
+                          key={item.label}
+                          className="rounded-lg border border-slate-200 px-3 py-2"
+                          style={{ background: softPanelBg }}
+                        >
+                          <p
+                            className="font-black uppercase tracking-[0.14em]"
+                            style={{ color: subtleTextColor, fontSize: `${Math.max(7, labelFontSize - 1)}px` }}
+                          >
+                            {uppercaseLatinOnly(item.label)}
+                          </p>
+                          <p
+                            className="mt-0.5 truncate font-black"
+                            style={{ color: primaryTextColor, fontSize: `${Math.max(10, valueFontSize - 2)}px` }}
+                          >
+                            {item.value}
+                          </p>
+                        </div>
+                      ))}
+                      {frontDetailItems.length === 0 && (
+                        <div className="col-span-2 h-12 rounded-lg border border-slate-200 bg-slate-50" />
+                      )}
+                    </div>
+                  </section>
+                </div>
+              </main>
+
+              <footer className="grid grid-cols-2 items-center border-t border-white/45 pt-2.5">
+                <span
+                  className="truncate font-bold uppercase tracking-[0.14em]"
+                  style={{ color: subtleTextColor, fontSize: `${Math.max(7, labelFontSize - 1)}px` }}
+                >
+                  {displayValidityText}
+                </span>
+                <span
+                  className="text-right font-black uppercase tracking-[0.14em]"
+                  style={{ color: subtleTextColor, fontSize: `${Math.max(7, labelFontSize - 1)}px` }}
+                >
+                  Verify on back
+                </span>
+              </footer>
+            </div>
+          </div>
+        )}
+
+        {showBackSide && (
+          <div
+            className="relative overflow-hidden border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5"
+            style={{
+              width: `${cardWidth}px`,
+              height: `${cardHeight}px`,
+              borderRadius: `${cardRadius}px`,
+              fontFamily: resolvedFontFamily,
+              color: primaryTextColor,
+              backgroundColor: cs.bgColor || "#ffffff",
+            }}
+          >
+            {renderGradientGeometry(true)}
+            <div className="relative flex h-full flex-col px-7 py-6">
+              <header className="grid grid-cols-[56px_minmax(0,1fr)_56px] items-center gap-4 border-b border-white/45 pb-3">
+                <div
+                  className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-black"
+                  style={{ color: accentColor }}
+                >
+                  {orgInitial}
+                </div>
+                <div className="min-w-0 text-center">
+                  <p className="truncate text-lg font-black" style={{ color: primaryTextColor }}>
+                    {orgDisplayName}
+                  </p>
+                  <p
+                    className="mt-1 font-black uppercase tracking-[0.24em]"
+                    style={{ color: subtleTextColor, fontSize: `${Math.max(7, labelFontSize - 1)}px` }}
+                  >
+                    Verification Details
+                  </p>
+                </div>
+                <div />
+              </header>
+
+              <main className="grid flex-1 grid-cols-[minmax(0,1fr)_144px] items-stretch gap-5 py-4">
+                <section
+                  className="flex min-w-0 flex-col justify-center rounded-xl border border-slate-200 p-4 shadow-sm"
+                  style={{ background: panelBg }}
+                >
+                  {fv.address && (
+                    <div>
+                      <p
+                        className="font-black uppercase tracking-[0.2em]"
+                        style={{ color: accentColor, fontSize: `${labelFontSize}px` }}
+                      >
+                        Address
+                      </p>
+                      <p
+                        className="mt-1 line-clamp-3 font-semibold leading-relaxed"
+                        style={{ color: primaryTextColor, fontSize: `${Math.max(10, valueFontSize - 2)}px` }}
+                      >
+                        {displayAddress}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="my-4 h-px bg-slate-200" />
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div
+                      className="col-span-2 rounded-lg border border-slate-200 px-3 py-2"
+                      style={{ background: softPanelBg }}
+                    >
+                      <p
+                        className="font-black uppercase tracking-[0.16em]"
+                        style={{ color: subtleTextColor, fontSize: `${Math.max(7, labelFontSize - 1)}px` }}
+                      >
+                        Issuing Authority
+                      </p>
+                      <p
+                        className="mt-0.5 truncate font-black"
+                        style={{ color: primaryTextColor, fontSize: `${valueFontSize}px` }}
+                      >
+                        {orgDisplayName}
+                      </p>
+                    </div>
+                    {backFields.slice(0, 3).map((f) => (
+                      <div
+                        key={f.label}
+                        className="rounded-lg border border-slate-200 px-3 py-2"
+                        style={{ background: softPanelBg }}
+                      >
+                        <p
+                          className="font-black uppercase tracking-[0.14em]"
+                          style={{ color: subtleTextColor, fontSize: `${Math.max(7, labelFontSize - 1)}px` }}
+                        >
+                          {uppercaseLatinOnly(f.label)}
+                        </p>
+                        <p
+                          className="mt-0.5 truncate font-black"
+                          style={{ color: primaryTextColor, fontSize: `${Math.max(10, valueFontSize - 2)}px` }}
+                        >
+                          {getCustomFieldDisplayValue(f.label)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                <section
+                  className="flex flex-col items-center justify-center rounded-xl border p-3"
+                  style={{
+                    background: fullGradientBg ? "rgba(255,255,255,0.78)" : `${accentColor}12`,
+                    borderColor: `${accentColor}2e`,
+                  }}
+                >
+                  <div className="flex h-[122px] w-[122px] items-center justify-center rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+                    <QRCodeCanvas
+                      value={verificationUrl}
+                      size={108}
+                      level="H"
+                      marginSize={1}
+                      bgColor="#ffffff"
+                      fgColor="#000000"
+                    />
+                  </div>
+                  <p
+                    className="mt-2 text-center font-bold uppercase tracking-[0.16em]"
+                    style={{ color: subtleTextColor, fontSize: `${Math.max(7, labelFontSize - 1)}px` }}
+                  >
+                    Scan for verification
+                  </p>
+                  <p
+                    className="mt-2 max-w-full truncate text-center font-bold uppercase tracking-[0.08em]"
+                    style={{ color: accentColor, fontSize: `${Math.max(7, labelFontSize - 1)}px` }}
+                  >
+                    {displayMembershipId}
+                  </p>
+                </section>
+              </main>
+
+              <footer className="grid grid-cols-2 items-center border-t border-white/45 pt-2.5">
+                <span
+                  className="truncate font-bold uppercase tracking-[0.14em]"
+                  style={{ color: subtleTextColor, fontSize: `${Math.max(7, labelFontSize - 1)}px` }}
+                >
+                  {orgDisplayName}
+                </span>
+                <span
+                  className="truncate text-right font-bold uppercase tracking-[0.1em]"
+                  style={{ color: subtleTextColor, fontSize: `${Math.max(7, labelFontSize - 1)}px` }}
+                >
+                  {verificationPath}
+                </span>
+              </footer>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div ref={ref} className="flex flex-col items-center gap-8">
